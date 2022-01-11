@@ -214,14 +214,3 @@ ext/tracy/
 *.callgrind.log
 callgrind.out.*
 memcheck.out.*
-conf/default/login.conf
-conf/default/maint.conf
-conf/default/map.conf
-conf/default/packet_tcp.conf
-conf/default/packet_udp.conf
-conf/default/search_server.conf
-conf/default/server_message.conf
-conf/default/version.conf
-modules/custom/homepoint_heal.lua
-modules/homepoint_heal.lua
-scripts/settings/default/main.lua

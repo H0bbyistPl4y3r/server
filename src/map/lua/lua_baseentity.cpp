@@ -803,6 +803,8 @@ void CLuaBaseEntity::StartEventHelper(int32 EventID, sol::variadic_args va, EVEN
         return;
     }
 
+    PChar->StatusEffectContainer->DelStatusEffect(EFFECT_BOOST);
+
     PChar->queueEvent(ParseEvent(EventID, va, PChar->eventPreparation, eventType));
 }
 
@@ -12384,7 +12386,7 @@ void CLuaBaseEntity::SetMobAbilityEnabled(bool state)
 
 void CLuaBaseEntity::SetMobSkillAttack(int16 listId)
 {
-    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype != TYPE_MOB);
+    XI_DEBUG_BREAK_IF(!(m_PBaseEntity->objtype == TYPE_MOB || m_PBaseEntity->objtype == TYPE_TRUST));
 
     static_cast<CMobEntity*>(m_PBaseEntity)->setMobMod(MOBMOD_ATTACK_SKILL_LIST, listId);
 }

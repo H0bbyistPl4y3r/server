@@ -1,4 +1,4 @@
-﻿/*
+/*
 ===========================================================================
 
   Copyright (c) 2010-2015 Darkstar Dev Teams
@@ -58,6 +58,7 @@
 #include "../ai/states/weaponskill_state.h"
 #include "../alliance.h"
 #include "../battlefield.h"
+#include "../campaign_system.h"
 #include "../conquest_system.h"
 #include "../daily_system.h"
 #include "../entities/automatonentity.h"
@@ -4539,7 +4540,10 @@ namespace luautils
 
         if (PChar->PInstance)
         {
-            auto instance_filename = fmt::format("./scripts/zones/{}/instances/{}", PChar->loc.zone->GetName(), PChar->PInstance->GetName());
+            auto instance_filename = fmt::format(
+                "./scripts/zones/{}/instances/{}",
+                PChar->PInstance->GetZone()->GetName(),
+                PChar->PInstance->GetName());
 
             auto funcFromInstance = GetCacheEntryFromFilename(instance_filename)[functionName];
             if (funcFromInstance.valid())
@@ -4671,5 +4675,4 @@ namespace luautils
             return;
         }
     }
-
 }; // namespace luautils

@@ -66,7 +66,7 @@ CActionPacket::CActionPacket(action_t& action)
         break;
         case ACTION_WEAPONSKILL_FINISH:
         {
-            packBitsBE(data, action.actionid, 86, 10);
+            packBitsBE(data, action.actionid, 86, 16);
         }
         break;
         case ACTION_JOBABILITY_START:
@@ -78,6 +78,11 @@ CActionPacket::CActionPacket(action_t& action)
         {
             packBitsBE(data, action.actionid, 86, 10);
             packBitsBE(data, action.recast, 118, 10);
+        }
+        break;
+        case ACTION_RUN_WARD_EFFUSION:
+        {
+            packBitsBE(data, action.actionid, 86, 10);
         }
         break;
         case ACTION_WEAPONSKILL_START:
@@ -349,7 +354,7 @@ CActionPacket::CActionPacket(action_t& action)
             bitOffset = packBitsBE(data, static_cast<uint64>(target.speceffect), bitOffset, 7); // specialEffect
             bitOffset = packBitsBE(data, target.knockback, bitOffset, 3);                       // knockback amount (mobskill only)
             bitOffset = packBitsBE(data, target.param, bitOffset, 17);                          // параметр сообщения (урон)
-            bitOffset = packBitsBE(data, target.messageID, bitOffset, 10);                      // сообщение
+            bitOffset = packBitsBE(data, target.messageID, bitOffset, 10);                      // message
             bitOffset += 31;
 
             if (target.additionalEffect != SUBEFFECT_NONE)

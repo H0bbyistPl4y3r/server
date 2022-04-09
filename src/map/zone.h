@@ -543,10 +543,10 @@ public:
     const int8*    GetName();
     zoneLine_t*    GetZoneLine(uint32 zoneLineID);
 
-    uint8          GetSoloBattleMusic() const;
-    uint8          GetPartyBattleMusic() const;
-    uint8          GetBackgroundMusicDay() const;
-    uint8          GetBackgroundMusicNight() const;
+    uint8 GetSoloBattleMusic() const;
+    uint8 GetPartyBattleMusic() const;
+    uint8 GetBackgroundMusicDay() const;
+    uint8 GetBackgroundMusicNight() const;
 
     void SetSoloBattleMusic(uint8 music);
     void SetPartyBattleMusic(uint8 music);
@@ -596,6 +596,8 @@ public:
 
     virtual void TOTDChange(TIMETYPE TOTD); // обработка реакции мира на смену времени суток
     virtual void PushPacket(CBaseEntity*, GLOBAL_MESSAGE_TYPE, CBasicPacket*); // отправляем глобальный пакет в пределах зоны
+
+    CZoneEntities* GetZoneEntities();
 
     time_point      m_RegionCheckTime; // время последней проверки регионов
     weatherVector_t m_WeatherVector;   // вероятность появления каждого типа погоды

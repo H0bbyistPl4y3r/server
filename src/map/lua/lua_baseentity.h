@@ -51,7 +51,7 @@ public:
     // Messaging System
     void showText(CLuaBaseEntity* mob, uint16 messageID, sol::object const& p0, sol::object const& p1, sol::object const& p2, sol::object const& p3); // Displays Dialog for npc
     void messageText(CLuaBaseEntity* PLuaBaseEntity, uint16 messageID, sol::object const& arg2, sol::object const& arg3);
-    void PrintToPlayer(std::string const& message, sol::object messageType, sol::object name);                               // for sending debugging messages/command confirmations to the player's client
+    void PrintToPlayer(std::string const& message, sol::object const& messageTypeObj, sol::object const& nameObj);                               // for sending debugging messages/command confirmations to the player's client
     void PrintToArea(std::string const& message, sol::object const& arg1, sol::object const& arg2, sol::object const& arg3); // for sending area messages to multiple players at once
     void messageBasic(uint16 messageID, sol::object const& p0, sol::object const& p1, sol::object const& target);            // Sends Basic Message
     void messageName(uint16 messageID, sol::object const& entity, sol::object const& p0, sol::object const& p1,
@@ -62,6 +62,8 @@ public:
 
     void messageSystem(uint16 messageID, sol::object const& p0, sol::object const& p1); // Sends System Message
     void messageCombat(sol::object const& speaker, int32 p0, int32 p1, int16 message);  // Sends Combat Message
+
+    void customMenu(sol::object const& obj);
 
     // Variables
     int32  getCharVar(std::string const& varName);              // Returns a character variable
@@ -251,7 +253,10 @@ public:
     // Player Appearance
     uint8  getRace();
     uint8  getGender();              // Returns the player character's gender
-    auto   getName() -> const char*; // Gets Entity Name
+    auto   getName() -> std::string; // Gets Entity Name
+    void   setName(std::string const& name);
+    auto   getPacketName() -> std::string;
+    void   setPacketName(std::string const& name);
     void   hideName(bool isHidden);
     bool   checkNameFlags(uint32 flags); // this is check and not get because it tests for a flag, it doesn't return all flags
     uint16 getModelId();
@@ -270,6 +275,7 @@ public:
     void  setNation(uint8 nation); // Sets Nation of Entity
     uint8 getAllegiance();
     void  setAllegiance(uint8 allegiance);
+
     uint8 getCampaignAllegiance();                 // Gets Campaign Allegiance of Entity
     void  setCampaignAllegiance(uint8 allegiance); // Sets Campaign Allegiance of Entity
 
@@ -618,6 +624,7 @@ public:
     int    getRACC();
     uint16 getRATT();
     uint16 getILvlMacc();
+    uint16 getILvlSkill();
     bool   isSpellAoE(uint16 spellId);
 
     int32 physicalDmgTaken(double damage, sol::variadic_args va);
@@ -648,12 +655,13 @@ public:
                                 float tpMultiplier, uint16 bonusTP, float targetTPMultiplier);
 
     int32 takeSpellDamage(CLuaBaseEntity* caster, CLuaSpell* spell, int32 damage, uint8 atkType, uint8 dmgType);
+    int32 takeSwipeLungeDamage(CLuaBaseEntity* caster, int32 damage, uint8 atkType, uint8 dmgType);
 
     // Pets and Automations
     void spawnPet(sol::object const& arg0); // Calls Pet
     void despawnPet();                      // Despawns Pet
 
-    void   spawnTrust(uint16 trustId);
+    auto   spawnTrust(uint16 trustId) -> std::optional<CLuaBaseEntity>;
     void   clearTrusts();
     uint32 getTrustID();
     void   trustPartyMessage(uint32 message_id);
@@ -692,11 +700,19 @@ public:
     uint8 getAutomatonFrame();
     uint8 getAutomatonHead();
     bool  unlockAttachment(uint16 itemID);
-    uint8 getActiveManeuvers();
+    uint8 getActiveManeuverCount();
     void  removeOldestManeuver();
     void  removeAllManeuvers();
     void  updateAttachments();
     void  reduceBurden(float percentReduction, sol::object const& intReductionObj);
+
+    auto  getAllRuneEffects() -> sol::table;
+    uint8 getActiveRuneCount();
+    uint16 getHighestRuneEffect();
+    uint16 getNewestRuneEffect();
+    void  removeOldestRune();
+    void  removeNewestRune();
+    void  removeAllRunes();
 
     // Mob Entity-Specific
     void   setMobLevel(uint8 level);
@@ -774,6 +790,13 @@ public:
     bool   itemStolen();                                                                 // sets mob's ItemStolen var = true
     int16  getTHlevel();                                                                 // Returns the Monster's current Treasure Hunter Tier
     void   addDropListModification(uint16 id, uint16 newRate, sol::variadic_args va);    // Adds a modification to the drop list of this mob, erased on death
+
+    uint32 getAvailableTraverserStones();
+    time_t getTraverserEpoch();
+    void   setTraverserEpoch();
+    uint32 getClaimedTraverserStones();
+    void   addClaimedTraverserStones(uint16 numStones);
+    void   setClaimedTraverserStones(uint16 totalStones);
 
     uint32 getHistory(uint8 index);
 

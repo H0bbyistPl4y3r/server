@@ -108,15 +108,15 @@ namespace battleutils
                             ORDER BY level \
                             LIMIT 100";
 
-        int32 ret = Sql_Query(SqlHandle, fmtQuery);
+        int32 ret = sql->Query(fmtQuery);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            for (uint32 x = 0; x < 100 && Sql_NextRow(SqlHandle) == SQL_SUCCESS; ++x)
+            for (uint32 x = 0; x < 100 && sql->NextRow() == SQL_SUCCESS; ++x)
             {
                 for (uint32 y = 0; y < 14; ++y)
                 {
-                    g_SkillTable[x][y] = (uint16)Sql_GetIntData(SqlHandle, y);
+                    g_SkillTable[x][y] = (uint16)sql->GetIntData(y);
                 }
             }
         }
@@ -125,17 +125,17 @@ namespace battleutils
                 FROM skill_ranks \
                 LIMIT 64";
 
-        ret = Sql_Query(SqlHandle, fmtQuery);
+        ret = sql->Query(fmtQuery);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            for (uint32 x = 0; x < MAX_SKILLTYPE && Sql_NextRow(SqlHandle) == SQL_SUCCESS; ++x)
+            for (uint32 x = 0; x < MAX_SKILLTYPE && sql->NextRow() == SQL_SUCCESS; ++x)
             {
-                auto SkillID = std::clamp<uint8>(Sql_GetIntData(SqlHandle, 0), 0, MAX_SKILLTYPE - 1);
+                auto SkillID = std::clamp<uint8>(sql->GetIntData(0), 0, MAX_SKILLTYPE - 1);
 
                 for (uint32 y = 1; y < MAX_JOBTYPE; ++y)
                 {
-                    g_SkillRanks[SkillID][y] = std::clamp<uint8>(Sql_GetIntData(SqlHandle, y), 0, 11);
+                    g_SkillRanks[SkillID][y] = std::clamp<uint8>(sql->GetIntData(y), 0, 11);
                 }
             }
         }
@@ -153,28 +153,28 @@ namespace battleutils
                                "WHERE weaponskillid < %u "
                                "ORDER BY type, skilllevel ASC";
 
-        int32 ret = Sql_Query(SqlHandle, fmtQuery, MAX_WEAPONSKILL_ID);
+        int32 ret = sql->Query(fmtQuery, MAX_WEAPONSKILL_ID);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            while (Sql_NextRow(SqlHandle) == SQL_SUCCESS)
+            while (sql->NextRow() == SQL_SUCCESS)
             {
-                CWeaponSkill* PWeaponSkill = new CWeaponSkill(Sql_GetIntData(SqlHandle, 0));
+                CWeaponSkill* PWeaponSkill = new CWeaponSkill(sql->GetIntData(0));
 
-                PWeaponSkill->setName(Sql_GetData(SqlHandle, 1));
-                PWeaponSkill->setJob(Sql_GetData(SqlHandle, 2));
-                PWeaponSkill->setType(Sql_GetIntData(SqlHandle, 3));
-                PWeaponSkill->setSkillLevel(Sql_GetIntData(SqlHandle, 4));
-                PWeaponSkill->setElement(Sql_GetIntData(SqlHandle, 5));
-                PWeaponSkill->setAnimationId(Sql_GetIntData(SqlHandle, 6));
-                PWeaponSkill->setAnimationTime(std::chrono::milliseconds(Sql_GetUIntData(SqlHandle, 7)));
-                PWeaponSkill->setRange(Sql_GetIntData(SqlHandle, 8));
-                PWeaponSkill->setAoe(Sql_GetIntData(SqlHandle, 9));
-                PWeaponSkill->setPrimarySkillchain(Sql_GetIntData(SqlHandle, 10));
-                PWeaponSkill->setSecondarySkillchain(Sql_GetIntData(SqlHandle, 11));
-                PWeaponSkill->setTertiarySkillchain(Sql_GetIntData(SqlHandle, 12));
-                PWeaponSkill->setMainOnly(Sql_GetIntData(SqlHandle, 13));
-                PWeaponSkill->setUnlockId(Sql_GetIntData(SqlHandle, 14));
+                PWeaponSkill->setName(sql->GetData(1));
+                PWeaponSkill->setJob(sql->GetData(2));
+                PWeaponSkill->setType(sql->GetIntData(3));
+                PWeaponSkill->setSkillLevel(sql->GetIntData(4));
+                PWeaponSkill->setElement(sql->GetIntData(5));
+                PWeaponSkill->setAnimationId(sql->GetIntData(6));
+                PWeaponSkill->setAnimationTime(std::chrono::milliseconds(sql->GetUIntData(7)));
+                PWeaponSkill->setRange(sql->GetIntData(8));
+                PWeaponSkill->setAoe(sql->GetIntData(9));
+                PWeaponSkill->setPrimarySkillchain(sql->GetIntData(10));
+                PWeaponSkill->setSecondarySkillchain(sql->GetIntData(11));
+                PWeaponSkill->setTertiarySkillchain(sql->GetIntData(12));
+                PWeaponSkill->setMainOnly(sql->GetIntData(13));
+                PWeaponSkill->setUnlockId(sql->GetIntData(14));
 
                 g_PWeaponSkillList[PWeaponSkill->getID()] = PWeaponSkill;
                 g_PWeaponSkillsList[PWeaponSkill->getType()].push_back(PWeaponSkill);
@@ -199,26 +199,26 @@ namespace battleutils
         mob_valid_targets, mob_skill_flag, mob_skill_param, knockback, primary_sc, secondary_sc, tertiary_sc \
         FROM mob_skills;";
 
-        int32 ret = Sql_Query(SqlHandle, specialQuery);
+        int32 ret = sql->Query(specialQuery);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            while (Sql_NextRow(SqlHandle) == SQL_SUCCESS)
+            while (sql->NextRow() == SQL_SUCCESS)
             {
-                CMobSkill* PMobSkill = new CMobSkill(Sql_GetIntData(SqlHandle, 0));
-                PMobSkill->setAnimationID(Sql_GetIntData(SqlHandle, 1));
-                PMobSkill->setName(Sql_GetData(SqlHandle, 2));
-                PMobSkill->setAoe(Sql_GetIntData(SqlHandle, 3));
-                PMobSkill->setDistance(Sql_GetFloatData(SqlHandle, 4));
-                PMobSkill->setAnimationTime(Sql_GetIntData(SqlHandle, 5));
-                PMobSkill->setActivationTime(Sql_GetIntData(SqlHandle, 6));
-                PMobSkill->setValidTargets(Sql_GetIntData(SqlHandle, 7));
-                PMobSkill->setFlag(Sql_GetIntData(SqlHandle, 8));
-                PMobSkill->setParam(Sql_GetIntData(SqlHandle, 9));
-                PMobSkill->setKnockback(Sql_GetUIntData(SqlHandle, 10));
-                PMobSkill->setPrimarySkillchain(Sql_GetUIntData(SqlHandle, 11));
-                PMobSkill->setSecondarySkillchain(Sql_GetUIntData(SqlHandle, 12));
-                PMobSkill->setTertiarySkillchain(Sql_GetUIntData(SqlHandle, 13));
+                CMobSkill* PMobSkill = new CMobSkill(sql->GetIntData(0));
+                PMobSkill->setAnimationID(sql->GetIntData(1));
+                PMobSkill->setName(sql->GetData(2));
+                PMobSkill->setAoe(sql->GetIntData(3));
+                PMobSkill->setDistance(sql->GetFloatData(4));
+                PMobSkill->setAnimationTime(sql->GetIntData(5));
+                PMobSkill->setActivationTime(sql->GetIntData(6));
+                PMobSkill->setValidTargets(sql->GetIntData(7));
+                PMobSkill->setFlag(sql->GetIntData(8));
+                PMobSkill->setParam(sql->GetIntData(9));
+                PMobSkill->setKnockback(sql->GetUIntData(10));
+                PMobSkill->setPrimarySkillchain(sql->GetUIntData(11));
+                PMobSkill->setSecondarySkillchain(sql->GetUIntData(12));
+                PMobSkill->setTertiarySkillchain(sql->GetUIntData(13));
                 PMobSkill->setMsg(185); // standard damage message. Scripters will change this.
                 g_PMobSkillList[PMobSkill->getID()] = PMobSkill;
 
@@ -230,15 +230,15 @@ namespace battleutils
         const char* fmtQuery = "SELECT skill_list_id, mob_skill_id \
         FROM mob_skill_lists;";
 
-        ret = Sql_Query(SqlHandle, fmtQuery);
+        ret = sql->Query(fmtQuery);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            while (Sql_NextRow(SqlHandle) == SQL_SUCCESS)
+            while (sql->NextRow() == SQL_SUCCESS)
             {
-                int16 skillListId = Sql_GetIntData(SqlHandle, 0);
+                int16 skillListId = sql->GetIntData(0);
 
-                uint16 skillId = Sql_GetIntData(SqlHandle, 1);
+                uint16 skillId = sql->GetIntData(1);
 
                 g_PMobSkillLists[skillListId].push_back(skillId);
             }
@@ -251,15 +251,15 @@ namespace battleutils
                            FROM skillchain_damage_modifiers \
                            ORDER BY chain_level, chain_count";
 
-        int32 ret = Sql_Query(SqlHandle, fmtQuery);
+        int32 ret = sql->Query(fmtQuery);
 
-        if (ret != SQL_ERROR && Sql_NumRows(SqlHandle) != 0)
+        if (ret != SQL_ERROR && sql->NumRows() != 0)
         {
-            for (uint32 x = 0; Sql_NextRow(SqlHandle) == SQL_SUCCESS; ++x)
+            for (uint32 x = 0; sql->NextRow() == SQL_SUCCESS; ++x)
             {
-                uint16 level                              = (uint16)Sql_GetIntData(SqlHandle, 0);
-                uint16 count                              = (uint16)Sql_GetIntData(SqlHandle, 1);
-                uint16 value                              = (uint16)Sql_GetIntData(SqlHandle, 2);
+                uint16 level                              = (uint16)sql->GetIntData(0);
+                uint16 count                              = (uint16)sql->GetIntData(1);
+                uint16 value                              = (uint16)sql->GetIntData(2);
                 g_SkillChainDamageModifiers[level][count] = value;
             }
         }
@@ -305,12 +305,28 @@ namespace battleutils
 
     uint16 GetMaxSkill(SKILLTYPE SkillID, JOBTYPE JobID, uint8 level)
     {
-        return g_SkillTable[level][g_SkillRanks[SkillID][JobID]];
+        // The skill_caps table is 0-indexed, so our maximum level should one lower
+        // than the size of the array.
+        std::size_t maxLevel = g_SkillTable.size() - 1;
+
+        if (level > maxLevel)
+        {
+            ShowDebug("battleutils::GetMaxSkill() received level value greater than array size! (Received: %d, Clamped to: %d)", level, maxLevel);
+        }
+
+        return g_SkillTable[std::clamp<uint8>(level, 0, maxLevel)][g_SkillRanks[SkillID][JobID]];
     }
 
     uint16 GetMaxSkill(uint8 rank, uint8 level)
     {
-        return g_SkillTable[level][rank];
+        std::size_t maxLevel = g_SkillTable.size() - 1;
+
+        if (level > maxLevel)
+        {
+            ShowDebug("battleutils::GetMaxSkill() received level value greater than array size! (Received: %d, Clamped to: %d)", level, maxLevel);
+        }
+
+        return g_SkillTable[std::clamp<uint8>(level, 0, maxLevel)][rank];
     }
 
     bool isValidSelfTargetWeaponskill(int wsid)
@@ -801,6 +817,28 @@ namespace battleutils
         {
             Action->spikesParam   = 0;
             Action->spikesMessage = 0;
+        }
+        return false;
+    }
+
+    bool HandleParrySpikesDamage(CBattleEntity* PAttacker, CBattleEntity* PDefender, actionTarget_t* Action, int32 damage)
+    {
+        Action->spikesEffect  = (SUBEFFECT)PDefender->getMod(Mod::PARRY_SPIKES);
+        Action->spikesMessage = 44;
+        Action->spikesParam   = std::max<int16>(PDefender->getMod(Mod::PARRY_SPIKES_DMG), 0);
+
+        if (Action->spikesEffect > 0)
+        {
+            // calculate damage
+            Action->spikesParam = HandleStoneskin(PAttacker, CalculateSpikeDamage(PAttacker, PDefender, Action, (uint16)(abs(damage))));
+            PAttacker->takeDamage(Action->spikesParam, PDefender, ATTACK_TYPE::MAGICAL, GetSpikesDamageType(Action->spikesEffect));
+
+            battleutils::DirtyExp(PAttacker, PDefender);
+            if (PAttacker->isDead())
+            {
+                battleutils::ClaimMob(PAttacker, PDefender);
+            }
+            return true;
         }
         return false;
     }
@@ -1810,11 +1848,11 @@ namespace battleutils
 
                 // Issekigan grants parry rate bonus. From best available data, if you already capped out at 25% parry it grants another 25% bonus for ~50%
                 // parry rate
-                if (PDefender->objtype == TYPE_PC && PDefender->StatusEffectContainer->HasStatusEffect(EFFECT_ISSEKIGAN))
+                if ((PDefender->objtype == TYPE_PC || PDefender->objtype == TYPE_TRUST)
+                    && PDefender->StatusEffectContainer->HasStatusEffect(EFFECT_ISSEKIGAN))
                 {
                     int16 issekiganBonus = PDefender->StatusEffectContainer->GetStatusEffect(EFFECT_ISSEKIGAN)->GetPower();
-                    // ShowDebug(CL_CYAN"GetParryRate: Issekigan Active, Parry Rate %d -> %d...", parryRate, (parryRate+issekiganBonus));
-                    parryRate = parryRate + issekiganBonus;
+                    parryRate += issekiganBonus;
                 }
 
                 // Inquartata grants a flat parry rate bonus.
@@ -2336,6 +2374,29 @@ namespace battleutils
             // Do we get TP for damaging spells?
             int16 tp = battleutils::CalculateSpellTP(PAttacker, PSpell);
             PAttacker->addTP(tp);
+        }
+
+        return damage;
+    }
+
+    /************************************************************************
+    *                                                                       *
+    *  Handles Damage from Swipe/Lunge (dmg type reductions calced in lua)  *
+    *                                                                       *
+    ************************************************************************/
+
+    int32 TakeSwipeLungeDamage(CBattleEntity* PDefender, CCharEntity* PAttacker, int32 damage, ATTACK_TYPE attackType, DAMAGE_TYPE damageType)
+    {
+        PDefender->takeDamage(damage, PAttacker, attackType, damageType);
+
+        // Remove effects from damage
+        if (damage > 0)
+        {
+            PDefender->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_DAMAGE);
+            // Check for bind breaking
+            BindBreakCheck(PAttacker, PDefender);
+
+            // Do targets get TP?
         }
 
         return damage;
@@ -3815,7 +3876,7 @@ namespace battleutils
         {
             damage = (int32)(damage * (1.f + PChar->PMeritPoints->GetMeritValue(MERIT_INNIN_EFFECT, PChar) / 100.f));
         }
-        damage = damage * (1000 - resistance) / 1000;
+        damage = damage * (10000 - resistance) / 10000;
         damage = MagicDmgTaken(PDefender, damage, appliedEle);
         if (damage > 0)
         {
@@ -6102,8 +6163,9 @@ namespace battleutils
             }
         }
 
-        fastCast               = std::clamp<int16>(fastCast, -100, 80);
-        int16 uncappedFastCast = std::clamp<int16>(PEntity->getMod(Mod::UFASTCAST), -100, 100);
+        fastCast                  = std::clamp<int16>(fastCast, -100, 80);
+        int16 uncappedFastCast    = std::clamp<int16>(PEntity->getMod(Mod::UFASTCAST), -100, 100);
+        int16 inspirationFastCast = std::clamp<int16>(PEntity->getMod(Mod::INSPIRATION_FAST_CAST), -100, 100);
 
         // Add in fast cast from Divine Benison
         if (PSpell->isNa())
@@ -6111,7 +6173,7 @@ namespace battleutils
             uncappedFastCast = std::clamp<int16>(uncappedFastCast + PEntity->getMod(Mod::DIVINE_BENISON), -100, 100);
         }
 
-        float sumFastCast = std::clamp<float>((float)(fastCast + uncappedFastCast), -100.f, 100.f);
+        float sumFastCast = std::clamp<float>((float)(fastCast + uncappedFastCast + inspirationFastCast), -100.f, 100.f);
 
         return (uint32)(cast * ((100.0f - sumFastCast) / 100.0f));
     }
@@ -6488,6 +6550,10 @@ namespace battleutils
                 return DAMAGE_TYPE::WIND;
             case SUBEFFECT_CLOD_SPIKES:
                 return DAMAGE_TYPE::EARTH;
+            case SUBEFFECT_DELUGE_SPIKES:
+                return DAMAGE_TYPE::WATER;
+            case SUBEFFECT_DEATH_SPIKES:
+                return DAMAGE_TYPE::DARK;
             default:
                 return DAMAGE_TYPE::NONE;
         }

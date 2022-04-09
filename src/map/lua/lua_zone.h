@@ -56,14 +56,19 @@ public:
     WEATHER     getWeather();
     void        reloadNavmesh();
 
+    auto insertDynamicEntity(sol::table table) -> std::optional<CLuaBaseEntity>;
+
     auto getSoloBattleMusic();
     auto getPartyBattleMusic();
     auto getBackgroundMusicDay();
     auto getBackgroundMusicNight();
+
     void setSoloBattleMusic(uint8 musicId);
     void setPartyBattleMusic(uint8 musicId);
     void setBackgroundMusicDay(uint8 musicId);
     void setBackgroundMusicNight(uint8 musicId);
+
+    sol::table queryEntitiesByName(std::string const& name);
 
     static void Register();
 };

@@ -29,6 +29,7 @@ global_objects=(
     Module
     Override
     super
+    applyOverride
 
     common
     zones
@@ -64,12 +65,10 @@ global_objects=(
     KeyItemAction
     LambdaAction
     Message
+    NoAction
     Sequence
     Container
     Event
-    onMobDeathEx
-
-    checkForGearSet
 
     removeSleepEffects
 

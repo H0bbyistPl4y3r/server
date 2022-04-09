@@ -56,9 +56,10 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include "utils/zoneutils.h"
 
 CZoneEntities::CZoneEntities(CZone* zone)
+: m_zone(zone)
+, m_Transport(nullptr)
+, m_DynamicTargIDCount(0)
 {
-    m_zone      = zone;
-    m_Transport = nullptr;
 }
 
 CZoneEntities::~CZoneEntities() = default;
@@ -432,8 +433,9 @@ void CZoneEntities::DecreaseZoneCounter(CCharEntity* PChar)
     ShowDebug("CZone:: %s DecreaseZoneCounter <%u> %s", m_zone->GetName(), m_charList.size(), PChar->GetName());
 }
 
-uint16 CZoneEntities::GetNewTargID()
+uint16 CZoneEntities::GetNewCharTargID()
 {
+    // NOTE: 0x0D (char_update) entity updates are valid for 1024 to 1791
     uint16 targid = 0x400;
     for (EntityList_t::const_iterator it = m_charList.begin(); it != m_charList.end(); ++it)
     {
@@ -444,6 +446,15 @@ uint16 CZoneEntities::GetNewTargID()
         targid++;
     }
     return targid;
+}
+
+uint16 CZoneEntities::GetNewDynamicTargID()
+{
+    // NOTE: 0x0E (entity_update) entity updates are valid for 0 to 1023 and 1792 to 2303
+    // TODO: As in GetNewCharTargID, we should be searching in the valid range for IDs
+    //     : that aren't used yet, and releasing them when we're done.
+    uint16 offset = m_DynamicTargIDCount++;
+    return 0x800 + offset;
 }
 
 bool CZoneEntities::CharListEmpty() const
@@ -733,7 +744,8 @@ CBaseEntity* CZoneEntities::GetEntity(uint16 targid, uint8 filter)
             }
         }
     }
-    else if (targid < 0x780)
+    // TODO: Combine Trusts and Pets into the same id space
+    else if (targid < 0x780) // 1920
     {
         if (filter & TYPE_PET)
         {
@@ -744,7 +756,7 @@ CBaseEntity* CZoneEntities::GetEntity(uint16 targid, uint8 filter)
             }
         }
     }
-    else if (targid < 0x800)
+    else if (targid < 0x800) // 2048
     {
         if (filter & TYPE_TRUST)
         {
@@ -755,6 +767,30 @@ CBaseEntity* CZoneEntities::GetEntity(uint16 targid, uint8 filter)
             }
         }
     }
+    else if (targid < 0x1000) // 2048 - 4096 are dynamic entities
+    {
+        if (filter & TYPE_NPC)
+        {
+            EntityList_t::const_iterator it = m_npcList.find(targid);
+            if (it != m_npcList.end())
+            {
+                return it->second;
+            }
+        }
+        if (filter & TYPE_MOB)
+        {
+            EntityList_t::const_iterator it = m_mobList.find(targid);
+            if (it != m_mobList.end())
+            {
+                return it->second;
+            }
+        }
+    }
+    else
+    {
+        ShowError("Trying to get entity outside of valid id bounds (%u)", targid);
+    }
+
     return nullptr;
 }
 
@@ -899,7 +935,7 @@ CCharEntity* CZoneEntities::GetCharByID(uint32 id)
 void CZoneEntities::PushPacket(CBaseEntity* PEntity, GLOBAL_MESSAGE_TYPE message_type, CBasicPacket* packet)
 {
     TracyZoneScoped;
-    TracyZoneHex16(packet->id());
+    TracyZoneHex16(packet->getType());
 
     if (!packet)
     {
@@ -954,7 +990,7 @@ void CZoneEntities::PushPacket(CBaseEntity* PEntity, GLOBAL_MESSAGE_TYPE message
 
                                 if (entity)
                                 {
-                                    if (entity->targid < 0x400)
+                                    if (entity->targid < 0x400 || entity->targid >= 0x800) // TODO: Don't hard code me!
                                     {
                                         if (entity->objtype == TYPE_MOB)
                                         {
@@ -1094,7 +1130,9 @@ void CZoneEntities::ZoneServer(time_point tick, bool check_regions)
 
     for (EntityList_t::const_iterator it = m_petList.begin(); it != m_petList.end(); ++it)
     {
-        if (auto* PPet = dynamic_cast<CPetEntity*>(it->second))
+        // TODO: This static cast includes Battlefield Allies. Allies shouldn't be handled here in
+        //     : this way, but we need to do this to keep allies working (for now).
+        if (auto* PPet = static_cast<CPetEntity*>(it->second))
         {
             PPet->PRecastContainer->Check();
             PPet->StatusEffectContainer->CheckEffectsExpiry(tick);
@@ -1112,7 +1150,9 @@ void CZoneEntities::ZoneServer(time_point tick, bool check_regions)
     EntityList_t::const_iterator pit = m_petList.begin();
     while (pit != m_petList.end())
     {
-        if (auto* PPet = dynamic_cast<CPetEntity*>(pit->second))
+        // TODO: This static cast includes Battlefield Allies. Allies shouldn't be handled here in
+        //     : this way, but we need to do this to keep allies working (for now).
+        if (auto* PPet = static_cast<CPetEntity*>(pit->second))
         {
             if (PPet->status == STATUS_TYPE::DISAPPEAR)
             {

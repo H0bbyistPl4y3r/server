@@ -138,19 +138,19 @@ public:
 
     void  setMobMod(uint16 type, int16 value);
     int16 getMobMod(uint16 type);
-    void  addMobMod(uint16 type, int16 value);     // add
+    void  addMobMod(uint16 type, int16 value);
     void  defaultMobMod(uint16 type, int16 value); // set value if value has not been already set
     void  resetMobMod(uint16 type);                // resets mob mod to original value
     int32 getBigMobMod(uint16 type);               // multiplies mod by 1000
     void  saveMobModifiers();                      // save current state of modifiers
     void  restoreMobModifiers();                   // restore to saved state
 
-    void CallForHelp(bool call);
-    bool CalledForHelp() const;
+    void SetCallForHelpFlag(bool call);
+    bool GetCallForHelpFlag() const;
     void HideHP(bool hide);
     bool IsHPHidden() const;
-    void Untargetable(bool untargetable);
-    bool IsUntargetable() const;
+    void SetUntargetable(bool untargetable);
+    bool GetUntargetable() const;
 
     void         PostTick() override;
     float        GetRoamDistance();
@@ -248,9 +248,19 @@ public:
     uint32   m_flags;       // includes the CFH flag and whether the HP bar should be shown or not (e.g. Yilgeban doesnt)
     uint8    m_name_prefix; // The ding bats VS Ding bats
 
+    uint8 m_unk0; // possibly campaign related (entity 0x24)
+    uint8 m_unk1; // (entity_update 0x25)
+    uint8 m_unk2; // (entity_update 0x26)
+
+    bool m_CallForHelpBlocked;
+
     CEnmityContainer* PEnmityContainer; // система ненависти монстров
 
     CMobSpellContainer* SpellContainer;   // retrieves spells for the mob
+
+    bool m_IsClaimable;
+
+    bool m_bReleaseTargIDOnDeath = false;
 
     static constexpr float sound_range{ 8.f };
     static constexpr float sight_range{ 15.f };

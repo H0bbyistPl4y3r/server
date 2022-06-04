@@ -26,7 +26,7 @@ xi.trust.message_offset =
     SPECIAL_MOVE_2 = 19,
 }
 
-local MAX_MESSAGE_PAGE = 121
+local maxMessagePage = 121
 
 local rovKIBattlefieldIDs = set{
     5,    -- Shattering Stars (WAR LB5)
@@ -55,7 +55,8 @@ local rovKIBattlefieldIDs = set{
 
 -- NOTE: Unfortunately, these are not linear, so we have to use
 --       a big lookup of offsets instead of a single offset
-local poolIDToMessagePageOffset = {
+local poolIDToMessagePageOffset =
+{
     [5896] = 0,   -- Shantotto
     [5897] = 1,   -- Naji
     [5898] = 2,   -- Kupipi
@@ -237,6 +238,11 @@ xi.trust.canCast = function(caster, spell, not_allowed_trust_ids)
         return xi.msg.basic.TRUST_NO_CAST_TRUST
     end
 
+    -- GMs can do what they want (as long as ENABLE_TRUST_CASTING is enabled)
+    if caster:getGMLevel() > 0 and caster:checkNameFlags(0x04000000) then
+        return 0
+    end
+
     -- Trusts not allowed in an alliance
     if caster:checkSoloPartyAlliance() == 2 then
         return xi.msg.basic.TRUST_NO_CAST_TRUST
@@ -351,8 +357,8 @@ xi.trust.message = function(mob, message_offset)
         return
     end
 
-    if page_offset > MAX_MESSAGE_PAGE then
-        print("trust.lua: MAX_MESSAGE_PAGE exceeded!")
+    if page_offset > maxMessagePage then
+        print("trust.lua: maxMessagePage exceeded!")
         return
     end
 

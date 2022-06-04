@@ -19,19 +19,19 @@ entity.onTrade = function(player, npc, trade)
 end
 
 entity.onTrigger = function(player, npc)
-    local OutOfOneShell = player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.OUT_OF_ONE_S_SHELL)
+    local outOfOneShell = player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.OUT_OF_ONE_S_SHELL)
 
-    if OutOfOneShell == QUEST_ACCEPTED and player:getCharVar("OutOfOneShell") == 1 then
+    if outOfOneShell == QUEST_ACCEPTED and player:getCharVar("OutOfOneShell") == 1 then
         if player:needToZone() then
             player:startEvent(85)
         else
             player:startEvent(86)
         end
-    elseif OutOfOneShell == QUEST_ACCEPTED then
+    elseif outOfOneShell == QUEST_ACCEPTED then
         player:showText(npc, ID.text.RONAN_DIALOG_1)
-    elseif OutOfOneShell == QUEST_COMPLETED then
+    elseif outOfOneShell == QUEST_COMPLETED then
         player:startEvent(89)
-    elseif player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.THE_QUADAV_S_CURSE) == QUEST_COMPLETED and player:getFameLevel(BASTOK) >= 2 then
+    elseif player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.THE_QUADAV_S_CURSE) == QUEST_COMPLETED and player:getFameLevel(xi.quest.fame_area.BASTOK) >= 2 then
         player:startEvent(82)
     else
         player:startEvent(37)
@@ -54,7 +54,7 @@ entity.onEventFinish = function(player, csid, option)
             player:setCharVar("OutOfOneShell", 0)
             player:addItem(12501)
             player:messageSpecial(ID.text.ITEM_OBTAINED, 12501)
-            player:addFame(BASTOK, 120)
+            player:addFame(xi.quest.fame_area.BASTOK, 120)
             player:completeQuest(xi.quest.log_id.BASTOK, xi.quest.id.bastok.OUT_OF_ONE_S_SHELL)
         else
             player:messageSpecial(ID.text.ITEM_CANNOT_BE_OBTAINED, 12501)

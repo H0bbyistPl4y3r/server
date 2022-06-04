@@ -174,6 +174,8 @@ namespace charutils
     void SaveMentorFlag(CCharEntity* PChar);                   // saves the char's mentor flag
     void SaveJobMasterDisplay(CCharEntity* PChar);             // Saves the char's job master display status
     void SaveMenuConfigFlags(CCharEntity* PChar);              // saves the char's unnamed flags
+    void SaveChatFilterFlags(CCharEntity* PChar);              // saves the char's chat filters
+    void SaveLanguages(CCharEntity* PChar);                    // saves the char's language preference
     void SaveCharNation(CCharEntity* PChar);                   // Save the character's nation of allegiance.
     void SaveCampaignAllegiance(CCharEntity* PChar);           // Save the character's campaign allegiance.
     void SaveCharMoghancement(CCharEntity* PChar);             // Save the character's current moghancement
@@ -182,6 +184,8 @@ namespace charutils
     void SaveDeathTime(CCharEntity* PChar);                    // Saves when this character last died.
     void SavePlayTime(CCharEntity* PChar);                     // Saves this characters total play time.
     bool hasMogLockerAccess(CCharEntity* PChar);               // true if have access, false otherwise.
+
+    uint8 getQuestStatus(CCharEntity* PChar, uint8 log, uint8 quest); // Get Quest status. Used in FishingUtils.cpp, allows to fish quest specific mobs, like PLD AF NM.
 
     float AddExpBonus(CCharEntity* PChar, float exp);
 
@@ -212,8 +216,8 @@ namespace charutils
     void  HomePoint(CCharEntity* PChar);
     bool  AddWeaponSkillPoints(CCharEntity*, SLOTTYPE, int);
 
-    int32 GetCharVar(CCharEntity* PChar, const char* var);
-    void  SetCharVar(CCharEntity* PChar, const char* var, int32 value);
+    int32 GetCharVar(CCharEntity* PChar, std::string const& var);
+    void  SetCharVar(CCharEntity* PChar, std::string const& var, int32 value);
     void ClearCharVarsWithPrefix(CCharEntity* PChar, std::string prefix);
 
     uint16 getWideScanRange(JOBTYPE job, uint8 level);
@@ -237,6 +241,10 @@ namespace charutils
     uint8 getItemLevelDifference(CCharEntity* PChar);
     uint8 getMainhandItemLevel(CCharEntity* PChar);
     uint8 getRangedItemLevel(CCharEntity* PChar);
+
+    bool hasEntitySpawned(CCharEntity* PChar, CBaseEntity* entity);
+
+    uint32 getCharIdFromName(std::string const& name);
 }; // namespace charutils
 
 #endif // _CHARUTILS_H

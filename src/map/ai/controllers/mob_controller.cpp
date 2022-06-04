@@ -776,10 +776,9 @@ void CMobController::DoRoamTick(time_point tick)
         else if (m_Tick >= m_LastActionTime + std::chrono::milliseconds(PMob->getBigMobMod(MOBMOD_ROAM_COOL)))
         {
             // lets buff up or move around
-
-            if (PMob->CalledForHelp())
+            if (PMob->GetCallForHelpFlag())
             {
-                PMob->CallForHelp(false);
+                PMob->SetCallForHelpFlag(false);
             }
 
             // can't rest with poison or disease
@@ -865,7 +864,7 @@ void CMobController::DoRoamTick(time_point tick)
                         // move down
                         PMob->animationsub = 1;
                         PMob->HideName(true);
-                        PMob->Untargetable(true);
+                        PMob->SetUntargetable(true);
 
                         // don't move around until i'm fully in the ground
                         Wait(2s);
@@ -874,7 +873,7 @@ void CMobController::DoRoamTick(time_point tick)
                     {
                         // hidden name
                         PMob->HideName(true);
-                        PMob->Untargetable(true);
+                        PMob->SetUntargetable(true);
 
                         PMob->updatemask |= UPDATE_HP;
                     }
@@ -937,7 +936,7 @@ void CMobController::FollowRoamPath()
             {
                 PMob->animationsub = 0;
                 PMob->HideName(false);
-                PMob->Untargetable(false);
+                PMob->SetUntargetable(false);
             }
 
             // face spawn rotation if I just moved back to spawn
@@ -1008,7 +1007,7 @@ bool CMobController::Disengage()
 
     PMob->m_OwnerID.clean();
     PMob->updatemask |= (UPDATE_STATUS | UPDATE_HP);
-    PMob->CallForHelp(false);
+    PMob->SetCallForHelpFlag(false);
     PMob->animation = ANIMATION_NONE;
 
     return CController::Disengage();

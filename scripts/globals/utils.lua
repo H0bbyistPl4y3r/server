@@ -10,7 +10,6 @@ utils.MAX_INT32  = 2147483647
 
 -- Used to keep the linter quiet
 function utils.unused(...)
-    return
 end
 
 -- Shuffles a table and returns a new table containing the randomized result.
@@ -90,6 +89,20 @@ function utils.stoneskin(target, dmg)
                 target:setMod(xi.mod.STONESKIN, 0)
                 return dmg - skin
             end
+        end
+    end
+
+    return dmg
+end
+
+-- returns reduced magic damage from RUN buff, "One for All"
+function utils.oneforall(target, dmg)
+    if dmg > 0 then
+        local oneForAllEffect = target:getStatusEffect(xi.effect.ONE_FOR_ALL)
+
+        if oneForAllEffect ~= nil then
+            local power = oneForAllEffect:getPower()
+            dmg = math.max(0, dmg - power)
         end
     end
 
@@ -447,11 +460,11 @@ end
 -- https://gist.github.com/jdev6/1e7ff30671edf88d03d4
 function utils.randomEntryIdx(t)
     local keys = {}
-    local values = {}
-    for key, value in pairs(t) do
+
+    for key, _ in pairs(t) do
         keys[#keys+1] = key
-        values[#values+1] = value
     end
+
     local index = keys[math.random(1, #keys)]
     return index, t[index]
 end
@@ -480,6 +493,61 @@ end
 function utils.splitStr(s, sep)
     local fields = {}
     local pattern = string.format("([^%s]+)", sep)
-    string.gsub(s, pattern, function(c) fields[#fields + 1] = c end)
+    local _ = string.gsub(s, pattern, function(c) fields[#fields + 1] = c end)
     return fields
+end
+
+function utils.mobTeleport(mob, hideDuration, pos, disAnim, reapAnim)
+
+    --TODO Table of animations that are used for teleports for reference
+
+    if hideDuration == nil then
+        hideDuration = 5000
+    end
+
+    if disAnim == nil then
+        disAnim = "kesu"
+    end
+
+    if reapAnim == nil then
+        reapAnim = "deru"
+    end
+
+    if pos == nil then
+        pos = mob:getPos()
+    end
+
+    local mobSpeed = mob:getSpeed()
+
+    if hideDuration < 1000 then
+        hideDuration = 1000
+    end
+
+    if mob:isDead() then
+        return
+    end
+
+    mob:entityAnimationPacket(disAnim)
+    mob:hideName(true)
+    mob:setUntargetable(true)
+    mob:SetAutoAttackEnabled(false)
+    mob:SetMagicCastingEnabled(false)
+    mob:SetMobAbilityEnabled(false)
+    mob:setPos(pos, 0)
+    mob:setSpeed(0)
+
+    mob:timer(hideDuration, function(mobArg)
+        mobArg:setPos(pos, 0)
+        mobArg:hideName(false)
+        mobArg:setUntargetable(false)
+        mobArg:SetAutoAttackEnabled(true)
+        mobArg:SetMagicCastingEnabled(true)
+        mobArg:SetMobAbilityEnabled(true)
+        mobArg:setSpeed(mobSpeed)
+        mobArg:entityAnimationPacket(reapAnim)
+
+        if mobArg:isDead() then
+            return
+        end
+    end)
 end

@@ -431,7 +431,32 @@ namespace itemutils
                         ((CItemWeapon*)PItem)->setDamage(sql->GetUIntData(30));
                         ((CItemWeapon*)PItem)->setDmgType(static_cast<DAMAGE_TYPE>(sql->GetUIntData(31)));
                         ((CItemWeapon*)PItem)->setMaxHit(sql->GetUIntData(32));
-                        ((CItemWeapon*)PItem)->setUnlockablePoints(sql->GetUIntData(33));
+                        ((CItemWeapon*)PItem)->setTotalUnlockPointsNeeded(sql->GetUIntData(33));
+
+                        int dmg   = sql->GetUIntData(30);
+                        int delay = sql->GetIntData(29);
+                        bool isH2H = ((CItemWeapon*)PItem)->getSkillType() == SKILL_HAND_TO_HAND;
+
+                        if ((dmg > 0 || isH2H) && delay > 0) // avoid division by zero for items not yet implemented. Zero dmg h2h weapons don't actually have zero dmg for the purposes of DPS.
+                        {
+                            if (isH2H)
+                            {
+                                delay -= 240; // base h2h delay per fist is 240 when used in DPS calculation. We store Delay in the database as Weapon Delay+(240*2).
+                                dmg   += 3;   // add 3 base damage for DPS calculation. This base damage addition appears to come from "base" h2h damage of 3.
+                                              // See Ninzas +2 in polutils/bg wiki: https://www.bg-wiki.com/ffxi/Ninzas_%2B2
+                                              // The DPS field is in the DAT itself and is calculated by SE as follows:
+                                              // ((104+3)*60)/(81+240) = 20
+                            }
+
+                            // calculate DPS
+                            double dps = (dmg * 60.0) / delay;
+
+                            // SE seems to round at the second decimal place, see Machine Crossbow, Falcata .DAT DPS values for rounding up and down respectively.
+                            // https://www.bg-wiki.com/ffxi/Falcata, https://www.bg-wiki.com/ffxi/Machine_Crossbow
+                            dps = round(dps * 100) / 100;
+
+                            ((CItemWeapon*)PItem)->setDPS(dps);
+                        }
                     }
 
                     if (PItem->isType(ITEM_FURNISHING))
@@ -539,11 +564,12 @@ namespace itemutils
                 {
                     uint8  GroupId   = (uint8)sql->GetIntData(4);
                     uint16 GroupRate = (uint16)sql->GetIntData(5);
-                    while (GroupId >= dropList->Groups.size())
+                    while (GroupId > dropList->Groups.size())
                     {
                         dropList->Groups.emplace_back(GroupRate);
                     }
-                    dropList->Groups[GroupId].Items.emplace_back(DropType, ItemID, DropRate);
+                    dropList->Groups[GroupId - 1].GroupRate = GroupRate; // a bit redundant but it prevents any ordering issues.
+                    dropList->Groups[GroupId - 1].Items.emplace_back(DropType, ItemID, DropRate);
                 }
                 else
                 {

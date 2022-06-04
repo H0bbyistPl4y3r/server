@@ -1,5 +1,4 @@
 require("scripts/globals/keyitems")
-require("scripts/globals/log_ids")
 require("scripts/globals/utils")
 require("scripts/globals/zone")
 
@@ -255,7 +254,7 @@ xi.mission.id =
         FLAMES_IN_THE_DARKNESS           = 718, -- ±
         FIRE_IN_THE_EYES_OF_MEN          = 728, -- ±
         CALM_BEFORE_THE_STORM            = 738, -- ±
-        THE_WARRIOR_S_PATH               = 748, -- ±
+        THE_WARRIORS_PATH                = 748, -- ±
         EMPTINESS_BLEEDS                 = 758, -- ± ---- Category
         GARDEN_OF_ANTIQUITY              = 800, -- ±
         A_FATE_DECIDED                   = 818, -- ±
@@ -478,20 +477,20 @@ xi.mission.id =
         THE_LEAFKIN_MONARCH             = 34,  -- ±
         YGGDRASIL                       = 35,  -- ±
         -- SHADOWS_UPON_ADOULIN         =  -- Category
-        RETURN_OF_THE_EXORCIST          = 37,
-        THE_MERCILESS_ONE               = 38,
-        A_CURSE_FROM_THE_PAST           = 39,
-        THE_PURGATION                   = 40,
-        THE_KEY                         = 41,
-        THE_PRINCESSS_DILEMMA           = 42,
-        DARK_CLOUDS_AHEAD               = 43,
-        THE_SMALLEST_OF_FAVORS          = 44,
-        SUMMONED_BY_SPIRITS             = 45,
-        EVIL_ENTITIES                   = 46,
-        ADOULIN_CALLING                 = 47,
-        THE_DISAPPEARANCE_OF_NYLINE     = 48,
-        SHARED_CONSCIOUSNESS            = 49,
-        CLEAR_SKIES                     = 50,
+        RETURN_OF_THE_EXORCIST          = 37,  -- ±
+        THE_MERCILESS_ONE               = 38,  -- ±
+        A_CURSE_FROM_THE_PAST           = 39,  -- ±
+        THE_PURGATION                   = 40,  -- ±
+        THE_KEY                         = 41,  -- ±
+        THE_PRINCESSS_DILEMMA           = 42,  -- ±
+        DARK_CLOUDS_AHEAD               = 43,  -- ±
+        THE_SMALLEST_OF_FAVORS          = 44,  -- ±
+        SUMMONED_BY_SPIRITS             = 45,  -- ±
+        EVIL_ENTITIES                   = 46,  -- ±
+        ADOULIN_CALLING                 = 47,  -- ±
+        THE_DISAPPEARANCE_OF_NYLINE     = 48,  -- ±
+        SHARED_CONSCIOUSNESS            = 49,  -- ±
+        CLEAR_SKIES                     = 50,  -- ±
         THE_MAN_IN_BLACK                = 51,
         TO_THE_VICTOR                   = 52,
         AN_EXTRAORDINARY_GENTLEMAN      = 53,
@@ -587,11 +586,11 @@ xi.mission.id =
         RING_MY_BELL                    = 42,  -- ±
         -- REVITALIZATION               =  -- Category
         SPIRITS_AWOKEN                  = 44,  -- ±
-        CRASHING_WAVES                  = 46,
-        CALL_TO_SERVE                   = 48,
-        NUMBERING_DAYS                  = 50,
-        INESCAPABLE_BINDS               = 52,
-        DESERT_WINDS                    = 54,
+        CRASHING_WAVES                  = 46,  -- ±
+        CALL_TO_SERVE                   = 48,  -- ±
+        NUMBERING_DAYS                  = 50,  -- ±
+        INESCAPABLE_BINDS               = 52,  -- ±
+        DESERT_WINDS                    = 54,  -- ±
         EVER_FORWARD                    = 56,
         THE_ENDLESS_SKY                 = 60,
         APHMAUS_LIGHT                   = 62,
@@ -720,9 +719,9 @@ end
 local missionType =
 {
     -- Required Rank             :   1  1  1  2  2  2  2  2  2  2  3  3  3  4  5  5  6  6  7  7  8  8  9  9
-    [xi.mission.log_id.SANDORIA] = { 1, 1, 1, 0, 1, 0, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    [xi.mission.log_id.BASTOK]   = { 2, 0, 1, 0, 1, 0, 2, 2, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    [xi.mission.log_id.WINDURST] = { 2, 0, 0, 0, 1, 0, 2, 2, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    [xi.mission.log_id.SANDORIA] = { 1, 1, 1, 0, 1, 0, 2, 2, 2, 2, 1, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    [xi.mission.log_id.BASTOK]   = { 2, 0, 1, 0, 1, 0, 2, 2, 2, 2, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    [xi.mission.log_id.WINDURST] = { 2, 0, 0, 0, 1, 0, 2, 2, 2, 2, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 }
 
 local function getRequiredRank(missionId)

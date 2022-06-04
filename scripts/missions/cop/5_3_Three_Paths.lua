@@ -42,6 +42,7 @@ local mission = Mission:new(xi.mission.log_id.COP, xi.mission.id.cop.THREE_PATHS
 
 mission.reward =
 {
+    title       = xi.title.TREADER_OF_AN_ICY_PAST,
     nextMission = { xi.mission.log_id.COP, xi.mission.id.cop.FOR_WHOM_THE_VERSE_IS_SUNG },
 }
 
@@ -273,7 +274,7 @@ mission.sections =
             onEventFinish =
             {
                 [852] = function(player, csid, option, npc)
-                    mission:setLocalVar('cidOption', 0)
+                    mission:setLocalVar(player, 'cidOption', 0)
                     player:setMissionStatus(mission.areaId, 11, xi.mission.status.COP.LOUVERANCE)
                 end,
 

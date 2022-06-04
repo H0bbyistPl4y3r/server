@@ -66,6 +66,11 @@ void CLuaZone::setLocalVar(const char* key, uint32 val)
     m_pLuaZone->SetLocalVar(key, val);
 }
 
+void CLuaZone::resetLocalVars()
+{
+    m_pLuaZone->ResetLocalVars();
+}
+
 /************************************************************************
  *                                                                       *
  * Registering the active area in the zone                               *
@@ -114,6 +119,13 @@ sol::table CLuaZone::getNPCs()
 {
     auto table = luautils::lua.create_table();
     m_pLuaZone->ForEachNpc([&table](CNpcEntity* PNpc) { table.add(CLuaBaseEntity(PNpc)); });
+    return table;
+}
+
+sol::table CLuaZone::getMobs()
+{
+    auto table = luautils::lua.create_table();
+    m_pLuaZone->ForEachMob([&table](CMobEntity* PMob) { table.add(CLuaBaseEntity(PMob)); });
     return table;
 }
 
@@ -168,12 +180,12 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
     CBaseEntity* PEntity = nullptr;
     if (table.get_or<uint8>("objtype", TYPE_NPC) == TYPE_NPC)
     {
-        PEntity = new CNpcEntity();
+        PEntity       = new CNpcEntity();
         PEntity->name = "DefaultName";
     }
     else
     {
-        auto groupId = table.get_or<uint32>("groupId", 0);
+        auto groupId     = table.get_or<uint32>("groupId", 0);
         auto groupZoneId = table.get_or<uint32>("groupZoneId", 0);
 
         PEntity = mobutils::InstantiateDynamicMob(groupId, groupZoneId, m_pLuaZone->GetID());
@@ -193,6 +205,8 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
         ShowError("CLuaZone::insertDynamicEntity : targid is high (03hX), update packets will be ignored", PEntity->targid);
     }
 
+    m_pLuaZone->GetZoneEntities()->dynamicTargIds.insert(PEntity->targid);
+
     PEntity->id = 0x1000000 + (ZoneID << 12) + PEntity->targid;
 
     PEntity->loc.zone       = m_pLuaZone;
@@ -206,7 +220,7 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
     if (name.empty())
     {
         ShowWarning("Trying to spawn dynamic entity without a name! (%s - %s)",
-            PEntity->name.c_str(), (const char*)m_pLuaZone->GetName());
+                    PEntity->name.c_str(), (const char*)m_pLuaZone->GetName());
 
         // If the name hasn't been provided, use "DefaultName" for NPCs, and whatever comes from the mob_pool for Mobs
         name = PEntity->name;
@@ -214,47 +228,60 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
 
     auto lookupName = "DE_" + name;
 
-    PEntity->name = lookupName;
+    PEntity->name       = lookupName;
     PEntity->packetName = name;
 
-    auto typeKey = (PEntity->objtype == TYPE_NPC) ? "npcs" : "mobs";
+    PEntity->isRenamed = true;
+
+    auto typeKey    = (PEntity->objtype == TYPE_NPC) ? "npcs" : "mobs";
     auto cacheEntry = lua[sol::create_if_nil]["xi"]["zones"][(const char*)m_pLuaZone->GetName()][typeKey][lookupName];
+
+    // Bind any functions that are passed in
+    for (auto& [entryKey, entryValue] : table)
+    {
+        if (entryValue.get_type() == sol::type::function)
+        {
+            cacheEntry[entryKey] = entryValue.as<sol::function>();
+        }
+    }
 
     if (auto* PNpc = dynamic_cast<CNpcEntity*>(PEntity))
     {
-        PNpc->namevis       = table.get_or<uint8>("namevis", 0);
-        PNpc->status        = STATUS_TYPE::NORMAL;
-        PNpc->m_flags       = 0;
-        PNpc->name_prefix   = 32;
+        PNpc->namevis     = table.get_or<uint8>("namevis", 0);
+        PNpc->status      = STATUS_TYPE::NORMAL;
+        PNpc->m_flags     = 0;
+        PNpc->name_prefix = 32;
 
         // TODO: Does this even work?
-        PNpc->widescan      = table.get_or<uint8>("widescan", 1);
+        PNpc->widescan = table.get_or<uint8>("widescan", 1);
 
-        auto onTrade = table["onTrade"].get_or<sol::function>(sol::lua_nil);
-        if (onTrade.valid())
-        {
-            cacheEntry["onTrade"] = onTrade;
-        }
-
+        // Ensure that the npc is triggerable if onTrigger is passed in
         auto onTrigger = table["onTrigger"].get_or<sol::function>(sol::lua_nil);
         if (onTrigger.valid())
         {
             PNpc->m_triggerable = true;
-            cacheEntry["onTrigger"] = onTrigger;
         }
 
         m_pLuaZone->InsertNPC(PNpc);
     }
     else if (auto* PMob = dynamic_cast<CMobEntity*>(PEntity))
     {
+        luautils::OnEntityLoad(PMob);
+
+        luautils::OnMobInitialize(PMob);
+        luautils::ApplyMixins(PMob);
+        luautils::ApplyZoneMixins(PMob);
+
+        PMob->saveModifiers();
+        PMob->saveMobModifiers();
+
+        PMob->m_bReleaseTargIDOnDeath = table["releaseIdOnDeath"].get_or(false);
+
+        // Ensure mobs get a function for onMobDeath
         auto onMobDeath = table["onMobDeath"].get_or<sol::function>(sol::lua_nil);
-        if (onMobDeath.valid())
+        if (!onMobDeath.valid())
         {
-            cacheEntry["onMobDeath"] = onMobDeath;
-        }
-        else
-        {
-            cacheEntry["onMobDeath"] = [](){}; // Empty func
+            cacheEntry["onMobDeath"] = []() {}; // Empty func
         }
 
         m_pLuaZone->InsertMOB(PMob);
@@ -375,11 +402,13 @@ void CLuaZone::Register()
 
     SOL_REGISTER("getLocalVar", CLuaZone::getLocalVar);
     SOL_REGISTER("setLocalVar", CLuaZone::setLocalVar);
+    SOL_REGISTER("resetLocalVars", CLuaZone::resetLocalVars);
 
     SOL_REGISTER("registerRegion", CLuaZone::registerRegion);
     SOL_REGISTER("levelRestriction", CLuaZone::levelRestriction);
     SOL_REGISTER("getPlayers", CLuaZone::getPlayers);
     SOL_REGISTER("getNPCs", CLuaZone::getNPCs);
+    SOL_REGISTER("getMobs", CLuaZone::getMobs);
     SOL_REGISTER("getID", CLuaZone::getID);
     SOL_REGISTER("getName", CLuaZone::getName);
     SOL_REGISTER("getRegionID", CLuaZone::getRegionID);

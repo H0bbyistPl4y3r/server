@@ -88,19 +88,19 @@ zone_object.afterZoneIn = function(player)
 end
 
 zone_object.onGameHour = function(zone)
-    local VanadielHour = VanadielHour()
+    local vanadielHour = VanadielHour()
     local qmDrk = GetNPCByID(ID.npc.QM_IXAERN_DRK) -- Ix'aern drk
     local s = math.random(6, 12) -- wait time till change to next spawn pos, random 15~30 mins.
 
     -- Jailer of Faith spawn randomiser
-    if (VanadielHour % s == 0) then
+    if (vanadielHour % s == 0) then
         local qmFaith = GetNPCByID(ID.npc.QM_JAILER_OF_FAITH) -- Jailer of Faith
         qmFaith:hideNPC(60) -- Hide it for 60 seconds
         qmFaith:setPos(unpack(ID.npc.QM_JAILER_OF_FAITH_POS[math.random(1, 5)])) -- Set the new position
     end
 
     -- Ix'DRK spawn randomiser
-    if (VanadielHour % 12 == 0 and qmDrk:getStatus() ~= xi.status.DISAPPEAR) then -- Change ??? position every 12 hours Vana'diel time (30 mins)
+    if (vanadielHour % 12 == 0 and qmDrk:getStatus() ~= xi.status.DISAPPEAR) then -- Change ??? position every 12 hours Vana'diel time (30 mins)
         qmDrk:hideNPC(30)
         local qmDrkPos = math.random(1, 4)
         qmDrk:setLocalVar("position", qmDrkPos)
@@ -117,7 +117,7 @@ zone_object.onZoneIn = function(player, prevZone)
     if (player:getXPos() == 0 and player:getYPos() == 0 and player:getZPos() == 0) then
         player:setPos(-351.136, -2.25, -380, 253)
     end
-    if (player:getCurrentMission(COP) == xi.mission.id.cop.WHEN_ANGELS_FALL and player:getCharVar("PromathiaStatus") == 0) then
+    if (player:getCurrentMission(xi.mission.log_id.COP) == xi.mission.id.cop.WHEN_ANGELS_FALL and player:getCharVar("PromathiaStatus") == 0) then
         cs = 201
     end
     player:setCharVar("Ru-Hmet-TP", 0)
@@ -129,7 +129,7 @@ zone_object.onRegionEnter = function(player, region)
         switch (region:GetRegionID()): caseof
         {
             [1] = function (x)
-                if (player:getCurrentMission(COP)==xi.mission.id.cop.DAWN or player:hasCompletedMission(xi.mission.log_id.COP, xi.mission.id.cop.DAWN) or player:hasCompletedMission(xi.mission.log_id.COP, xi.mission.id.cop.THE_LAST_VERSE) ) then
+                if (player:getCurrentMission(xi.mission.log_id.COP)==xi.mission.id.cop.DAWN or player:hasCompletedMission(xi.mission.log_id.COP, xi.mission.id.cop.DAWN) or player:hasCompletedMission(xi.mission.log_id.COP, xi.mission.id.cop.THE_LAST_VERSE) ) then
                     player:startEvent(101)
                 else
                     player:startEvent(155)

@@ -83,7 +83,7 @@ PAST_WINDURST = 7
 -- Returns the numerical Campaign Medal of the player.
 -- -------------------------------------------------------------------
 
-function getMedalRank(player)
+xi.campaign.getMedalRank = function(player)
     local rank = 0
     local medals =
     {
@@ -106,8 +106,8 @@ end
 -- ListName_AN_price[optionID] = cost -- ItemName
 -- -------------------------------------------------------------------
 
-function getSandOriaNotesItem(i)
-    local SandOria_AN =
+xi.campaign.getSandOriaNotesItem = function(i)
+    local sandOria_AN =
     {
         [2] = {id = 15754, price = 980}, -- Sprinter's Shoes
         [258] = {id = 5428, price = 10}, -- Scroll of Instant Retrace
@@ -147,12 +147,12 @@ function getSandOriaNotesItem(i)
         [82] = {id = 17684, price = 150000, adj = 100000}, -- Griffinclaw
         [338] = {id = 11636, price = 75000, adj = 50000} -- Royal Knight Sigil Ring
     }
-    local item = SandOria_AN[i]
+    local item = sandOria_AN[i]
     return item.id, item.price, item.adj
 end
 
-function getBastokNotesItem(i)
-    local Bastok_AN =
+xi.campaign.getBastokNotesItem = function(i)
+    local bastok_AN =
     {
         [2] = {id = 15754, price = 980}, -- Sprinter's Shoes
         [258] = {id = 5428, price = 10}, -- Scroll of Instant Retrace
@@ -192,12 +192,12 @@ function getBastokNotesItem(i)
         [82] = {id = 17685, price = 150000, adj = 100000}, -- Lex Talionis
         [338] = {id = 11545, price = 75000, adj = 50000} -- Fourth Mantle
     }
-    local item = Bastok_AN[i]
+    local item = bastok_AN[i]
     return item.id, item.price, item.adj
 end
 
-function getWindurstNotesItem(i)
-    local Windurst_AN =
+xi.campaign.getWindurstNotesItem = function(i)
+    local windurst_AN =
     {
         [2] = {id = 15754, price = 980}, -- Sprinter's Shoes
         [258] = {id = 5428, price = 10}, -- Scroll of Instant Retrace
@@ -241,7 +241,7 @@ function getWindurstNotesItem(i)
         [82] = {id = 17684, price = 150000, adj = 10000}, -- Samudra
         [338] = {id = 11636, price = 75000, adj = 50000} -- Mercenary Major Charm
     }
-    local item = Windurst_AN[i]
+    local item = windurst_AN[i]
     return item.id, item.price, item.adj
 end
 
@@ -251,7 +251,7 @@ end
 -- effect will last until, NOT the actual status effect duration.
 -- -------------------------------------------------------------------
 
-function getSigilTimeStamp(player)
+xi.campaign.getSigilTimeStamp = function(player)
     local timeStamp = 0 -- zero'd till math is done.
 
     -- TODO: calculate time stamp for menu display of when it wears off

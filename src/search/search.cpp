@@ -1,4 +1,4 @@
-﻿/*
+/*
 ===========================================================================
 
 Copyright (c) 2010-2015 Darkstar Dev Teams
@@ -23,6 +23,7 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 #include "common/blowfish.h"
 #include "common/cbasetypes.h"
+#include "common/console_service.h"
 #include "common/md52.h"
 #include "common/mmo.h"
 #include "common/logging.h"
@@ -104,6 +105,8 @@ void login_config_default();
 void login_config_read(const int8* file); // We only need the search server port defined here
 void login_config_read_from_env();
 
+extern std::unique_ptr<ConsoleService> gConsoleService;
+
 /************************************************************************
  *                                                                       *
  *  Prints the contents of the packet in `data` to the console.          *
@@ -112,28 +115,15 @@ void login_config_read_from_env();
 
 void PrintPacket(char* data, int size)
 {
-    char message[50];
-    memset(&message, 0, 50);
-
-    printf("\n");
+    std::printf("\n");
 
     for (int32 y = 0; y < size; y++)
     {
-        char msgtmp[50];
-        memset(&msgtmp, 0, 50);
-        std::snprintf(msgtmp, sizeof(msgtmp), "%s %02x", message, (uint8)data[y]);
-        strncpy(message, msgtmp, 50);
+        std::printf("%02x ", (uint8)data[y]);
         if (((y + 1) % 16) == 0)
         {
-            message[48] = '\n';
-            fputs(message, stdout);
-            memset(&message, 0, 50);
+            printf("\n");
         }
-    }
-    if (strlen(message) > 0)
-    {
-        message[strlen(message)] = '\n';
-        fputs(message, stdout);
     }
     printf("\n");
 }
@@ -260,6 +250,16 @@ int32 main(int32 argc, char** argv)
         return 1;
     }
 
+#ifdef _WIN32
+    // Disable Quick Edit Mode (Mark) in Windows Console to prevent users from accidentially
+    // causing the server to freeze.
+    HANDLE hInput;
+    DWORD  prev_mode;
+    hInput = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hInput, &prev_mode);
+    SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS | (prev_mode & ~ENABLE_QUICK_EDIT_MODE));
+#endif // _WIN32
+
     ShowMessage("========================================================");
     ShowMessage("search and auction server");
     ShowMessage("========================================================");
@@ -269,9 +269,18 @@ int32 main(int32 argc, char** argv)
         CTaskMgr::getInstance()->AddTask("ah_cleanup", server_clock::now(), nullptr, CTaskMgr::TASK_INTERVAL, ah_cleanup,
                                          std::chrono::seconds(search_config.expire_interval));
     }
-    //  ShowMessage(CL_CYAN"[TASKMGR] Starting task manager thread..");
 
     std::thread(TaskManagerThread).detach();
+
+    // clang-format off
+    gConsoleService = std::make_unique<ConsoleService>();
+    gConsoleService->RegisterCommand(
+    "ah_cleanup", fmt::format("AH task to return items older than {} days.", search_config.expire_days),
+    [&]() -> void
+    {
+        ah_cleanup(server_clock::now(), nullptr);
+    });
+    // clang-format on
 
     while (true)
     {
@@ -290,6 +299,8 @@ int32 main(int32 argc, char** argv)
         std::thread(TCPComm, ClientSocket).detach();
     }
     // TODO: The code below this line will never be reached.
+
+    gConsoleService = nullptr;
 
     // shutdown the connection since we're done
 #ifdef WIN32
@@ -416,7 +427,7 @@ void search_config_read(const int8* file)
         }
         else
         {
-            ShowWarning("Unknown setting '%s' in file %s", w1, file);
+            ShowWarning("Unknown setting '%s' in file %s. Has this setting been removed?", w1, file);
         }
     }
     fclose(fp);
@@ -554,7 +565,7 @@ void TCPComm(SOCKET socket)
 
 void HandleGroupListRequest(CTCPRequestPacket& PTCPRequest)
 {
-    uint8* data = (uint8*)PTCPRequest.GetData();
+    uint8* data = PTCPRequest.GetData();
 
     uint16 partyid      = ref<uint16>(data, 0x10);
     uint16 allianceid   = ref<uint16>(data, 0x14);
@@ -599,7 +610,7 @@ void HandleGroupListRequest(CTCPRequestPacket& PTCPRequest)
 
 void HandleSearchComment(CTCPRequestPacket& PTCPRequest)
 {
-    uint8* data = (uint8*)PTCPRequest.GetData();
+    uint8* data = PTCPRequest.GetData();
     uint32 playerId = ref<uint32>(data, 0x10);
 
     CDataLoader PDataLoader;
@@ -634,7 +645,7 @@ void HandleSearchRequest(CTCPRequestPacket& PTCPRequest)
 
 void HandleAuctionHouseRequest(CTCPRequestPacket& PTCPRequest)
 {
-    uint8* data    = (uint8*)PTCPRequest.GetData();
+    uint8* data    = PTCPRequest.GetData();
     uint8  AHCatID = ref<uint8>(data, 0x16);
 
     // 2 - level
@@ -655,12 +666,16 @@ void HandleAuctionHouseRequest(CTCPRequestPacket& PTCPRequest)
         {
             case 2:
                 OrderByString.append(" item_equipment.level DESC,");
+                break;
             case 5:
                 OrderByString.append(" item_weapon.dmg DESC,");
+                break;
             case 6:
                 OrderByString.append(" item_weapon.delay DESC,");
+                break;
             case 9:
                 OrderByString.append(" item_basic.sortname,");
+                break;
         }
     }
 
@@ -689,7 +704,7 @@ void HandleAuctionHouseRequest(CTCPRequestPacket& PTCPRequest)
 
 void HandleAuctionHouseHistory(CTCPRequestPacket& PTCPRequest)
 {
-    uint8* data   = (uint8*)PTCPRequest.GetData();
+    uint8* data   = PTCPRequest.GetData();
     uint16 ItemID = ref<uint16>(data, 0x12);
     uint8  stack  = ref<uint8>(data, 0x15);
 
@@ -734,7 +749,7 @@ search_req _HandleSearchRequest(CTCPRequestPacket& PTCPRequest)
 
     uint32 flags = 0;
 
-    uint8* data = (uint8*)PTCPRequest.GetData();
+    uint8* data = PTCPRequest.GetData();
     uint8  size = ref<uint8>(data, 0x10);
 
     uint16 workloadBits = size * 8;
@@ -997,10 +1012,23 @@ void TaskManagerThread()
 
 int32 ah_cleanup(time_point tick, CTaskMgr::CTask* PTask)
 {
-    // ShowMessage(CL_YELLOW"[TASK] ah_cleanup tick..");
-
     CDataLoader data;
     data.ExpireAHItems();
 
     return 0;
+}
+
+void do_final(int code)
+{
+    timer_final();
+    socket_final();
+
+    logging::ShutDown();
+
+    exit(code);
+}
+
+void do_abort()
+{
+    do_final(EXIT_FAILURE);
 }

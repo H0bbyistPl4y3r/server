@@ -159,12 +159,13 @@ xi.teleport.type =
     OUTPOST_WINDURST   = 2,
     RUNIC_PORTAL       = 3,
     PAST_MAW           = 4,
-    ABBYSEA_MAW        = 5,
+    ABYSSEA_CONFLUX    = 5,
     CAMPAIGN_SANDORIA  = 6,
     CAMPAIGN_BASTOK    = 7,
     CAMPAIGN_WINDURST  = 8,
     HOMEPOINT          = 9,
-    SURVIVAL           = 10
+    SURVIVAL           = 10,
+    WAYPOINT           = 11,
 }
 
 xi.teleport.runic_portal =
@@ -292,15 +293,16 @@ end
 -----------------------------------
 
 xi.teleport.toAlliedNation = function(player)
-    local Allegiance = player:getCampaignAllegiance()
+    local allegiance = player:getCampaignAllegiance()
     local sandoriaPos = destinations[ids.SOUTHERN_SAN_DORIA_S]
     local bastokPos = destinations[ids.BASTOK_MARKETS_S]
     local windurstPos = destinations[ids.WINDURST_WATERS_S]
-    if Allegiance == xi.alliedNation.SANDORIA then
+
+    if allegiance == xi.alliedNation.SANDORIA then
         player:setPos(unpack(sandoriaPos))
-    elseif Allegiance == xi.alliedNation.BASTOK then
+    elseif allegiance == xi.alliedNation.BASTOK then
         player:setPos(unpack(bastokPos))
-    elseif Allegiance == xi.alliedNation.WINDURST then
+    elseif allegiance == xi.alliedNation.WINDURST then
         player:setPos(unpack(windurstPos))
     end
 end

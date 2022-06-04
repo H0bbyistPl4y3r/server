@@ -22,7 +22,7 @@
 #ifndef _BATTLEUTILS_H
 #define _BATTLEUTILS_H
 
-#include "../../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 #include "../blue_spell.h"
 #include "../merit.h"
 #include "../status_effect.h"
@@ -223,6 +223,7 @@ namespace battleutils
 
     // returns damage taken
     int32 HandleStoneskin(CBattleEntity* PDefender, int32 damage);
+    int32 HandleOneForAll(CBattleEntity* PDefender, int32 damage);
     int32 HandleFanDance(CBattleEntity* PDefender, int32 damage);
 
     // stores damage for afflatus misery if active
@@ -256,6 +257,8 @@ namespace battleutils
     int32      GetScaledItemModifier(CBattleEntity*, CItemEquipment*, Mod);
     DAMAGE_TYPE GetSpikesDamageType(SUBEFFECT spikesType);
     DAMAGE_TYPE GetEnspellDamageType(ENSPELL enspellType);
+    DAMAGE_TYPE GetRuneEnhancementDamageType(EFFECT runeEffect);
+    ELEMENT     GetRuneEnhancementElement(EFFECT runeEffect);
 
     CBattleEntity* GetCoverAbilityUser(CBattleEntity* PCoverAbilityTarget, CBattleEntity* PMob);
     bool           IsMagicCovered(CCharEntity* PCoverAbilityUser);

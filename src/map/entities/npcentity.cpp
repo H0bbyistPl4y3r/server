@@ -19,7 +19,7 @@
 ===========================================================================
 */
 
-#include "../../common/taskmgr.h"
+#include "common/taskmgr.h"
 
 #include "../ai/ai_container.h"
 #include "../utils/zoneutils.h"
@@ -71,7 +71,7 @@ bool CNpcEntity::IsHPHidden() const
     return (m_flags & 0x800) == 0x800;
 }
 
-void CNpcEntity::Untargetable(bool untargetable)
+void CNpcEntity::SetUntargetable(bool untargetable)
 {
     if (untargetable)
     {
@@ -83,7 +83,7 @@ void CNpcEntity::Untargetable(bool untargetable)
     }
 }
 
-bool CNpcEntity::IsUntargetable() const
+bool CNpcEntity::GetUntargetable() const
 {
     return (m_flags & 0x800) == 0x800;
 }
@@ -100,9 +100,11 @@ bool CNpcEntity::isWideScannable()
 
 void CNpcEntity::PostTick()
 {
-    if (loc.zone && updatemask)
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    if (loc.zone && updatemask && now > m_nextUpdateTimer)
     {
-        loc.zone->PushPacket(this, CHAR_INRANGE, new CEntityUpdatePacket(this, ENTITY_UPDATE, updatemask));
+        m_nextUpdateTimer = now + 250ms;
+        loc.zone->UpdateEntityPacket(this, ENTITY_UPDATE, updatemask);
         updatemask = 0;
     }
 }

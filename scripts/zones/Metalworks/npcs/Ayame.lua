@@ -27,9 +27,9 @@ end
 
 entity.onTrigger = function(player, npc)
     local trueStrength = player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.TRUE_STRENGTH)
-    local WildcatBastok = player:getCharVar("WildcatBastok")
+    local wildcatBastok = player:getCharVar("WildcatBastok")
 
-    if (player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.LURE_OF_THE_WILDCAT) == QUEST_ACCEPTED and not utils.mask.getBit(WildcatBastok, 9)) then
+    if (player:getQuestStatus(xi.quest.log_id.BASTOK, xi.quest.id.bastok.LURE_OF_THE_WILDCAT) == QUEST_ACCEPTED and not utils.mask.getBit(wildcatBastok, 9)) then
         player:startEvent(935)
     elseif (trueStrength == QUEST_AVAILABLE and player:getMainJob() == xi.job.MNK and player:getMainLvl() >= 50) then
         player:startEvent(748) -- Start Quest "True Strength"
@@ -54,7 +54,7 @@ entity.onEventFinish = function(player, csid, option)
             player:addTitle(xi.title.PARAGON_OF_MONK_EXCELLENCE)
             player:addItem(14215)
             player:messageSpecial(ID.text.ITEM_OBTAINED, 14215) -- Temple Hose
-            player:addFame(BASTOK, 60)
+            player:addFame(xi.quest.fame_area.BASTOK, 60)
             player:completeQuest(xi.quest.log_id.BASTOK, xi.quest.id.bastok.TRUE_STRENGTH)
         end
     elseif (csid == 935) then

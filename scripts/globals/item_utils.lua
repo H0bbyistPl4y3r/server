@@ -1,9 +1,13 @@
+-----------------------------------
+-- Item Utils (Used by Skill Books)
+-----------------------------------
 require("scripts/globals/status")
 require("scripts/globals/msg")
+-----------------------------------
+xi = xi or {}
+xi.item_utils = {}
 
-item_utils = {}
-
-function item_utils.skillBookCheck(target, skillID)
+xi.item_utils.skillBookCheck = function(target, skillID)
     local skill = skillID
     local mainCap = target:getMaxSkillLevel(target:getMainLvl(), target:getMainJob(), skill) or 0
     local subCap = target:getMaxSkillLevel(target:getSubLvl(), target:getSubJob(), skill) or 0
@@ -34,6 +38,31 @@ function item_utils.skillBookCheck(target, skillID)
     return 0
 end
 
-function item_utils.skillBookUse(target, skillID)
+xi.item_utils.skillBookUse = function(target, skillID)
     target:trySkillUp(skillID, target:getMainLvl(), true, true)
+end
+
+xi.item_utils.pickItemRandom = function(target, itemgroup) -- selects an item from a weighted result table
+    -- possible results
+    local items = itemgroup
+
+    -- sum weights
+    local sum = 0
+    for i = 1, #items do
+        sum = sum + items[i][1]
+    end
+
+    -- pick the weighted result
+    local item = 0
+    local pick = math.random(sum)
+    sum = 0
+    for i = 1, #items do
+        sum = sum + items[i][1]
+        if sum >= pick then
+            item = items[i][2]
+            break
+        end
+    end
+
+    return item
 end

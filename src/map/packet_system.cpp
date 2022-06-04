@@ -173,7 +173,7 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include "packets/zone_visited.h"
 
 uint8 PacketSize[512];
-void (*PacketParser[512])(map_session_data_t* const, CCharEntity* const, CBasicPacket);
+std::function<void(map_session_data_t* const, CCharEntity* const, CBasicPacket)> PacketParser[512];
 
 /************************************************************************
  *                                                                       *
@@ -183,28 +183,27 @@ void (*PacketParser[512])(map_session_data_t* const, CCharEntity* const, CBasicP
 
 void PrintPacket(CBasicPacket data)
 {
-    char message[50];
-    memset(&message, 0, 50);
+    std::string message;
+    char buffer[5];
 
     for (size_t y = 0; y < data.getSize(); y++)
     {
-        // TODO: -Wno-restrict - undefined behavior to print and write src into dest
-        // TODO: -Wno-format-overflow - writing between 4 and 53 bytes into destination of 50
-        // TODO: FIXME
-        // cppcheck-suppress sprintfOverlappingData
-        snprintf(message, sizeof(message), "%s %02hhx", message, *((uint8*)data[(const int)y]));
+        std::memset(buffer, 0, sizeof(buffer));                               // TODO: Replace these three lines with std::format when/if we move to C++ 20.
+        snprintf(buffer, sizeof(buffer), "%02hhx ", *((uint8*)data[(int)y])); //
+        message.append(buffer);                                               //
+
         if (((y + 1) % 16) == 0)
         {
-            message[48] = '\n';
-            ShowDebug(message);
-            memset(&message, 0, 50);
+            message += "\n";
+            ShowDebug(message.c_str());
+            message.clear();
         }
     }
 
-    if (strlen(message) > 0)
+    if (message.length() > 0)
     {
-        message[strlen(message)] = '\n';
-        ShowDebug(message);
+        message += "\n";
+        ShowDebug(message.c_str());
     }
 }
 
@@ -277,7 +276,8 @@ void SmallPacket0x00A(map_session_data_t* const PSession, CCharEntity* const PCh
         if (destination >= MAX_ZONEID)
         {
             ShowWarning("packet_system::SmallPacket0x00A player tried to enter zone out of range: %d", destination);
-            PChar->loc.destination = destination = ZONE_RESIDENTIAL_AREA;
+            ShowWarning("packet_system::SmallPacket0x00A dumping player `%s` to a valid zone!", PChar->GetName());
+            PChar->loc.destination = destination = (uint16)ZONE_SELBINA;
         }
 
         zoneutils::GetZone(destination)->IncreaseZoneCounter(PChar);
@@ -296,7 +296,7 @@ void SmallPacket0x00A(map_session_data_t* const PSession, CCharEntity* const PCh
         if (sql->NextRow() == SQL_SUCCESS)
         {
             // Update the character's death timestamp based off of how long they were previously dead
-            uint32 secondsSinceDeath = (uint32)sql->GetUIntData(0);
+            uint32 secondsSinceDeath = sql->GetUIntData(0);
             if (PChar->health.hp == 0)
             {
                 PChar->SetDeathTimestamp((uint32)time(nullptr) - secondsSinceDeath);
@@ -315,12 +315,18 @@ void SmallPacket0x00A(map_session_data_t* const PSession, CCharEntity* const PCh
         }
         PChar->status = STATUS_TYPE::NORMAL;
     }
-    else
+    else if (PChar->loc.zone != nullptr)
     {
-        if (PChar->loc.zone != nullptr)
-        {
-            ShowWarning("Client cannot receive packet or key is invalid: %s", PChar->GetName());
-        }
+        // TODO: this should only happen ONCE, instead of spamming the log dozens of times..
+        ShowWarning("Client cannot receive packet or key is invalid: %s, Zone: %s (%i)",
+            PChar->GetName(), PChar->loc.zone->GetName(), PChar->loc.zone->GetID());
+
+        // Write a sane location for them
+        // TODO: work out how to drop player in moghouse that exits them to the zone they were in before this happened, like we used to.
+        ShowWarning("packet_system::SmallPacket0x00A dumping player `%s` to a valid zone!", PChar->GetName());
+        auto prevZone = PChar->loc.prevzone ? PChar->loc.prevzone : (uint16)ZONE_VALKURM_DUNES;
+        PChar->loc.destination = prevZone;
+        sql->Query("UPDATE chars SET pos_zone = %u WHERE charid = %u", prevZone, PChar->id);
     }
 
     charutils::SaveCharPosition(PChar);
@@ -477,9 +483,9 @@ void SmallPacket0x00D(map_session_data_t* const PSession, CCharEntity* const PCh
             {
                 if (PChar->PParty->GetLeader() == PChar)
                 {
-                    if (PChar->PParty->members.size() == 1)
+                    if (PChar->PParty->HasOnlyOneMember())
                     {
-                        if (PChar->PParty->m_PAlliance->partyList.size() == 1)
+                        if (PChar->PParty->m_PAlliance->hasOnlyOneParty())
                         {
                             PChar->PParty->m_PAlliance->dissolveAlliance();
                         }
@@ -650,7 +656,7 @@ void SmallPacket0x015(map_session_data_t* const PSession, CCharEntity* const PCh
 
         if (isUpdate)
         {
-            PChar->loc.zone->SpawnPCs(PChar);
+            PChar->requestedInfoSync = true;
             PChar->loc.zone->SpawnNPCs(PChar);
         }
 
@@ -683,7 +689,7 @@ void SmallPacket0x016(map_session_data_t* const PSession, CCharEntity* const PCh
 
     if (targid == PChar->targid)
     {
-        PChar->pushPacket(new CCharPacket(PChar, ENTITY_SPAWN, UPDATE_ALL_CHAR));
+        PChar->updateCharPacket(PChar, ENTITY_SPAWN, UPDATE_ALL_CHAR);
         PChar->pushPacket(new CCharUpdatePacket(PChar));
     }
     else
@@ -692,7 +698,7 @@ void SmallPacket0x016(map_session_data_t* const PSession, CCharEntity* const PCh
 
         if (PEntity && PEntity->objtype == TYPE_PC)
         {
-            PChar->pushPacket(new CCharPacket((CCharEntity*)PEntity, ENTITY_SPAWN, UPDATE_ALL_CHAR));
+            PChar->updateCharPacket((CCharEntity*)PEntity, ENTITY_SPAWN, UPDATE_ALL_CHAR);
         }
         else
         {
@@ -700,7 +706,7 @@ void SmallPacket0x016(map_session_data_t* const PSession, CCharEntity* const PCh
             {
                 PEntity = zoneutils::GetTrigger(targid, PChar->getZone());
             }
-            PChar->pushPacket(new CEntityUpdatePacket(PEntity, ENTITY_SPAWN, UPDATE_ALL_MOB));
+            PChar->updateEntityPacket(PEntity, ENTITY_SPAWN, UPDATE_ALL_MOB);
         }
     }
 }
@@ -730,11 +736,71 @@ void SmallPacket0x017(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    TracyZoneCString("Player Action");
 
     // uint32 ID = data.ref<uint32>(0x04);
     uint16 TargID = data.ref<uint16>(0x08);
     uint8  action = data.ref<uint8>(0x0A);
+    position_t actionOffset =
+    {
+        data.ref<float>(0x10),
+        data.ref<float>(0x14),
+        data.ref<float>(0x18)
+    };
+
+    constexpr auto actionToStr = [](uint8 actionIn)
+    {
+        switch (actionIn)
+        {
+            case 0x00:
+                return "Trigger";
+            case 0x02:
+                return "Attack";
+            case 0x03:
+                return "Spellcast";
+            case 0x04:
+                return "Disengage";
+            case 0x05:
+                return "Call for Help";
+            case 0x07:
+                return "Weaponskill";
+            case 0x09:
+                return "Job Ability";
+            case 0x0B:
+                return "Homepoint";
+            case 0x0C:
+                return "Assist";
+            case 0x0D:
+                return "Raise";
+            case 0x0E:
+                return "Fishing";
+            case 0x0F:
+                return "Change Target";
+            case 0x10:
+                return "Ranged Attack";
+            case 0x11:
+                return "Chocobo Digging";
+            case 0x12:
+                return "Dismount";
+            case 0x13:
+                return "Tractor Menu";
+            case 0x14:
+                return "Complete Character Update";
+            case 0x15:
+                return "Ballista - Quarry";
+            case 0x16:
+                return "Ballista - Sprint";
+            case 0x17:
+                return "Ballista - Scout";
+            case 0x18:
+                return "Blockaid";
+            case 0x1A:
+                return "Mounts";
+            default:
+                return "Unknown";
+        }
+    };
+    auto actionStr = actionToStr(action);
+    TracyZoneString(fmt::format("Player Action: {}: {} -> targid: {}", PChar->GetName(), actionStr, TargID));
 
     switch (action)
     {
@@ -788,6 +854,26 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
         {
             auto spellID = static_cast<SpellID>(data.ref<uint16>(0x0C));
             PChar->PAI->Cast(TargID, spellID);
+
+            // target offset used only for luopan placement as of now
+            if (spellID >= SpellID::Geo_Regen && spellID <= SpellID::Geo_Gravity)
+            {
+                // reset the action offset position to prevent other spells from using previous position data
+                PChar->m_ActionOffsetPos = {0, 0, 0};
+
+                // Need to set the target position plus offset for positioning correctly
+                auto* PTarget = dynamic_cast<CBattleEntity*>(PChar->GetEntity(TargID));
+
+                if (PTarget != nullptr)
+                {
+                    PChar->m_ActionOffsetPos =
+                    {
+                        PTarget->loc.p.x + actionOffset.x,
+                        PTarget->loc.p.y + actionOffset.y,
+                        PTarget->loc.p.z + actionOffset.z
+                    };
+                }
+            }
         }
         break;
         case 0x04: // disengage
@@ -804,9 +890,9 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
 
             if (auto* PMob = dynamic_cast<CMobEntity*>(PChar->GetBattleTarget()))
             {
-                if (!PMob->CalledForHelp() && PMob->PEnmityContainer->HasID(PChar->id))
+                if (!PMob->GetCallForHelpFlag() && PMob->PEnmityContainer->HasID(PChar->id) && !PMob->m_CallForHelpBlocked)
                 {
-                    PMob->CallForHelp(true);
+                    PMob->SetCallForHelpFlag(true);
                     PChar->loc.zone->PushPacket(PChar, CHAR_INRANGE_SELF, new CMessageBasicPacket(PChar, PChar, 0, 0, 19));
                     return;
                 }
@@ -825,11 +911,23 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
         {
             uint16 JobAbilityID = data.ref<uint16>(0x0C);
             uint8 currentAnimation = PChar->animation;
+
             if (currentAnimation != ANIMATION_NONE && currentAnimation != ANIMATION_ATTACK)
             {
-                ShowExploit("SmallPacket0x009: Player %s trying to use a Job Ability from invalid state", PChar->GetName());
+                ShowExploit("SmallPacket0x01A: Player %s trying to use a Job Ability from invalid state", PChar->GetName());
                 return;
             }
+
+            // Don't allow BST to use ready before level 25
+            if (PChar->PPet != nullptr && (!charutils::hasAbility(PChar, ABILITY_READY) || !PChar->PPet->PAI->IsEngaged()))
+            {
+                if (JobAbilityID >= ABILITY_FOOT_KICK && JobAbilityID <= ABILITY_PENTAPECK) // Is this a BST ability?
+                {
+                    PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, 0, 0, MSGBASIC_UNABLE_TO_USE_JA2));
+                    return;
+                }
+            }
+
             PChar->PAI->Ability(TargID, JobAbilityID);
         }
         break;
@@ -963,7 +1061,7 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             else
             {
-                PChar->loc.zone->SpawnPCs(PChar);
+                PChar->requestedInfoSync = true;
                 PChar->loc.zone->SpawnNPCs(PChar);
                 PChar->loc.zone->SpawnMOBs(PChar);
                 PChar->loc.zone->SpawnTRUSTs(PChar);
@@ -972,6 +1070,7 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
         break;
         case 0x15: // ballista - quarry
         case 0x16: // ballista - sprint
+        case 0x17: // ballista - scout
             break;
         case 0x18: // blockaid
         {
@@ -1054,12 +1153,12 @@ void SmallPacket0x01A(map_session_data_t* const PSession, CCharEntity* const PCh
         break;
         default:
         {
-            ShowWarning("CLIENT PERFORMING UNHANDLED ACTION %02hX", action);
+            ShowWarning(fmt::format("CLIENT {} PERFORMING UNHANDLED ACTION {} (0x{:02X})", PChar->GetName(), actionStr, action));
             return;
         }
         break;
     }
-    ShowAction("CLIENT %s PERFORMING ACTION %02hX", PChar->GetName(), action);
+    ShowAction(fmt::format("CLIENT {} PERFORMING ACTION {} (0x{:02X})", PChar->GetName(), actionStr, action));
 }
 
 /************************************************************************
@@ -1117,7 +1216,7 @@ void SmallPacket0x01E(map_session_data_t* const PSession, CCharEntity* const PCh
     std::vector<char> chars;
     std::for_each(data[HEADER_LENGTH], data[HEADER_LENGTH] + (data.getSize() - HEADER_LENGTH), [&](char ch)
     {
-        if ((ch >= 0 && ch < 128) && ch != '\0') // isascii && nonnull
+        if (isascii(ch) && ch != '\0')
         {
             chars.emplace_back(ch);
         }
@@ -1333,6 +1432,13 @@ void SmallPacket0x032(map_session_data_t* const PSession, CCharEntity* const PCh
     if ((PTarget != nullptr) && (PTarget->id == charid))
     {
         ShowDebug("%s initiated trade request with %s", PChar->GetName(), PTarget->GetName());
+
+        // If the player is the same as the target, don't allow the trade
+        if (PChar->id == PTarget->id)
+        {
+            PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, 0, 0, 155));
+            return;
+        }
 
         // If PChar is invisible don't allow the trade, but you are able to initiate a trade TO an invisible player
         if (PChar->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_INVISIBLE))
@@ -2898,7 +3004,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                     {
                         AuctionHistory_t ah;
                         ah.itemid = (uint16)sql->GetIntData(0);
-                        ah.price  = (uint32)sql->GetUIntData(1);
+                        ah.price  = sql->GetUIntData(1);
                         ah.stack  = (uint8)sql->GetIntData(2);
                         ah.status = 0;
                         PChar->m_ah_history.push_back(ah);
@@ -2912,6 +3018,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                 break;
             }
         }
+        [[fallthrough]];
         case 0x0A:
         {
             auto totalItemsOnAh = PChar->m_ah_history.size();
@@ -3247,6 +3354,7 @@ void SmallPacket0x053(map_session_data_t* const PSession, CCharEntity* const PCh
                 case SLOT_RANGED:
                 case SLOT_AMMO:
                     charutils::UpdateWeaponStyle(PChar, equipSlotId, (CItemWeapon*)PChar->getEquip((SLOTTYPE)equipSlotId));
+                    break;
                 case SLOT_HEAD:
                 case SLOT_BODY:
                 case SLOT_HANDS:
@@ -3310,10 +3418,12 @@ void SmallPacket0x059(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x05A(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    CampaignState state = campaign::GetCampaignState();
     PChar->pushPacket(new CConquestPacket(PChar));
-    PChar->pushPacket(new CCampaignPacket(PChar, state, 0));
-    PChar->pushPacket(new CCampaignPacket(PChar, state, 1));
+
+    // TODO: This is unstable across multiple processes. Fix me.
+    // CampaignState state = campaign::GetCampaignState();
+    // PChar->pushPacket(new CCampaignPacket(PChar, state, 0));
+    // PChar->pushPacket(new CCampaignPacket(PChar, state, 1));
 }
 
 /************************************************************************
@@ -3727,7 +3837,20 @@ void SmallPacket0x064(map_session_data_t* const PSession, CCharEntity* const PCh
         return;
     }
 
-    memcpy(&PChar->keys.tables[KeyTable].seenList, data[0x08], 0x40);
+    // Write 64 bytes to PChar->keys.tables[KeyTable].seenList (512 bits)
+    // std::memcpy(&PChar->keys.tables[KeyTable].seenList, data[0x08], 0x40);
+    for (int i = 0; i < 0x40; i++)
+    {
+        // copy each bit of byte into std::bit location
+        PChar->keys.tables[KeyTable].seenList.set(i * 8,     *data[0x08 + i] & 0x01);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 1, *data[0x08 + i] & 0x02);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 2, *data[0x08 + i] & 0x04);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 3, *data[0x08 + i] & 0x08);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 4, *data[0x08 + i] & 0x10);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 5, *data[0x08 + i] & 0x20);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 6, *data[0x08 + i] & 0x40);
+        PChar->keys.tables[KeyTable].seenList.set(i * 8 + 7, *data[0x08 + i] & 0x80);
+    }
 
     charutils::SaveKeyItems(PChar);
 }
@@ -3741,19 +3864,13 @@ void SmallPacket0x064(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x066(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    // PrintPacket(data);
-
-    // uint32 charid = data.ref<uint32>(0x04);
-    uint16 stamina = data.ref<uint16>(0x08);
-    // uint16 ukn1 = data.ref<uint16>(0x0A); // Seems to always be zero with basic fishing, skill not high enough to test legendary fish.
-    // uint16 targetid = data.ref<uint16>(0x0C);
-    uint8 action = data.ref<uint8>(0x0E);
-    // uint8 ukn2 = data.ref<uint8>(0x0F);
-    uint32 special = data.ref<uint32>(0x10);
-
-    if (static_cast<FISH_ACTION>(action) != FISH_ACTION::FINISH || PChar->animation == ANIMATION_FISHING_FISH)
+    if (map_config.fishing_enable == 1)
     {
-        fishingutils::FishingAction(PChar, static_cast<FISH_ACTION>(action), stamina, special);
+        fishingutils::HandleFishingAction(PChar, data);
+    }
+    else
+    {
+        return;
     }
 }
 
@@ -3786,7 +3903,7 @@ void SmallPacket0x06E(map_session_data_t* const PSession, CCharEntity* const PCh
         case 0: // party - must by party leader or solo
             if (PChar->PParty == nullptr || PChar->PParty->GetLeader() == PChar)
             {
-                if (PChar->PParty && PChar->PParty->members.size() > 5)
+                if (PChar->PParty && PChar->PParty->IsFull())
                 {
                     PChar->pushPacket(new CMessageStandardPacket(PChar, 0, 0, MsgStd::CannotInvite));
                     break;
@@ -3866,7 +3983,7 @@ void SmallPacket0x06E(map_session_data_t* const PSession, CCharEntity* const PCh
         case 5: // alliance - must be unallied party leader or alliance leader of a non-full alliance
             if (PChar->PParty && PChar->PParty->GetLeader() == PChar &&
                 (PChar->PParty->m_PAlliance == nullptr ||
-                 (PChar->PParty->m_PAlliance->getMainParty() == PChar->PParty && PChar->PParty->m_PAlliance->partyCount() < 3)))
+                 (PChar->PParty->m_PAlliance->getMainParty() == PChar->PParty && !PChar->PParty->m_PAlliance->isFull())))
             {
                 CCharEntity* PInvitee = nullptr;
                 if (targid != 0)
@@ -3954,10 +4071,10 @@ void SmallPacket0x06F(map_session_data_t* const PSession, CCharEntity* const PCh
         {
             case 0: // party - anyone may remove themself from party regardless of leadership or alliance
                 if (PChar->PParty->m_PAlliance &&
-                    PChar->PParty->members.size() == 1) // single member alliance parties must be removed from alliance before disband
+                    PChar->PParty->HasOnlyOneMember()) // single member alliance parties must be removed from alliance before disband
                 {
                     ShowDebug("%s party size is one", PChar->GetName());
-                    if (PChar->PParty->m_PAlliance->partyCount() == 1) // if there is only 1 party then dissolve alliance
+                    if (PChar->PParty->m_PAlliance->hasOnlyOneParty()) // if there is only 1 party then dissolve alliance
                     {
                         ShowDebug("%s alliance size is one party", PChar->GetName());
                         PChar->PParty->m_PAlliance->dissolveAlliance();
@@ -3979,7 +4096,7 @@ void SmallPacket0x06F(map_session_data_t* const PSession, CCharEntity* const PCh
                 if (PChar->PParty->m_PAlliance && PChar->PParty->GetLeader() == PChar)
                 {
                     ShowDebug("%s is leader of a party in an alliance", PChar->GetName());
-                    if (PChar->PParty->m_PAlliance->partyCount() == 1) // if there is only 1 party then dissolve alliance
+                    if (PChar->PParty->m_PAlliance->hasOnlyOneParty()) // if there is only 1 party then dissolve alliance
                     {
                         ShowDebug("One party in alliance, %s wants to dissolve the alliance", PChar->GetName());
                         PChar->PParty->m_PAlliance->dissolveAlliance();
@@ -4060,9 +4177,9 @@ void SmallPacket0x071(map_session_data_t* const PSession, CCharEntity* const PCh
                     if (PVictim == PChar) // using kick on yourself, let's borrow the logic from /pcmd leave to prevent alliance crash
                     {
                         if (PChar->PParty->m_PAlliance &&
-                            PChar->PParty->members.size() == 1) // single member alliance parties must be removed from alliance before disband
+                            PChar->PParty->HasOnlyOneMember()) // single member alliance parties must be removed from alliance before disband
                         {
-                            if (PChar->PParty->m_PAlliance->partyCount() == 1) // if there is only 1 party then dissolve alliance
+                            if (PChar->PParty->m_PAlliance->hasOnlyOneParty()) // if there is only 1 party then dissolve alliance
                             {
                                 ShowDebug("One party in alliance, %s wants to dissolve the alliance", PChar->GetName());
                                 PChar->PParty->m_PAlliance->dissolveAlliance();
@@ -4145,7 +4262,7 @@ void SmallPacket0x071(map_session_data_t* const PSession, CCharEntity* const PCh
                         // if using kick on yourself, or alliance leader using kick on another party leader - remove the party
                         if (PVictim == PChar || (PChar->PParty->m_PAlliance->getMainParty() == PChar->PParty && PVictim->PParty->GetLeader() == PVictim))
                         {
-                            if (PVictim->PParty->m_PAlliance->partyCount() == 1) // if there is only 1 party then dissolve alliance
+                            if (PVictim->PParty->m_PAlliance->hasOnlyOneParty()) // if there is only 1 party then dissolve alliance
                             {
                                 ShowDebug("One party in alliance, %s wants to dissolve the alliance", PChar->GetName());
                                 PVictim->PParty->m_PAlliance->dissolveAlliance();
@@ -4230,7 +4347,7 @@ void SmallPacket0x074(map_session_data_t* const PSession, CCharEntity* const PCh
                 if (PInviter->PParty->m_PAlliance)
                 {
                     // break if alliance is full or the inviter is not the leader
-                    if (PInviter->PParty->m_PAlliance->partyCount() == 3 || PInviter->PParty->m_PAlliance->getMainParty() != PInviter->PParty)
+                    if (PInviter->PParty->m_PAlliance->isFull() || PInviter->PParty->m_PAlliance->getMainParty() != PInviter->PParty)
                     {
                         ShowDebug("Alliance is full, invite to %s cancelled", PChar->GetName());
                         PChar->pushPacket(new CMessageStandardPacket(PChar, 0, 0, MsgStd::CannotBeProcessed));
@@ -4276,7 +4393,7 @@ void SmallPacket0x074(map_session_data_t* const PSession, CCharEntity* const PCh
                 }
                 if (PInviter->PParty->GetLeader() == PInviter)
                 {
-                    if (PInviter->PParty->members.size() > 5)
+                    if (PInviter->PParty->IsFull())
                     { // someone else accepted invitation
                         // PInviter->pushPacket(new CMessageStandardPacket(PInviter, 0, 0, 14)); Don't think retail sends error packet to inviter on full pt
                         ShowDebug("Someone else accepted party invite, %s cannot be added to party", PChar->GetName());
@@ -5160,6 +5277,7 @@ void SmallPacket0x0BE(map_session_data_t* const PSession, CCharEntity* const PCh
 
 void SmallPacket0x0BF(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
+    TracyZoneScoped;
     if (PChar->m_moghouseID)
     {
         JOBPOINT_TYPE jpType = static_cast<JOBPOINT_TYPE>(data.ref<uint16>(0x04));
@@ -5181,6 +5299,7 @@ void SmallPacket0x0BF(map_session_data_t* const PSession, CCharEntity* const PCh
 
 void SmallPacket0x0C0(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
+    TracyZoneScoped;
     if (charutils::hasKeyItem(PChar, 2544))
     {
         // Only send Job Points Packet if the player has unlocked them
@@ -5227,10 +5346,11 @@ void SmallPacket0x0C3(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x0C4(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    uint8           SlotID         = data.ref<uint8>(0x06);
-    uint8           LocationID     = data.ref<uint8>(0x07);
-    uint8           action         = data.ref<uint8>(0x08);
-    uint8           lsNum          = data.ref<uint8>(0x1B);
+    uint8 SlotID     = data.ref<uint8>(0x06);
+    uint8 LocationID = data.ref<uint8>(0x07);
+    uint8 action     = data.ref<uint8>(0x08);
+    uint8 lsNum      = data.ref<uint8>(0x1B);
+
     CItemLinkshell* PItemLinkshell = (CItemLinkshell*)PChar->getStorage(LocationID)->GetItem(SlotID);
 
     if (PItemLinkshell != nullptr && PItemLinkshell->isType(ITEM_LINKSHELL))
@@ -5240,8 +5360,12 @@ void SmallPacket0x0C4(map_session_data_t* const PSession, CCharEntity* const PCh
         {
             uint32 LinkshellID    = 0;
             uint16 LinkshellColor = data.ref<uint16>(0x04);
-            int8   DecodedName[21];
-            int8   EncodedName[16];
+
+            int8   DecodedName[DecodeStringLength];
+            int8   EncodedName[LinkshellStringLength];
+
+            memset(DecodedName, 0, sizeof(DecodedName));
+            memset(EncodedName, 0, sizeof(EncodedName));
 
             DecodeStringLinkshell(data[12], DecodedName);
             EncodeStringLinkshell(DecodedName, EncodedName);
@@ -5402,12 +5526,15 @@ void SmallPacket0x0CB(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x0D2(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    PChar->ForAlliance([PChar](CBattleEntity* PPartyMember) {
+    // clang-format off
+    PChar->ForAlliance([PChar](CBattleEntity* PPartyMember)
+    {
         if (PPartyMember->getZone() == PChar->getZone() && ((CCharEntity*)PPartyMember)->m_moghouseID == PChar->m_moghouseID)
         {
             PChar->pushPacket(new CPartyMapPacket((CCharEntity*)PPartyMember));
         }
     });
+    // clang-format on
 }
 
 /************************************************************************
@@ -5425,28 +5552,43 @@ void SmallPacket0x0D3(map_session_data_t* const PSession, CCharEntity* const PCh
 
 /************************************************************************
  *                                                                       *
- *  Set Preferred Language                                               *
+ *  Set Chat Filters / Preferred Language                                *
  *                                                                       *
  ************************************************************************/
 
 void SmallPacket0x0DB(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    uint8 newLanguage = data.ref<uint8>(0x24);
 
-    if (newLanguage == PChar->search.language)
+    auto oldMenuConfigFlags = PChar->menuConfigFlags.flags;
+    auto oldChatFilterFlags = PChar->chatFilterFlags;
+    auto oldLanguages = PChar->search.language;
+
+    // Extract the system filter bits and update MenuConfig
+    const uint8 systemFilterMask = (NFLAG_SYSTEM_FILTER_H | NFLAG_SYSTEM_FILTER_L) >> 8;
+    PChar->menuConfigFlags.byte2 &= ~systemFilterMask;
+    PChar->menuConfigFlags.byte2 |= data.ref<uint8>(0x09) & systemFilterMask;
+
+    PChar->chatFilterFlags = data.ref<uint64>(0x0C);
+
+    PChar->search.language = data.ref<uint8>(0x24);
+
+    if (oldMenuConfigFlags != PChar->menuConfigFlags.flags)
     {
-        return;
+        charutils::SaveMenuConfigFlags(PChar);
     }
 
-    auto ret = sql->Query("UPDATE chars SET languages = %u WHERE charid = %u;", newLanguage, PChar->id);
-
-    if (ret == SQL_SUCCESS)
+    if (oldChatFilterFlags != PChar->chatFilterFlags)
     {
-        PChar->search.language = newLanguage;
+        charutils::SaveChatFilterFlags(PChar);
     }
 
-    return;
+    if (oldLanguages != PChar->search.language)
+    {
+        charutils::SaveLanguages(PChar);
+    }
+
+    PChar->pushPacket(new CMenuConfigPacket(PChar));
 }
 
 /************************************************************************
@@ -6856,7 +6998,7 @@ void SmallPacket0x105(map_session_data_t* const PSession, CCharEntity* const PCh
 
     uint32 charid = data.ref<uint32>(0x04);
 
-    CCharEntity* PTarget = charid != 0 ? (CCharEntity*)PChar->loc.zone->GetCharByID(charid) : (CCharEntity*)PChar->GetEntity(PChar->m_TargID, TYPE_PC);
+    CCharEntity* PTarget = charid != 0 ? PChar->loc.zone->GetCharByID(charid) : (CCharEntity*)PChar->GetEntity(PChar->m_TargID, TYPE_PC);
 
     if (PTarget != nullptr && PTarget->id == charid && (PTarget->nameflags.flags & FLAG_BAZAAR))
     {
@@ -7162,20 +7304,14 @@ void SmallPacket0x10F(map_session_data_t* const PSession, CCharEntity* const PCh
 void SmallPacket0x110(map_session_data_t* const PSession, CCharEntity* const PChar, CBasicPacket data)
 {
     TracyZoneScoped;
-    // PrintPacket(data);
-    if (PChar->animation != ANIMATION_FISHING_START)
+    if (map_config.fishing_enable == 1)
+    {
+        fishingutils::HandleFishingAction(PChar, data);
+    }
+    else
     {
         return;
     }
-
-    // uint32 charid = data.ref<uint32>(0x04);
-    uint16 stamina = data.ref<uint16>(0x08);
-    // uint16 ukn1 = data.ref<uint16>(0x0A); // Seems to always be zero with basic fishing, skill not high enough to test legendary fish.
-    // uint16 targetid = data.ref<uint16>(0x0C);
-    uint8 action = data.ref<uint8>(0x0E);
-    // uint8 ukn2 = data.ref<uint8>(0x0F);
-    uint32 special = data.ref<uint32>(0x10);
-    fishingutils::FishingAction(PChar, static_cast<FISH_ACTION>(action), stamina, special);
 }
 
 /************************************************************************
@@ -7263,7 +7399,7 @@ void SmallPacket0x113(map_session_data_t* const PSession, CCharEntity* const PCh
         chairId = ANIMATION_SITCHAIR_0;
     }
 
-    PChar->animation = PChar->animation == chairId ? ANIMATION_NONE : chairId;
+    PChar->animation = PChar->animation == chairId ? (uint8)ANIMATION_NONE : chairId;
     PChar->updatemask |= UPDATE_HP;
 }
 

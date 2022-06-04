@@ -25,7 +25,6 @@ global_objects=(
     ai
     os
 
-    _G
     Module
     Override
     super
@@ -36,7 +35,6 @@ global_objects=(
     quests
     utils
     npcUtil
-    item_utils
 
     mixins
     g_mixins
@@ -72,92 +70,11 @@ global_objects=(
 
     removeSleepEffects
 
-    SANDORIA
-    BASTOK
-    WINDURST
-    ZILART
-    TOAU
-    WOTG
-    COP
-    ASSAULT
-    CAMPAIGN
-    ACP
-    AMK
-    ASA
-    SOA
-    ROV
-
     QUEST_AVAILABLE
     QUEST_ACCEPTED
     QUEST_COMPLETED
 
-    GetMissionLogInfo
-    GetQuestLogInfo
-
-    SANDORIA
-    BASTOK
-    WINDURST
-    JEUNO
-    OTHER_AREAS
-    OUTLANDS
-    AHT_URHGAN
-    CRYSTAL_WAR
-    ABYSSEA
-    ADOULIN
-    COALITION
-
-    SANDORIA
-    BASTOK
-    WINDURST
-    JEUNO
-    SELBINA
-    MHAURA
-    RABAO
-    KAZHAM
-    NORG
-    OTHER_AREAS_LOG
-    TAVNAZIA
-    OUTLANDS
-    ZILART
-    COP
-    TOAU
-    AHT_URHGAN
-    ASSAULT
-    WOTG
-    CRYSTAL_WAR
-    CAMPAIGN
-    ACP
-    AMK
-    ASA
-    ABYSSEA
-    ABYSSEA_KONSCHTAT
-    ABYSSEA_TAHRONGI
-    ABYSSEA_LATHEINE
-    ABYSSEA_MISAREAUX
-    ABYSSEA_VUNKERL
-    ABYSSEA_ATTOHWA
-    ABYSSEA_ALTEPA
-    ABYSSEA_GRAUBERG
-    ABYSSEA_ULEGUERAND
-    SOA
-    ADOULIN
-    COALITION
-    ROV
-    QUEST_LOGS
-    MISSION_LOGS
-
-    TradeBCNM
-    EventTriggerBCNM
-    EventUpdateBCNM
-    EventFinishBCNM
-
     onBattlefieldHandlerInitialise
-
-    porterMoogleTrade
-    porterEventUpdate
-    porterEventFinish
-
-    dynamis
 
     doAutoPhysicalWeaponskill
     doAutoRangedWeaponskill
@@ -189,11 +106,6 @@ global_objects=(
     cmdprops
     error
     onTrigger
-
-    CheckMaps
-    CheckMapsUpdate
-
-    getDynamisMapList
 
     SetExplorerMoogles
 
@@ -265,12 +177,6 @@ global_objects=(
     MOBSKILL_MAGICAL
     MOBSKILL_PHYSICAL
 
-    getMedalRank
-    getBastokNotesItem
-    getSandOriaNotesItem
-    getWindurstNotesItem
-    getSigilTimeStamp
-
     TPMOD_NONE
     TPMOD_CHANCE
     TPMOD_CRITICAL
@@ -326,4 +232,52 @@ ignore_rules=(
 --no-max-line-length \
 --max-cyclomatic-complexity 30 \
 --globals ${global_funcs[@]} ${global_objects[@]} \
---ignore ${ignores[@]} ${ignore_rules[@]}
+--ignore ${ignores[@]} ${ignore_rules[@]} | grep -v "Total:"
+
+python3 << EOF
+import glob
+import re
+
+def check_tables_in_file(name):
+    with open(name) as f:
+        counter = 0
+        lines = f.readlines()
+        for line in lines:
+            counter = counter + 1
+
+            # [ ]{0,} : Any number of spaces
+            # =       : = character
+            # [ ]{0,} : Any number of spaces
+            # \{      : { character
+            # [ ]{0,} : Any number of spaces
+            # \n      : newline character
+
+            for match in re.finditer("[ ]{0,}=[ ]{0,}\{[ ]{0,}\n", line):
+                print(f"Incorrectly defined table: {name}:{counter}:{match.start() + 2}")
+                print("")
+                print(lines[counter - 2].strip())
+                print(f"{lines[counter - 1].strip()}                              <-- HERE")
+                print(lines[counter].strip())
+                print("")
+
+            # local     : 'local ' (with a space)
+            # (?=       : Positive lookahead
+            # [^(ID)])  : A token that is NOT 'ID'
+            # (?=[A-Z]) : A token that starts with a capital letter
+
+            for match in re.finditer("local (?=[^(ID)])(?=[A-Z]){1,}", line):
+                print(f"Capitalised local name: {name}:{counter}:{match.start() + 2}")
+                print("")
+                print(lines[counter - 2].strip())
+                print(f"{lines[counter - 1].strip()}                              <-- HERE")
+                print(lines[counter].strip())
+                print("")
+
+target = '${target}'
+
+if target == 'scripts':
+    for filename in glob.iglob('scripts/**/*.lua', recursive=True):
+        check_tables_in_file(filename)
+else:
+    check_tables_in_file(target)
+EOF

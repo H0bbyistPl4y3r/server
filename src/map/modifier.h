@@ -153,18 +153,20 @@ enum class Mod
     PARRY             = 110, // Parry Skill
 
     // Magic Skills
-    DIVINE    = 111, // Divine Magic Skill
-    HEALING   = 112, // Healing Magic Skill
-    ENHANCE   = 113, // Enhancing Magic Skill
-    ENFEEBLE  = 114, // Enfeebling Magic Skill
-    ELEM      = 115, // Elemental Magic Skill
-    DARK      = 116, // Dark Magic Skill
-    SUMMONING = 117, // Summoning Magic Skill
-    NINJUTSU  = 118, // Ninjutsu Magic Skill
-    SINGING   = 119, // Singing Magic Skill
-    STRING    = 120, // String Magic Skill
-    WIND      = 121, // Wind Magic Skill
-    BLUE      = 122, // Blue Magic Skill
+    DIVINE    = 111,  // Divine Magic Skill
+    HEALING   = 112,  // Healing Magic Skill
+    ENHANCE   = 113,  // Enhancing Magic Skill
+    ENFEEBLE  = 114,  // Enfeebling Magic Skill
+    ELEM      = 115,  // Elemental Magic Skill
+    DARK      = 116,  // Dark Magic Skill
+    SUMMONING = 117,  // Summoning Magic Skill
+    NINJUTSU  = 118,  // Ninjutsu Magic Skill
+    SINGING   = 119,  // Singing Magic Skill
+    STRING    = 120,  // String Magic Skill
+    WIND      = 121,  // Wind Magic Skill
+    BLUE      = 122,  // Blue Magic Skill
+    GEOMANCY  = 1026, // Geomancy Magic Skill
+    HANDBELL  = 1027, // Handbell Magic SKill
 
     // Synthesis Skills
     FISH      = 127, // Fishing Skill
@@ -568,15 +570,18 @@ enum class Mod
     GRIMOIRE_SPELLCASTING    = 489, // "Grimoire: Reduces spellcasting time" bonus
 
     // Geo
-    CARDINAL_CHANT       = 959,
-    INDI_DURATION        = 960,
-    GEOMANCY             = 961,
-    WIDENED_COMPASS      = 962,
-    MENDING_HALATION     = 968,
-    RADIAL_ARCANA        = 969,
-    CURATIVE_RECANTATION = 970,
-    PRIMEVAL_ZEAL        = 971,
-    FULL_CIRCLE          = 1025, // Increases the initial multiplier on MP returned via Full Circle
+    CARDINAL_CHANT          = 959,
+    INDI_DURATION           = 960,
+    GEOMANCY_BONUS          = 961, // Used to increase potency of "Geomancy +" items (only the highest value is counted)
+    WIDENED_COMPASS         = 962,
+    MENDING_HALATION        = 968, // This mod should never exceed 1 as the multiplier is the merit, this is basicaly just a bool mod
+    RADIAL_ARCANA           = 969,
+    CURATIVE_RECANTATION    = 970,
+    PRIMEVAL_ZEAL           = 971,
+    FULL_CIRCLE             = 1025, // Increases the initial multiplier on MP returned via Full Circle
+    BOLSTER_EFFECT          = 1028, // Adds bonus duration as +N seconds
+    LIFE_CYCLE_EFFECT       = 1029, // Adds bonus HP% returned to the luopan when using Life Cycle
+    AURA_SIZE               = 1030, // Used to extend aura size, the formula is 6.25 + (PEntity->getMod(Mod::AURA_SIZE) / 100) so adding 100 will make this 7.25
 
     ENSPELL           = 341, // stores the type of enspell active (0 if nothing)
     ENSPELL_DMG       = 343, // stores the base damage of the enspell before reductions
@@ -866,6 +871,15 @@ enum class Mod
     SUPERIOR_LEVEL  = 997, // SU0..5
     ONE_HOUR_RECAST = 996, // Decreases the recast time of one-hour abilities by n minutes.
 
+    // AF3 Set Bonus Modifiers
+    AUGMENT_CONSERVE_MP    = 1031, // Percent chance to deal extra damage based on Conserve MP Amount (BLM AF3 Sets)
+    AUGMENT_COMPOSURE      = 1032, // Percent Enhancing Duration Extension for Others (RDM AF3 Sets)
+    AUGMENT_DAMAGE_HP      = 1033, // Percent chance to increase damage based on player HP% (DRK AF3 Sets)
+    AUGMENT_DAMAGE_PET_HP  = 1034, // Percent chance to increase damage based on pet HP% (BST/DRG AF3 Sets)
+    AUGMENT_BLOOD_BOON     = 1035, // Percent chance to deal extra damage based on Blood Boon Amount (SMN AF3 Sets)
+    AUGMENT_BLU_MAGIC      = 1036, // Percent chance for BLU magic to receive 3x WSC value for spell (BLU AF3 Sets)
+    GEOMANCY_MP_NO_DEPLETE = 1037, // Percent chance for Geomancy to cost 0 MP (GEO AF3 Sets)
+
     // IF YOU ADD ANY NEW MODIFIER HERE, ADD IT IN scripts/globals/status.lua ASWELL!
 
     // The spares take care of finding the next ID to use so long as we don't forget to list IDs that have been freed up by refactoring.
@@ -882,7 +896,7 @@ enum class Mod
     // 888
     // 936
     //
-    // SPARE = 1026, and onward
+    // SPARE = 1038, and onward
 };
 
 // temporary workaround for using enum class as unordered_map key until compilers support it
@@ -923,7 +937,8 @@ enum class PetModType
     Harlequin  = 4,
     Valoredge  = 5,
     Sharpshot  = 6,
-    Stormwaker = 7
+    Stormwaker = 7,
+    Luopan     = 8
 };
 
 class CPetModifier : public CModifier

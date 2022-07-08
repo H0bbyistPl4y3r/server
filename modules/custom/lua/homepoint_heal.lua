@@ -6,10 +6,6 @@ require("modules/module_utils")
 require("scripts/globals/homepoint")
 -----------------------------------
 local m = Module:new("homepoint_heal")
-<<<<<<< HEAD:modules/homepoint_heal.lua
-m:setEnabled(true)
-=======
->>>>>>> 0c7db71b6240298e799693ae5f26979b2e729213:modules/custom/lua/homepoint_heal.lua
 
 m:addOverride("xi.homepoint.onTrigger", function(player, csid, index)
     player:addHP(player:getMaxHP())

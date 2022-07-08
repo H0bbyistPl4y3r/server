@@ -8,7 +8,6 @@ require("scripts/globals/status")
 require("scripts/globals/zone")
 -----------------------------------
 
-
 function getRoeRecords(triggers)
     return {
 
@@ -151,7 +150,6 @@ function getRoeRecords(triggers)
                 item = { 10140 }
             }
         },
-
 
       -----------------------------------
       -- Tutorial -> Synthesis
@@ -2664,7 +2662,6 @@ function getRoeRecords(triggers)
             reward = { sparks = 500, xp = 1000 },
         },
 
-
         [ 237] = { -- Conflict: Ordelle's Caves
             trigger = triggers.mobKill,
             goal = 10,
@@ -3440,7 +3437,7 @@ function getRoeRecords(triggers)
         [ 339] = { -- Conflict: Moh Gates III
             trigger = triggers.mobKill,
             goal = 5,
-            reqs = { mobName = set{"Writhing_Obdella"}, zone = set{269} },
+            reqs = { mobName = set{"Ferocious_Funguar"}, zone = set{269} },
             flags = set{"repeat"},
             reward = { sparks = 160, xp = 500, capacity = 100, accolades = 16 },
         },
@@ -4092,7 +4089,6 @@ function getRoeRecords(triggers)
             flags = set{"repeat"},
             reward = { sparks = 16, xp = 800, accolades = 5, item = { 15993 } },
         },
-
 
       -----------------------------------
       -- Combat (Region) - Goddess 2
@@ -7457,7 +7453,6 @@ function getRoeRecords(triggers)
             flags = set{"daily"},
             reward = { sparks = 300, xp = 1500, accolades = 300, item = { 8711 } },
         },
-
 
       -----------------------------------
       -- Timed Records - No Category

@@ -677,11 +677,21 @@ xi.reaction =
 {
     NONE     = 0x00,
     MISS     = 0x01,
+    GUARDED  = 0x02,
     PARRY    = 0x03,
     BLOCK    = 0x04,
     HIT      = 0x08,
     EVADE    = 0x09,
-    GUARD    = 0x14,
+    ABILITY  = 0x10,
+}
+
+xi.actionModifier =
+{
+    NONE        = 0x00,
+    COVER       = 0x01,
+    RESIST      = 0x02,
+    MAGIC_BURST = 0x04, -- Currently known to be used for Swipe/Lunge only
+    IMMUNOBREAK = 0x08,
 }
 
 xi.specEffect =
@@ -694,7 +704,7 @@ xi.specEffect =
     CRITICAL_HIT   = 0x22,
 }
 
-function AbilityFinalAdjustments(dmg,mob,skill,target,skilltype,skillparam,shadowbehav)
+function AbilityFinalAdjustments(dmg,mob,skill,target,skilltype,skillparam,shadowbehav) -- seems to only be used for Wyvern breaths
     -- physical attack missed, skip rest
     local msg = skill:getMsg()
     if (msg == 158 or msg == 188 or msg == 31 or msg == 30) then
@@ -738,18 +748,20 @@ function AbilityFinalAdjustments(dmg,mob,skill,target,skilltype,skillparam,shado
     if (skilltype == xi.attackType.PHYSICAL) then
         dmg = target:physicalDmgTaken(dmg, skillparam)
     elseif (skilltype == xi.attackType.MAGICAL) then
-        dmg = target:magicDmgTaken(dmg)
+        dmg = target:magicDmgTaken(dmg, skillparam)
     elseif (skilltype == xi.attackType.BREATH) then
         dmg = target:breathDmgTaken(dmg)
     elseif (skilltype == xi.attackType.RANGED) then
         dmg = target:rangedDmgTaken(dmg)
     end
 
-    --handling phalanx
-    dmg = dmg - target:getMod(xi.mod.PHALANX)
+    if dmg < 0 then
+        return dmg
+    end
 
-    if (dmg < 0) then
-        return 0
+    -- Handle Phalanx
+    if dmg > 0 then
+        dmg = utils.clamp(dmg - target:getMod(xi.mod.PHALANX), 0, 99999)
     end
 
     if skilltype == xi.attackType.MAGICAL then

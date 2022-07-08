@@ -114,14 +114,77 @@ struct Pet_t
     int16 light_sdt;
     int16 dark_sdt;
 
-    int16 fire_res;
-    int16 ice_res;
-    int16 wind_res;
-    int16 earth_res;
-    int16 thunder_res;
-    int16 water_res;
-    int16 light_res;
-    int16 dark_res;
+    int16 fire_meva;
+    int16 ice_meva;
+    int16 wind_meva;
+    int16 earth_meva;
+    int16 thunder_meva;
+    int16 water_meva;
+    int16 light_meva;
+    int16 dark_meva;
+
+    Pet_t()
+    : EcoSystem(ECOSYSTEM::ECO_ERROR)
+    {
+        PetID     = 0;
+
+        minLevel = -1;
+        maxLevel = 99;
+
+        name_prefix = 0;
+        radius      = 0;
+        m_Family    = 0;
+        time        = 0;
+
+        mJob      = 0;
+        sJob      = 0;
+        m_Element = 0;
+        HPscale   = 0.f;
+        MPscale   = 0.f;
+
+        cmbDelay = 0;
+        speed    = 0;
+
+        strRank = 0;
+        dexRank = 0;
+        vitRank = 0;
+        agiRank = 0;
+        intRank = 0;
+        mndRank = 0;
+        chrRank = 0;
+        attRank = 0;
+        defRank = 0;
+        evaRank = 0;
+        accRank = 0;
+
+        m_MobSkillList = 0;
+
+        hasSpellScript = false;
+        spellList      = 0;
+
+        slash_sdt    = 0;
+        pierce_sdt   = 0;
+        hth_sdt      = 0;
+        impact_sdt   = 0;
+
+        fire_sdt     = 0;
+        ice_sdt      = 0;
+        wind_sdt     = 0;
+        earth_sdt    = 0;
+        thunder_sdt  = 0;
+        water_sdt    = 0;
+        light_sdt    = 0;
+        dark_sdt     = 0;
+
+        fire_meva    = 0;
+        ice_meva     = 0;
+        wind_meva    = 0;
+        earth_meva   = 0;
+        thunder_meva = 0;
+        water_meva   = 0;
+        light_meva   = 0;
+        dark_meva    = 0;
+    }
 };
 
 std::vector<Pet_t*> g_PPetList;
@@ -129,9 +192,9 @@ std::vector<Pet_t*> g_PPetList;
 namespace petutils
 {
     /************************************************************************
-     *																		*
-     *  Загружаем список прототипов питомцев									*
-     *																		*
+     *                                                                      *
+     *  Загружаем список прототипов питомцев                                    *
+     *                                                                      *
      ************************************************************************/
 
     void LoadPetList()
@@ -168,7 +231,7 @@ namespace petutils
                 hasSpellScript, spellList, \
                 slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, \
                 fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
-                fire_res, ice_res, wind_res, earth_res, lightning_res, water_res, light_res, dark_res, \
+                fire_meva, ice_meva, wind_meva, earth_meva, lightning_meva, water_meva, light_meva, dark_meva, \
                 cmbDelay, name_prefix, mob_pools.skill_list_id \
                 FROM pet_list, mob_pools, mob_resistances, mob_family_system \
                 WHERE pet_list.poolid = mob_pools.poolid AND mob_resistances.resist_id = mob_pools.resist_id AND mob_pools.familyid = mob_family_system.familyID";
@@ -182,7 +245,10 @@ namespace petutils
                 Pet->PetID = (uint16)sql->GetIntData(0);
                 Pet->name.insert(0, (const char*)sql->GetData(1));
 
-                memcpy(&Pet->look, sql->GetData(2), 20);
+                uint16 sqlModelID[10];
+                memcpy(&sqlModelID, sql->GetData(2), 20);
+                Pet->look = look_t(sqlModelID);
+
                 Pet->minLevel  = (uint8)sql->GetIntData(3);
                 Pet->maxLevel  = (uint8)sql->GetIntData(4);
                 Pet->time      = sql->GetUIntData(5);
@@ -220,24 +286,34 @@ namespace petutils
                 Pet->hth_sdt    = (uint16)(sql->GetFloatData(30) * 1000);
                 Pet->impact_sdt = (uint16)(sql->GetFloatData(31) * 1000);
 
-                Pet->fire_sdt    = (int16)sql->GetFloatData(32); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->ice_sdt     = (int16)sql->GetFloatData(33); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->wind_sdt    = (int16)sql->GetFloatData(34); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->earth_sdt   = (int16)sql->GetFloatData(35); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->thunder_sdt = (int16)sql->GetFloatData(36); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->water_sdt   = (int16)sql->GetFloatData(37); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->light_sdt   = (int16)sql->GetFloatData(38); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->dark_sdt    = (int16)sql->GetFloatData(39); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->fire_sdt    = (int16)sql->GetIntData(32); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->ice_sdt     = (int16)sql->GetIntData(33); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->wind_sdt    = (int16)sql->GetIntData(34); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->earth_sdt   = (int16)sql->GetIntData(35); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->thunder_sdt = (int16)sql->GetIntData(36); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->water_sdt   = (int16)sql->GetIntData(37); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->light_sdt   = (int16)sql->GetIntData(38); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->dark_sdt    = (int16)sql->GetIntData(39); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
 
                 // resistances
-                Pet->fire_res    = (int16)sql->GetIntData(40);
-                Pet->ice_res     = (int16)sql->GetIntData(41);
-                Pet->wind_res    = (int16)sql->GetIntData(42);
-                Pet->earth_res   = (int16)sql->GetIntData(43);
-                Pet->thunder_res = (int16)sql->GetIntData(44);
-                Pet->water_res   = (int16)sql->GetIntData(45);
-                Pet->light_res   = (int16)sql->GetIntData(46);
-                Pet->dark_res    = (int16)sql->GetIntData(47);
+                Pet->fire_meva    = (int16)sql->GetIntData(40);
+                Pet->ice_meva     = (int16)sql->GetIntData(41);
+                Pet->wind_meva    = (int16)sql->GetIntData(42);
+                Pet->earth_meva   = (int16)sql->GetIntData(43);
+                Pet->thunder_meva = (int16)sql->GetIntData(44);
+                Pet->water_meva   = (int16)sql->GetIntData(45);
+                Pet->light_meva   = (int16)sql->GetIntData(46);
+                Pet->dark_meva    = (int16)sql->GetIntData(47);
+                /* Todo
+                Pet->fire_res_rank    = (int16)sql->GetIntData(??);
+                Pet->ice_res_rank     = (int16)sql->GetIntData(??);
+                Pet->wind_res_rank    = (int16)sql->GetIntData(??);
+                Pet->earth_res_rank   = (int16)sql->GetIntData(??);
+                Pet->thunder_res_rank = (int16)sql->GetIntData(??);
+                Pet->water_res_rank   = (int16)sql->GetIntData(??);
+                Pet->light_res_rank   = (int16)sql->GetIntData(??);
+                Pet->dark_res_rank    = (int16)sql->GetIntData(??);
+                */
 
                 Pet->cmbDelay       = (uint16)sql->GetIntData(48);
                 Pet->name_prefix    = (uint8)sql->GetUIntData(49);
@@ -249,9 +325,9 @@ namespace petutils
     }
 
     /************************************************************************
-     *																		*
-     *  Освобождаем список прототипов питомцев								*
-     *																		*
+     *                                                                      *
+     *  Освобождаем список прототипов питомцев                              *
+     *                                                                      *
      ************************************************************************/
 
     void FreePetList()
@@ -265,7 +341,11 @@ namespace petutils
 
     void AttackTarget(CBattleEntity* PMaster, CBattleEntity* PTarget)
     {
-        XI_DEBUG_BREAK_IF(PMaster->PPet == nullptr);
+        if (PMaster == nullptr || PMaster->PPet == nullptr || PTarget == nullptr)
+        {
+            ShowWarning("petutils::AttackTarget() - Null master, pet, or target passed to function.");
+            return;
+        }
 
         CBattleEntity* PPet = PMaster->PPet;
 
@@ -277,7 +357,11 @@ namespace petutils
 
     void RetreatToMaster(CBattleEntity* PMaster)
     {
-        XI_DEBUG_BREAK_IF(PMaster->PPet == nullptr);
+        if (PMaster == nullptr || PMaster->PPet == nullptr)
+        {
+            ShowWarning("petutils::RetreatToMaster() - Null master or pet passed to function.");
+            return;
+        }
 
         CBattleEntity* PPet = PMaster->PPet;
 
@@ -512,7 +596,7 @@ namespace petutils
         int32 mainLevelOver60To75 = std::clamp(mlvl - 60, 0, 15); // Second calculation mode after level 60
         int32 mainLevelOver75     = (mlvl < 75 ? 0 : mlvl - 75);  // Third calculation mode after level 75
 
-        //Calculate the bonus amount of HP
+        // Calculate the bonus amount of HP
         int32 mainLevelOver10           = (mlvl < 10 ? 0 : mlvl - 10);  // +2HP on every level after 10
         int32 mainLevelOver50andUnder60 = std::clamp(mlvl - 50, 0, 10); // +2HP at each level between level 50 and 60
         int32 mainLevelOver60           = (mlvl < 60 ? 0 : mlvl - 60);
@@ -540,8 +624,8 @@ namespace petutils
         PPet->health.maxhp = (int32)((raceStat + jobStat + bonusStat + sJobStat) * petStats->HPscale);
         PPet->health.hp    = PPet->health.maxhp;
 
-        //Start MP calculation
-        raceStat =0;
+        // Start MP calculation
+        raceStat = 0;
         jobStat  = 0;
         sJobStat = 0;
 
@@ -551,12 +635,12 @@ namespace petutils
         // If the main job doesn't have an MP rating, calculate the racial bonus based on the level of the subjob's level (assuming it has an MP rating)
         if (!(grade::GetJobGrade(mjob, 1) == 0 && grade::GetJobGrade(sjob, 1) == 0))
         {
-            //calculate normal racial bonus
+            // calculate normal racial bonus
             raceStat = grade::GetMPScale(grade, 0) + grade::GetMPScale(grade, scaleTo60Column) * mainLevelUpTo60 +
                        grade::GetMPScale(grade, scaleOver60) * mainLevelOver60;
         }
 
-        //For the main profession
+        // For the main profession
         grade = grade::GetJobGrade(mjob, 1);
         if (grade > 0)
         {
@@ -670,17 +754,17 @@ namespace petutils
 
         uint8 grade;
 
-        uint8 mlvl   = PPet->GetMLevel();
+        uint8   mlvl = PPet->GetMLevel();
         JOBTYPE mjob = PPet->GetMJob();
-        uint8 race   = 3; // Tarutaru - wait what??
+        uint8   race = 3; // Tarutaru - wait what??
 
         // Calculate HP gain from main job
-        int32 mainLevelOver30           = std::clamp(mlvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
-        int32 mainLevelUpTo60           = (mlvl < 60 ? mlvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
-        int32 mainLevelOver60To75       = std::clamp(mlvl - 60, 0, 15); // Second calculation mode after level 60
-        int32 mainLevelOver75           = (mlvl < 75 ? 0 : mlvl - 75);  // Third calculation mode after level 75
+        int32 mainLevelOver30     = std::clamp(mlvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
+        int32 mainLevelUpTo60     = (mlvl < 60 ? mlvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
+        int32 mainLevelOver60To75 = std::clamp(mlvl - 60, 0, 15); // Second calculation mode after level 60
+        int32 mainLevelOver75     = (mlvl < 75 ? 0 : mlvl - 75);  // Third calculation mode after level 75
 
-        //Calculate the bonus amount of HP
+        // Calculate the bonus amount of HP
         int32 mainLevelOver10           = (mlvl < 10 ? 0 : mlvl - 10);  // +2HP on every level after 10
         int32 mainLevelOver50andUnder60 = std::clamp(mlvl - 50, 0, 10); // +2HP at each level between level 50 and 60
         int32 mainLevelOver60           = (mlvl < 60 ? 0 : mlvl - 60);
@@ -716,7 +800,7 @@ namespace petutils
         raceStat = 0;
         jobStat  = 0;
         sJobStat = 0;
-        grade = grade::GetRaceGrades(race, 1);
+        grade    = grade::GetRaceGrades(race, 1);
 
         // If the main job does not have an MP rating, calculate the racial bonus based on the level of the subjob's level (assuming it has an MP rating)
         if (grade::GetJobGrade(mjob, 1) != 0)
@@ -798,9 +882,9 @@ namespace petutils
     }
 
     /************************************************************************
-     *																		*
-     *																		*
-     *																		*
+     *                                                                      *
+     *                                                                      *
+     *                                                                      *
      ************************************************************************/
 
     void SpawnPet(CBattleEntity* PMaster, uint32 PetID, bool spawningFromZone)
@@ -854,7 +938,13 @@ namespace petutils
 
                 // check latents affected by pets
                 ((CCharEntity*)PMaster)->PLatentEffectContainer->CheckLatentsPetType();
-                PMaster->ForParty([](CBattleEntity* PMember) { ((CCharEntity*)PMember)->PLatentEffectContainer->CheckLatentsPartyAvatar(); });
+
+                // clang-format off
+                PMaster->ForParty([](CBattleEntity* PMember)
+                {
+                    ((CCharEntity*)PMember)->PLatentEffectContainer->CheckLatentsPartyAvatar();
+                });
+                // clang-format on
             }
             // apply stats from previous zone if this pet is being transferred
             if (spawningFromZone)
@@ -886,11 +976,11 @@ namespace petutils
         PPet->look = petData->look;
         PPet->name = petData->name;
         PPet->SetMJob(petData->mJob);
-        PPet->m_EcoSystem      = petData->EcoSystem;
-        PPet->m_Family         = petData->m_Family;
-        PPet->m_Element        = petData->m_Element;
-        PPet->HPscale          = petData->HPscale;
-        PPet->MPscale          = petData->MPscale;
+        PPet->m_EcoSystem = petData->EcoSystem;
+        PPet->m_Family    = petData->m_Family;
+        PPet->m_Element   = petData->m_Element;
+        PPet->HPscale     = petData->HPscale;
+        PPet->MPscale     = petData->MPscale;
 
         PPet->allegiance = PMaster->allegiance;
         PMaster->StatusEffectContainer->CopyConfrontationEffect(PPet);
@@ -918,14 +1008,24 @@ namespace petutils
         PPet->setModifier(Mod::LIGHT_SDT, petData->light_sdt);
         PPet->setModifier(Mod::DARK_SDT, petData->dark_sdt);
 
-        PPet->setModifier(Mod::FIRE_RES, petData->fire_res);       // These are stored as signed integers which
-        PPet->setModifier(Mod::ICE_RES, petData->ice_res);         // is directly the modifier starting value.
-        PPet->setModifier(Mod::WIND_RES, petData->wind_res);       // Positives signify increased resist chance.
-        PPet->setModifier(Mod::EARTH_RES, petData->earth_res);
-        PPet->setModifier(Mod::THUNDER_RES, petData->thunder_res);
-        PPet->setModifier(Mod::WATER_RES, petData->water_res);
-        PPet->setModifier(Mod::LIGHT_RES, petData->light_res);
-        PPet->setModifier(Mod::DARK_RES, petData->dark_res);
+        PPet->setModifier(Mod::FIRE_MEVA, petData->fire_meva); // These are stored as signed integers which
+        PPet->setModifier(Mod::ICE_MEVA, petData->ice_meva);   // is directly the modifier starting value.
+        PPet->setModifier(Mod::WIND_MEVA, petData->wind_meva); // Positives signify increased resist chance.
+        PPet->setModifier(Mod::EARTH_MEVA, petData->earth_meva);
+        PPet->setModifier(Mod::THUNDER_MEVA, petData->thunder_meva);
+        PPet->setModifier(Mod::WATER_MEVA, petData->water_meva);
+        PPet->setModifier(Mod::LIGHT_MEVA, petData->light_meva);
+        PPet->setModifier(Mod::DARK_MEVA, petData->dark_meva);
+        /* Todo
+        fire_res_rank
+        ice_res_rank
+        wind_res_rank
+        earth_res_rank
+        thunder_res_rank
+        water_res_rank
+        light_res_rank
+        dark_res_rank
+        */
     }
 
     void DetachPet(CBattleEntity* PMaster)
@@ -994,7 +1094,13 @@ namespace petutils
             }
 
             ((CCharEntity*)PMaster)->PLatentEffectContainer->CheckLatentsPetType();
-            PMaster->ForParty([](CBattleEntity* PMember) { ((CCharEntity*)PMember)->PLatentEffectContainer->CheckLatentsPartyAvatar(); });
+
+            // clang-format off
+            PMaster->ForParty([](CBattleEntity* PMember)
+            {
+                ((CCharEntity*)PMember)->PLatentEffectContainer->CheckLatentsPartyAvatar();
+            });
+            // clang-format on
 
             if (PPetEnt->getPetType() != PET_TYPE::AUTOMATON)
             {
@@ -1016,9 +1122,9 @@ namespace petutils
     }
 
     /************************************************************************
-     *																		*
-     *																		*
-     *																		*
+     *                                                                      *
+     *                                                                      *
+     *                                                                      *
      ************************************************************************/
 
     void DespawnPet(CBattleEntity* PMaster)
@@ -1265,7 +1371,8 @@ namespace petutils
 
         Pet_t* PPetData = new Pet_t();
 
-        PPetData = *std::find_if(g_PPetList.begin(), g_PPetList.end(), [PetID](Pet_t* t) { return t->PetID == PetID; });
+        PPetData = *std::find_if(g_PPetList.begin(), g_PPetList.end(), [PetID](Pet_t* t)
+                                 { return t->PetID == PetID; });
 
         if (PMaster->GetMJob() != JOB_DRG && PetID == PETID_WYVERN)
         {
@@ -1668,7 +1775,7 @@ namespace petutils
                 {
                     if (trait->getID() == TRAIT_STOUT_SERVANT)
                     {
-                        PPet->addModifier(Mod::DMG, -(trait->getValue()*100));
+                        PPet->addModifier(Mod::DMG, -(trait->getValue() * 100));
                         break;
                     }
                 }

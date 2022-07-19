@@ -58,7 +58,7 @@ xi.settings.map =
     FAME_MULTIPLIER = 1.00,
 
     -- Percentage of experience normally lost to keep upon death. 0 means full loss, where 1 means no loss.
-    EXP_RETAIN = 0,
+    EXP_RETAIN = 0.9,
 
     -- Minimum level at which experience points can be lost
     EXP_LOSS_LEVEL = 31,
@@ -122,39 +122,39 @@ xi.settings.map =
     SKILLUP_BLOODPACT = true,
 
     -- Adjust rate of TP gain for mobs, and players. Acts as a multiplier, so default is 1.
-    MOB_TP_MULTIPLIER    = 1.0,
+    MOB_TP_MULTIPLIER    = 0.5,
     PLAYER_TP_MULTIPLIER = 1.0,
 
     -- Adjust max HP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_HP_MULTIPLIER        = 1.0,
-    MOB_HP_MULTIPLIER       = 1.0,
+    NM_HP_MULTIPLIER        = 0.9,
+    MOB_HP_MULTIPLIER       = 0.5,
     PLAYER_HP_MULTIPLIER    = 1.0,
-    ALTER_EGO_HP_MULTIPLIER = 1.0,
+    ALTER_EGO_HP_MULTIPLIER = 1.5,
 
     -- Adjust max MP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_MP_MULTIPLIER        = 1.0,
-    MOB_MP_MULTIPLIER       = 1.0,
+    NM_MP_MULTIPLIER        = 0.9,
+    MOB_MP_MULTIPLIER       = 0.5,
     PLAYER_MP_MULTIPLIER    = 1.0,
-    ALTER_EGO_MP_MULTIPLIER = 1.0,
+    ALTER_EGO_MP_MULTIPLIER = 1.5,
 
     -- Sets the fraction of MP a subjob provides to the main job. Retail is half and this acts as a divisor so default is 2
-    SJ_MP_DIVISOR = 2.0,
+    SJ_MP_DIVISOR = 0.2,
 
     --  Modify ratio of subjob-to-mainjob
     -- 0            = no subjobs
     -- 1            = 1/2   (default, 75/37, 99/49)
     -- 2            = 2/3   (75/50, 99/66)
     -- 3            = equal (75/75, 99/99)
-    SUBJOB_RATIO = 1,
+    SUBJOB_RATIO = 3,
 
     -- Also adjust monsters subjob in ratio adjustments? 1 = true / 0 = false
     INCLUDE_MOB_SJ = false,
 
     -- Adjust base stats (str/vit/etc.) for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_STAT_MULTIPLIER        = 1.0,
-    MOB_STAT_MULTIPLIER       = 1.0,
+    NM_STAT_MULTIPLIER        = 0.9,
+    MOB_STAT_MULTIPLIER       = 0.5,
     PLAYER_STAT_MULTIPLIER    = 1.0,
-    ALTER_EGO_STAT_MULTIPLIER = 1.0,
+    ALTER_EGO_STAT_MULTIPLIER = 1.5,
 
     -- Adjust skill caps for trusts/fellows. Acts as a multiplier, so default is 1.
     ALTER_EGO_SKILL_MULTIPLIER = 1.0,

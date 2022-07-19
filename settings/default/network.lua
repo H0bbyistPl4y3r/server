@@ -13,9 +13,9 @@ xi.settings.network =
 {
     SQL_HOST     = "127.0.0.1",
     SQL_PORT     = 3306,
-    SQL_LOGIN    = "root",
-    SQL_PASSWORD = "root",
-    SQL_DATABASE = "xidb",
+    SQL_LOGIN    = "FFXI",
+    SQL_PASSWORD = "RedMage4Win",
+    SQL_DATABASE = "ffxi-db",
 
     LOGIN_DATA_IP   = "0.0.0.0",
     LOGIN_DATA_PORT = 54230,

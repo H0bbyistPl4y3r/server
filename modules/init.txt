@@ -36,11 +36,8 @@
 #
 # Live example:
 
-<<<<<<< Updated upstream
-custom/commands/
-custom/lua/test_npcs_in_gm_home.lua
-=======
+#<<<<<<< Updated upstream
 custom/lua/homepoint_heal.lua
 custom/lua/mission_wardrobe_unlocks.lua
 
->>>>>>> Stashed changes
+#>>>>>>> Stashed changes

@@ -365,12 +365,6 @@ void CLuaBaseEntity::PrintToArea(std::string const& message, sol::object const& 
 
 void CLuaBaseEntity::messageBasic(uint16 messageID, sol::object const& p0, sol::object const& p1, sol::object const& target)
 {
-    if (m_PBaseEntity->objtype != TYPE_PC)
-    {
-        ShowError("Function called on non-PC entity (%s)", m_PBaseEntity->name.c_str());
-        return;
-    }
-
     uint32 param0 = (p0 != sol::lua_nil) ? p0.as<uint32>() : 0;
     uint32 param1 = (p1 != sol::lua_nil) ? p1.as<uint32>() : 0;
 
@@ -704,112 +698,33 @@ void CLuaBaseEntity::injectPacket(std::string const& filename)
 
 /************************************************************************
  *  Function: injectActionPacket()
- *  Purpose : Used for testing and finding animations, not production use
- *  Example : player:injectActionPacket(actID, animID, spEffect, react, msg);
- *  Notes   : Used only for testing through injectaction.lua command
- *            ONLY FOR DEBUGGING. Injects an action packet with the specified params.
+ *  Purpose : Used for injecting action packets
+ *  Example : "steal" a target's weapon on a target: player:injectActionPacket(target:getID(), 3, 181, 0, 24, 125, 41, 4370);
+ *  Notes   : Used for very special cases, like JoL or Plouton generating action packets that only play animations, and don't actually use abilities.
+ *            There are no safeties, You can crash a client with malformed parameters. You have been warned.
  ************************************************************************/
-
-void CLuaBaseEntity::injectActionPacket(uint16 action, uint16 anim, uint16 spec, uint16 react, uint16 message)
+void CLuaBaseEntity::injectActionPacket(uint32 inTargetID, uint16 inCategory, uint16 inAnimationID, uint16 inSpecEffect, uint16 inReaction, uint16 inMessage, uint16 inActionParam, uint16 inParam)
 {
-    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype != TYPE_PC);
-
-    CCharEntity* PChar = (CCharEntity*)m_PBaseEntity;
-
-    SPECEFFECT speceffect = static_cast<SPECEFFECT>(spec);
-    REACTION   reaction   = static_cast<REACTION>(react);
-
-    ACTIONTYPE actiontype = ACTION_MAGIC_FINISH;
-    switch (action)
-    {
-        case 3:
-            actiontype = ACTION_WEAPONSKILL_FINISH;
-            break;
-        case 4:
-            actiontype = ACTION_MAGIC_FINISH;
-            break;
-        case 5:
-            actiontype = ACTION_ITEM_FINISH;
-            break;
-        case 6:
-            actiontype = ACTION_JOBABILITY_FINISH;
-            break;
-        case 8:
-            actiontype = ACTION_MAGIC_START;
-            break;
-        case 11:
-            actiontype = ACTION_MOBABILITY_FINISH;
-            break;
-        case 13:
-            actiontype = ACTION_PET_MOBABILITY_FINISH;
-            break;
-        case 14:
-            actiontype = ACTION_DANCE;
-            break;
-        case 15:
-            actiontype = ACTION_RUN_WARD_EFFUSION;
-            break;
-    }
+    SPECEFFECT speceffect = static_cast<SPECEFFECT>(inSpecEffect);
+    REACTION   reaction   = static_cast<REACTION>(inReaction);
+    ACTIONTYPE actiontype = static_cast<ACTIONTYPE>(inCategory);
 
     action_t Action;
 
-    Action.id       = PChar->id;
-    Action.actionid = 1;
-
-    // If you use ACTION_MOBABILITY_FINISH, the first param = anim, the second param = skill id.
-    if (actiontype == ACTION_MOBABILITY_FINISH || actiontype == ACTION_PET_MOBABILITY_FINISH)
-    {
-        CBattleEntity* PTarget = (CBattleEntity*)PChar->GetEntity(PChar->m_TargID);
-        if (PTarget == nullptr)
-        {
-            ShowError("Cannot use MOBABILITY_FINISH on a nullptr battle target! Target a mob! ");
-            return;
-        }
-        Action.id              = PTarget->id;
-        Action.actiontype      = actiontype;
-        actionList_t& list     = Action.getNewActionList();
-        list.ActionTargetID    = PChar->id;
-        actionTarget_t& target = list.getNewActionTarget();
-        target.animation       = anim;
-        target.param           = 10;
-        target.messageID       = message;
-        PTarget->loc.zone->PushPacket(PTarget, CHAR_INRANGE, new CActionPacket(Action));
-        return;
-    }
+    Action.id       = m_PBaseEntity->id;
+    Action.actionid = inActionParam;
 
     Action.actiontype      = actiontype;
     actionList_t& list     = Action.getNewActionList();
-    list.ActionTargetID    = PChar->id;
+    list.ActionTargetID    = inTargetID;
     actionTarget_t& target = list.getNewActionTarget();
-    target.animation       = anim;
-    target.param           = 10;
-    target.messageID       = message;
+    target.animation       = inAnimationID;
+    target.param           = inParam;
+    target.messageID       = inMessage;
     target.speceffect      = speceffect;
     target.reaction        = reaction;
 
-    if (actiontype == ACTION_MAGIC_START)
-    {
-        SPELLGROUP castType = static_cast<SPELLGROUP>(anim);
-        uint16     castAnim = spec;
-
-        Action.spellgroup = castType;
-        Action.actiontype = actiontype;
-        target.reaction   = REACTION::NONE;
-        target.speceffect = SPECEFFECT::NONE;
-        if (!castAnim)
-        {
-            target.animation = 0;
-        }
-        else
-        {
-            target.animation = castAnim;
-        }
-        target.param     = message;
-        target.messageID = 327; // starts casting
-        return;
-    }
-
-    PChar->loc.zone->PushPacket(PChar, CHAR_INRANGE_SELF, new CActionPacket(Action));
+    m_PBaseEntity->loc.zone->PushPacket(m_PBaseEntity, CHAR_INRANGE_SELF, new CActionPacket(Action));
 }
 
 /************************************************************************
@@ -1596,8 +1511,12 @@ void CLuaBaseEntity::lookAt(sol::object const& arg0, sol::object const& arg1, so
         point.z = position["z"];
     }
 
-    m_PBaseEntity->loc.p.rotation = worldAngle(m_PBaseEntity->loc.p, point);
-    m_PBaseEntity->updatemask |= UPDATE_POS;
+    // Avoid unpredictable results if we're too close.
+    if (!distanceWithin(m_PBaseEntity->loc.p, point, 0.1f, true))
+    {
+        m_PBaseEntity->loc.p.rotation = worldAngle(m_PBaseEntity->loc.p, point);
+        m_PBaseEntity->updatemask |= UPDATE_POS;
+    }
 }
 
 /************************************************************************
@@ -1625,27 +1544,25 @@ bool CLuaBaseEntity::atPoint(sol::variadic_args va)
 {
     XI_DEBUG_BREAK_IF(m_PBaseEntity == nullptr);
 
-    float posX = 0;
-    float posY = 0;
-    float posZ = 0;
+    position_t pos;
 
     if (va.get_type(0) == sol::type::number)
     {
-        posX = va.get<float>(0);
-        posY = va.get<float>(1);
-        posZ = va.get<float>(2);
+        pos.x = va.get<float>(0);
+        pos.y = va.get<float>(1);
+        pos.z = va.get<float>(2);
     }
     else if (va.get_type(0) == sol::type::table)
     {
         auto table = va.get<sol::table>(0);
         auto vec   = table.as<std::vector<float>>();
 
-        posX = vec[0];
-        posY = vec[1];
-        posZ = vec[2];
+        pos.x = vec[0];
+        pos.y = vec[1];
+        pos.z = vec[2];
     }
 
-    return m_PBaseEntity->loc.p.x == posX && m_PBaseEntity->loc.p.y == posY && m_PBaseEntity->loc.p.z == posZ;
+    return distanceWithin(m_PBaseEntity->loc.p, pos, 0.01f);
 }
 
 /************************************************************************
@@ -1683,19 +1600,47 @@ bool CLuaBaseEntity::pathThrough(sol::table const& pointsTable, sol::object cons
 {
     XI_DEBUG_BREAK_IF(m_PBaseEntity == nullptr);
 
-    std::vector<position_t> points;
-
-    // Grab points from array and store in points array
-    for (std::size_t i = 1; i < pointsTable.size(); i += 3)
-    {
-        points.push_back({ (float)pointsTable[i], (float)pointsTable[i + 1], (float)pointsTable[i + 2], 0, 0 });
-    }
-
     uint8 flags = 0;
 
     if (flagsObj.is<uint8>())
     {
         flags = flagsObj.as<uint8>();
+    }
+
+    std::vector<pathpoint_t> points;
+
+    if (flags & PATHFLAG_PATROL)
+    {
+        // Grab points from array and store in points array
+        float x, y, z = -1;
+        for (std::size_t i = 1; i <= pointsTable.size(); ++i)
+        {
+            sol::table  pointData = pointsTable[i];
+            pathpoint_t point;
+            x              = pointData.get_or("x", x);
+            y              = pointData.get_or("y", y);
+            z              = pointData.get_or("z", z);
+            point.position = { x, y, z, 0, 0 };
+
+            auto rotation     = pointData["rotation"];
+            point.setRotation = rotation.valid();
+            if (point.setRotation)
+            {
+                point.position.rotation = rotation.get<uint8>();
+            }
+
+            auto wait  = pointData["wait"];
+            point.wait = wait.valid() ? wait.get<uint32>() : 0;
+            points.push_back(std::move(point));
+        }
+    }
+    else
+    {
+        // Grab points from array and store in points array
+        for (std::size_t i = 1; i < pointsTable.size(); i += 3)
+        {
+            points.push_back({ { (float)pointsTable[i], (float)pointsTable[i + 1], (float)pointsTable[i + 2], 0, 0 }, 0 });
+        }
     }
 
     CBattleEntity* PBattle = (CBattleEntity*)m_PBaseEntity;
@@ -1734,8 +1679,7 @@ void CLuaBaseEntity::clearPath(sol::object const& pauseObj)
     {
         m_PBaseEntity->SetLocalVar("pauseNPCPathing", 1);
     }
-
-    if (PBattle->PAI->PathFind != nullptr)
+    else if (PBattle->PAI->PathFind != nullptr)
     {
         PBattle->PAI->PathFind->Clear();
     }
@@ -2229,6 +2173,7 @@ void CLuaBaseEntity::sendEmote(CLuaBaseEntity* target, uint8 emID, uint8 emMode)
  *  Example : player:worldAngle(target)
  *  Notes   : Target is... 0: east; 64: south; 128: west, 192: north
  *            Default angle is 255-based mob rotation value - NOT a 360 angle
+ *            CAREFUL! If the entities are too close, this can return unexpected results.
  ************************************************************************/
 
 int16 CLuaBaseEntity::getWorldAngle(sol::variadic_args va)
@@ -2277,6 +2222,7 @@ int16 CLuaBaseEntity::getWorldAngle(sol::variadic_args va)
  *            Returned angle is 255-based rotation value - NOT a 360 angle
  *            Return value is signed to indicate this shortest turn direction.
  *            Negative: counter-clockwise (left), Positive: clockwise (right)
+ *            CAREFUL! If the entities are too close, this can return unxpected results.
  ************************************************************************/
 
 int16 CLuaBaseEntity::getFacingAngle(CLuaBaseEntity const* target)
@@ -7099,6 +7045,28 @@ void CLuaBaseEntity::setMerits(uint8 numPoints)
 }
 
 /************************************************************************
+ *  Function: getSpentJobPoints()
+ *  Purpose : Returns the total value of all job points spent
+ *  Example : player:getSpentJobPoints()
+ *  Notes   :
+ ************************************************************************/
+uint16 CLuaBaseEntity::getSpentJobPoints()
+{
+    if (m_PBaseEntity->objtype == TYPE_PC)
+    {
+        CCharEntity* PChar = static_cast<CCharEntity*>(m_PBaseEntity);
+
+        if (PChar->GetMLevel() < 99) // account for Level Sync
+        {
+            return 0;
+        }
+        return PChar->PJobPoints->GetJobPointsSpent();
+    }
+
+    return 0;
+}
+
+/************************************************************************
  *  Function: getJobPointLevel()
  *  Purpose : Returns the current value a specific job point
  *  Example : player:getJobPointLevel(JP_MIGHTY_STRIKES_EFFECT)
@@ -7696,6 +7664,22 @@ int32 CLuaBaseEntity::addHP(int32 hpAdd)
     PBattle->StatusEffectContainer->DelStatusEffect(EFFECT_LULLABY);
 
     return result;
+}
+
+/************************************************************************
+ *  Function: addHPLeaveSleeping()
+ *  Purpose : Adds to the Hit Points of an Entity but does not wake it up
+ *  Example : player:addHPLeaveSleeping(500)
+ *  Notes   :
+ ************************************************************************/
+
+int32 CLuaBaseEntity::addHPLeaveSleeping(int32 hpAdd)
+{
+    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype == TYPE_NPC);
+
+    auto* PBattle = static_cast<CBattleEntity*>(m_PBaseEntity);
+
+    return PBattle->addHP(hpAdd);
 }
 
 /************************************************************************
@@ -12877,38 +12861,44 @@ uint8 CLuaBaseEntity::getModelSize()
  *  Function: setMobFlags()
  *  Purpose : Manually set Mob flags
  *  Example : player:setMobFlags(flags, targ:getID())
- *  Notes   : Currently only used through !setmobflags command
+ *  Example : mob:setMobFlags(flags)
+ *  Notes   : Used for changing Ul'xzomit babies' size and through !setmobflags command
  ************************************************************************/
 
-void CLuaBaseEntity::setMobFlags(uint32 flags, uint32 mobid)
+void CLuaBaseEntity::setMobFlags(uint32 flags, sol::object const& mobId)
 {
-    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype != TYPE_PC);
+    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype != TYPE_MOB && m_PBaseEntity->objtype != TYPE_PC);
 
-    CMobEntity* PMob = (CMobEntity*)zoneutils::GetEntity(mobid, TYPE_MOB);
-
-    if (PMob != nullptr)
+    if (mobId != sol::lua_nil)
     {
+        auto* PMob = static_cast<CMobEntity*>(zoneutils::GetEntity(mobId.as<uint32>(), TYPE_MOB));
+        if (PMob == nullptr)
+        {
+            ShowError("Could not find a monster with id %u to use for setMobFlags.", mobId.as<uint32>());
+            return;
+        }
+        PMob->setEntityFlags(flags);
+        PMob->updatemask |= UPDATE_HP;
+    }
+    else if (m_PBaseEntity->objtype == TYPE_MOB)
+    {
+        auto* PMob = static_cast<CMobEntity*>(m_PBaseEntity);
         PMob->setEntityFlags(flags);
         PMob->updatemask |= UPDATE_HP;
     }
     else
     {
-        CCharEntity*   PChar   = (CCharEntity*)m_PBaseEntity;
-        CBattleEntity* PTarget = (CBattleEntity*)PChar->GetEntity(PChar->m_TargID);
+        auto* PChar = static_cast<CCharEntity*>(m_PBaseEntity);
+        auto* PMob  = static_cast<CMobEntity*>(PChar->GetEntity(PChar->m_TargID, TYPE_MOB));
 
-        if (PTarget == nullptr)
+        if (PMob == nullptr)
         {
             ShowError("Must target a monster to use for setMobFlags ");
             return;
         }
-        else if (PTarget->objtype != TYPE_MOB)
-        {
-            ShowError("Battle target must be a monster to use setMobFlags ");
-            return;
-        }
 
-        ((CMobEntity*)PTarget)->setEntityFlags(flags);
-        PTarget->updatemask |= UPDATE_HP;
+        PMob->setEntityFlags(flags);
+        PMob->updatemask |= UPDATE_HP;
     }
 }
 
@@ -14767,6 +14757,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getMeritCount", CLuaBaseEntity::getMeritCount);
     SOL_REGISTER("setMerits", CLuaBaseEntity::setMerits);
 
+    SOL_REGISTER("getSpentJobPoints", CLuaBaseEntity::getSpentJobPoints);
     SOL_REGISTER("getJobPointLevel", CLuaBaseEntity::getJobPointLevel);
     SOL_REGISTER("addCapacityPoints", CLuaBaseEntity::addCapacityPoints);
     SOL_REGISTER("setCapacityPoints", CLuaBaseEntity::setCapacityPoints);
@@ -14802,6 +14793,8 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getMaxHP", CLuaBaseEntity::getMaxHP);
     SOL_REGISTER("getBaseHP", CLuaBaseEntity::getBaseHP);
     SOL_REGISTER("addHP", CLuaBaseEntity::addHP);
+    SOL_REGISTER("addHPLeaveSleeping", CLuaBaseEntity::addHPLeaveSleeping);
+
     SOL_REGISTER("setHP", CLuaBaseEntity::setHP);
     SOL_REGISTER("restoreHP", CLuaBaseEntity::restoreHP);
     SOL_REGISTER("delHP", CLuaBaseEntity::delHP);

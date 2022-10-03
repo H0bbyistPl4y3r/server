@@ -129,10 +129,12 @@ xi.msg.basic =
     JA_NO_EFFECT           = 156, -- <user> uses <ability>. No effect on <target>. (1 line msg)
     JA_MISS                = 158, -- <user> uses <ability>, but misses. (no name included)
     USES_JA_TAKE_DAMAGE    = 317, -- The <player> uses .. <target> takes .. points of damage.
+    JA_GAIN_EFFECT         = 266, -- <target> gains the effect of <ability>.
     JA_REMOVE_EFFECT_2     = 321, -- <user> uses <ability>. <target>'s <status> wears off.
     JA_NO_EFFECT_2         = 323, -- <user> uses <ability>. No effect on <target>. (2 line msg)
     JA_MISS_2              = 324, -- <user> uses <ability>, but misses <target>. (includes target name)
     JA_RECOVERS_MP         = 451, -- <user> uses <ability>. <target> regains <amount> MP.
+    JA_ATK_ENHANCED        = 285, -- <target>'s attacks are enhanced.
 
     -- Misc Other
     DEFEATS_TARG           = 6,   -- The <player> defeats <target>.
@@ -299,6 +301,7 @@ xi.msg.basic =
     -- PUP
     AUTO_OVERLOAD_CHANCE   = 798, -- The <pet>'s overload chance is <number>%.
     AUTO_OVERLOADED        = 799, -- The <pet>'s overload chance is <number>%. The <pet> is overloaded!
+    PROVOKE_SWITCH         = 418, -- The <actor> uses <action> on <target>. The <target> switches to <actor>!
 
     -- DNC
     NO_FINISHINGMOVES      = 524, -- You have not earned enough finishing moves to perform that action.

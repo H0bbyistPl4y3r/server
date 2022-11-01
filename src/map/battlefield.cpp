@@ -722,8 +722,22 @@ bool CBattlefield::Cleanup(time_point time, bool force)
         if (PChar)
         {
             RemoveEntity(PChar, leavecode);
+        }
+    }
+
+    // Remove all registered players as long as they're in the zone
+    for (auto id : m_RegisteredPlayers)
+    {
+        auto* PChar = GetZone()->GetCharByID(id);
+        if (PChar)
+        {
             PChar->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_CONFRONTATION, true);
             PChar->StatusEffectContainer->DelStatusEffect(EFFECT_LEVEL_RESTRICTION);
+
+            if (PChar->PPet)
+            {
+                PChar->PPet->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_CONFRONTATION, true);
+            }
         }
     }
 
@@ -921,7 +935,12 @@ void CBattlefield::handleDeath(CBaseEntity* PEntity)
 
                 if (group.deathCallback.valid())
                 {
-                    group.deathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity), group.deathCount);
+                    auto result = group.deathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity), group.deathCount);
+                    if (!result.valid())
+                    {
+                        sol::error err = result;
+                        ShowError("Error in battlefield %s group.death: %s", this->GetName(), err.what());
+                    }
                 }
 
                 if (group.allDeathCallback.valid() && group.deathCount >= group.mobIds.size())
@@ -939,13 +958,23 @@ void CBattlefield::handleDeath(CBaseEntity* PEntity)
 
                     if (deathCount == group.mobIds.size())
                     {
-                        group.allDeathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity));
+                        auto result = group.allDeathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity));
+                        if (!result.valid())
+                        {
+                            sol::error err = result;
+                            ShowError("Error in battlefield %s group.allDeath: %s", this->GetName(), err.what());
+                        }
                     }
                 }
 
                 if (group.randomDeathCallback.valid() && mobId == group.randomMobId)
                 {
-                    group.randomDeathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity));
+                    auto result = group.randomDeathCallback(CLuaBattlefield(this), CLuaBaseEntity(PEntity));
+                    if (!result.valid())
+                    {
+                        sol::error err = result;
+                        ShowError("Error in battlefield %s group.randomDeath: %s", this->GetName(), err.what());
+                    }
                 }
                 break;
             }

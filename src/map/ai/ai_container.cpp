@@ -26,6 +26,7 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include "../entities/charentity.h"
 #include "../entities/mobentity.h"
 #include "../packets/entity_animation.h"
+#include "../status_effect_container.h"
 #include "controllers/mob_controller.h"
 #include "controllers/pet_controller.h"
 #include "controllers/player_controller.h"
@@ -200,11 +201,19 @@ bool CAIContainer::Internal_Engage(uint16 targetid)
     if (entity)
     {
         //#TODO: remove m_battleTarget if possible (need to check disengage)
-        if (CanChangeState() || (GetCurrentState() && GetCurrentState()->IsCompleted()))
+        // Check if an entity can change to the attack state
+        // Allow entity with prevent action effect to very briefly switch to the attack state to be properly engaged
+        if (CanChangeState() || (GetCurrentState() && GetCurrentState()->IsCompleted()) || entity->StatusEffectContainer->HasPreventActionEffect())
         {
             if (ForceChangeState<CAttackState>(entity, targetid))
             {
                 entity->OnEngage(*static_cast<CAttackState*>(m_stateStack.top().get()));
+
+                // Resume being inactive if entity has a status effect preventing them from doing actions
+                if (entity->StatusEffectContainer->HasPreventActionEffect())
+                {
+                    entity->PAI->Inactive(0ms, false);
+                }
             }
         }
         return true;
@@ -217,7 +226,7 @@ bool CAIContainer::Internal_Cast(uint16 targetid, SpellID spellid)
     auto* entity = dynamic_cast<CBattleEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targetid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targetid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -260,7 +269,7 @@ bool CAIContainer::Internal_WeaponSkill(uint16 targid, uint16 wsid)
     auto* entity = dynamic_cast<CBattleEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -274,7 +283,7 @@ bool CAIContainer::Internal_MobSkill(uint16 targid, uint16 wsid)
     auto* entity = dynamic_cast<CMobEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -288,7 +297,7 @@ bool CAIContainer::Internal_PetSkill(uint16 targid, uint16 abilityid)
     auto* entity = dynamic_cast<CPetEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -302,7 +311,7 @@ bool CAIContainer::Internal_Ability(uint16 targetid, uint16 abilityid)
     auto* entity = dynamic_cast<CBattleEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targetid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targetid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -316,7 +325,7 @@ bool CAIContainer::Internal_RangedAttack(uint16 targetid)
     auto* entity = dynamic_cast<CBattleEntity*>(PEntity);
     if (entity)
     {
-        if (auto target = entity->GetEntity(targetid); target->PAI->IsUntargetable())
+        if (auto target = entity->GetEntity(targetid); target && target->PAI->IsUntargetable())
         {
             return false;
         }
@@ -520,11 +529,11 @@ bool CAIContainer::QueueEmpty()
     return ActionQueue.isEmpty();
 }
 
-bool CAIContainer::Internal_Despawn()
+bool CAIContainer::Internal_Despawn(bool instantDespawn)
 {
     if (!IsCurrentState<CDespawnState>() && !IsCurrentState<CRespawnState>())
     {
-        return ForceChangeState<CDespawnState>(PEntity);
+        return ForceChangeState<CDespawnState>(PEntity, instantDespawn);
     }
     return false;
 }

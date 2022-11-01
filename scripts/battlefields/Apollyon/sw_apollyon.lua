@@ -22,6 +22,7 @@ local content = Limbus:new({
     entryNpc         = '_127',
     requiredKeyItems = { xi.ki.COSMO_CLEANSE, xi.ki.RED_CARD, message = ID.text.YOU_INSERT_THE_CARD_POLISHED },
     name             = "SW_APOLLYON",
+    timeExtension   = 10,
 })
 
 function content:onBattlefieldRegister(player, battlefield)
@@ -103,7 +104,7 @@ content.paths =
     [ID.SW_APOLLYON.mob.DARK_ELEMENTAL[1]] =
     {
         { x = -611.0, y =  0.0, z = -376.0, wait = 7500 },
-        { x = -585.0, y =  -0.5,z = -365.0, wait = 7500 },
+        { x = -585.0, y = -0.5, z = -365.0, wait = 7500 },
     },
 
     [ID.SW_APOLLYON.mob.DARK_ELEMENTAL[2]] =

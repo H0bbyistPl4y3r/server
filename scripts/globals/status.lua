@@ -61,6 +61,33 @@ xi.job =
 }
 xi.MAX_JOB_TYPE = 23
 
+xi.jobNames =
+{
+    [ 0] = { "NONE", "None" },
+    [ 1] = { "WAR", "Warrior" },
+    [ 2] = { "MNK", "Monk" },
+    [ 3] = { "WHM", "White Mage" },
+    [ 4] = { "BLM", "Black Mage" },
+    [ 5] = { "RDM", "Red Mage" },
+    [ 6] = { "THF", "Thief" },
+    [ 7] = { "PLD", "Paladin" },
+    [ 8] = { "DRK", "Dark Knight" },
+    [ 9] = { "BST", "Beastmaster" },
+    [10] = { "BRD", "Bard" },
+    [11] = { "RNG", "Ranger" },
+    [12] = { "SAM", "Samurai" },
+    [13] = { "NIN", "Ninja" },
+    [14] = { "DRG", "Dragoon" },
+    [15] = { "SMN", "Summoner" },
+    [16] = { "BLU", "Blue Mage" },
+    [17] = { "COR", "Corsair" },
+    [18] = { "PUP", "Puppermaster" },
+    [19] = { "DNC", "Dancer" },
+    [20] = { "SCH", "Scholar" },
+    [21] = { "GEO", "Geomancer" },
+    [22] = { "RUN", "Rune Fencer" },
+}
+
 -----------------------------------
 -- Race IDs
 -----------------------------------
@@ -113,8 +140,9 @@ xi.subEffect =
     DISPEL              = 8,   -- Verified with video of Lockheart Greatsword proc.
     SLEEP               = 9,   -- 110010       19
     POISON              = 10,  -- 1-01010      21
-    PARALYSIS           = 11,
-    AMNESIA             = 11,  -- Verified uses same animation as para
+    ADDLE               = 11,  -- Verified shared group 1
+    AMNESIA             = 11,  -- Verified shared group 1
+    PARALYSIS           = 11,  -- Verified shared group 1
     BLIND               = 12,  -- 1-00110      25
     SILENCE             = 13,
     PETRIFY             = 14,
@@ -122,13 +150,14 @@ xi.subEffect =
     STUN                = 16,
     CURSE               = 17,
     DEFENSE_DOWN        = 18,  -- 1-01001      37
-    EVASION_DOWN        = 18,  -- Same subeffect as DEFENSE_DOWN
-    ATTACK_DOWN         = 18,  -- Same subeffect as DEFENSE_DOWN
+    EVASION_DOWN        = 18,  -- Verified shared group 2
+    ATTACK_DOWN         = 18,  -- Verified shared group 2
+    SLOW                = 18,  -- Verified shared group 2
     DEATH               = 19,
     SHIELD              = 20,
     HP_DRAIN            = 21,  -- 1-10101      43
-    MP_DRAIN            = 22,  -- This is correct animation
-    TP_DRAIN            = 22,  -- Verified this should look exactly like Aspir Samba.
+    MP_DRAIN            = 22,  -- Verified shared group 3
+    TP_DRAIN            = 22,  -- Verified shared group 3
     HASTE               = 23,
     -- There are no additional attack effect animations beyond 23. Some effects share subeffect/animations.
 
@@ -2417,7 +2446,7 @@ xi.auraTarget =
 {
     ALLIES  = 0,
     ENEMIES = 1,
-};
+}
 
 -----------------------------------
 -- MOBMODs
@@ -2443,10 +2472,10 @@ xi.mobMod =
     SEVERE_SPELL_CHANCE = 13, -- % chance to use a severe spell like death or impact
     SKILL_LIST          = 14, -- uses given mob skill list
     MUG_GIL             = 15, -- amount gil carried for mugging
-    -- 16 Available for use
+    DETECTION           = 16, -- Overrides mob family's detection method. In order to set to override to none an unused bit must be set such as DETECT_NONE1.
     NO_DESPAWN          = 17, -- do not despawn when too far from spawn. Gob Diggers have this.
     VAR                 = 18, -- temp var for whatever. Gets cleared on spawn
-    -- 19 Available for use
+    CAN_SHIELD_BLOCK    = 19, -- toggle shield use for mobs without physical shields (trusts)
     TP_USE_CHANCE       = 20, -- % chance to use tp
     PET_SPELL_LIST      = 21, -- set pet spell list
     NA_CHANCE           = 22, -- % chance to cast -na
@@ -2499,6 +2528,7 @@ xi.mobMod =
     NO_LINK             = 69, -- If set, mob cannot link until unset.
     NO_REST             = 70, -- Mob cannot regain hp (e.g. re-burrowing antlions during ENM).
     LEADER              = 71, -- Used for mobs that follow a defined "leader", such as Ul'xzomit mobs.
+    MAGIC_RANGE         = 72, -- magic aggro range
 }
 
 -----------------------------------
@@ -2809,6 +2839,24 @@ xi.behavior =
 }
 
 -----------------------------------
+-- Detects bits
+-----------------------------------
+
+xi.detects =
+{
+    NONE        = 0x000,
+    SIGHT       = 0x001,
+    HEARING     = 0x002,
+    LOWHP       = 0x004,
+    NONE1       = 0x008,
+    NONE2       = 0x010,
+    MAGIC       = 0x020,
+    WEAPONSKILL = 0x040,
+    JOBABILITY  = 0x080,
+    SCENT       = 0x100,
+}
+
+-----------------------------------
 -- Roam flags
 -----------------------------------
 
@@ -2865,7 +2913,7 @@ xi.animation =
 {
     NONE                    = 0,
     ATTACK                  = 1,
-    -- Death 2              = 2,
+    DESPAWN                 = 2,
     DEATH                   = 3,
     CHOCOBO                 = 5,
     FISHING                 = 6,
@@ -3060,7 +3108,7 @@ xi.pathflag =
     REVERSE  = 0x04, -- reverse the path
     SCRIPT   = 0x08, -- don't overwrite this path before completion (except via another script)
     SLIDE    = 0x10,  -- Slide to end point if close enough (so no over shoot)
-};
+}
 
 -- Check Lua item with:
 -- local isEx = bit.band(item:getFlag(), xi.itemFlag.EX) ~= 0

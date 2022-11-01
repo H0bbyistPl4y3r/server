@@ -43,6 +43,22 @@ function utils.bind(func, ...)
     end
 end
 
+-- Creates a slice of an input table and returns a new table
+function utils.slice(inputTable, first, last, step)
+    local slicedTable = {}
+    first = first or 1
+    last = last or #inputTable
+    step = step or 1
+    local position = 1
+
+    for i = first, last, step do
+        slicedTable[position] = inputTable[i]
+        position = position + 1
+    end
+
+    return slicedTable
+end
+
 -- Shuffles a table and returns a new table containing the randomized result.
 function utils.shuffle(inputTable)
     local shuffledTable = {}
@@ -123,6 +139,10 @@ function utils.uniqueRandomTable(minVal, maxVal, numEntries)
     end
 
     return resultTable
+end
+
+function utils.chance(likelihood)
+    return math.random(100) <= likelihood
 end
 
 function utils.clamp(input, min_val, max_val)
@@ -228,7 +248,7 @@ function utils.takeShadows(target, dmg, shadowbehav)
             end
         end
 
-        target:setMod(shadowType, shadowsLeft);
+        target:setMod(shadowType, shadowsLeft)
 
         if shadowsLeft <= 0 then
             target:delStatusEffect(xi.effect.COPY_IMAGE)
@@ -342,7 +362,7 @@ function utils.getMobSkillLvl(rank, level)
              return 153 + (level - 50) * 5
          end
          if rank == 2 then
-             return 147 + (level - 50) *4.9
+             return 147 + (level - 50) * 4.9
          end
          if rank == 3 then
              return 136 + (level - 50) * 4.8
@@ -522,7 +542,7 @@ function utils.randomEntryIdx(t)
     local keys = {}
 
     for key, _ in pairs(t) do
-        keys[#keys+1] = key
+        keys[#keys + 1] = key
     end
 
     local index = keys[math.random(1, #keys)]

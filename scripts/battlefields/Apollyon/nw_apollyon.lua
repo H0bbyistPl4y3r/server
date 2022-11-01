@@ -22,6 +22,7 @@ local content = Limbus:new({
     entryNpc         = '_127',
     requiredKeyItems = { xi.ki.COSMO_CLEANSE, xi.ki.RED_CARD, message = ID.text.YOU_INSERT_THE_CARD_POLISHED },
     name             = "NW_APOLLYON",
+    timeExtension   = 5,
 })
 
 function content:onBattlefieldInitialise(battlefield)
@@ -36,7 +37,7 @@ function content:onBattlefieldInitialise(battlefield)
     end
 end
 
-local enpowerBoss = function(battlefield, mobs)
+local empowerBoss = function(battlefield, mobs)
     local boss = mobs[1]
     boss:addMod(xi.mod.ATTP, 100)
     boss:addMod(xi.mod.ACC, 50)
@@ -100,8 +101,8 @@ content.paths =
 
     [ID.NW_APOLLYON.mob.ZLATOROG] =
     {
-        { x = -384.0, y = 0.0, z = 268.0, wait = 5000 },
-        { x = -336.0, y = -0.5,z =  320.0, wait = 5000 },
+        { x = -384.0, y = 0.0,  z = 268.0, wait = 5000 },
+        { x = -336.0, y = -0.5, z = 320.0, wait = 5000 },
     },
 
     [ID.NW_APOLLYON.mob.MOUNTAIN_BUFFALO[1]] =
@@ -124,8 +125,8 @@ content.paths =
 
     [ID.NW_APOLLYON.mob.MOUNTAIN_BUFFALO[4]] =
     {
-        { x = -334.0, y = 0.0, z = 233.0, wait = 5000 },
-        { x = -345.0, y = -1.0,z =  246.0, wait = 5000 },
+        { x = -334.0, y = 0.0,  z = 233.0, wait = 5000 },
+        { x = -345.0, y = -1.0, z = 246.0, wait = 5000 },
     },
 
     [ID.NW_APOLLYON.mob.MOUNTAIN_BUFFALO[5]] =
@@ -243,7 +244,7 @@ content.groups =
             [xi.mod.BINDRES] = -25,
         },
 
-        setup = enpowerBoss,
+        setup = empowerBoss,
         death = function(battlefield, mob, count)
             xi.limbus.spawnFrom(mob, ID.NW_APOLLYON.npc.ITEM_CRATES[1])
         end,
@@ -277,7 +278,7 @@ content.groups =
             [xi.mod.SLEEPRES] = -25,
         },
 
-        setup = enpowerBoss,
+        setup = empowerBoss,
         death = function(battlefield, mob, count)
             xi.limbus.spawnFrom(mob, ID.NW_APOLLYON.npc.ITEM_CRATES[2])
         end,
@@ -305,7 +306,7 @@ content.groups =
     {
         mobs = { "Millenary_Mossback" },
         stationary = true,
-        setup = enpowerBoss,
+        setup = empowerBoss,
         death = function(battlefield, mob, count)
             xi.limbus.spawnFrom(mob, ID.NW_APOLLYON.npc.ITEM_CRATES[3])
         end,
@@ -339,7 +340,7 @@ content.groups =
             [xi.mod.BINDRES] = -25,
         },
 
-        setup = enpowerBoss,
+        setup = empowerBoss,
         death = function(battlefield, mob, count)
             xi.limbus.spawnFrom(mob, ID.NW_APOLLYON.npc.ITEM_CRATES[4])
         end,
@@ -370,9 +371,10 @@ content.groups =
         {
             [xi.mobMod.ALLI_HATE] = 50,
             [xi.mobMod.MAGIC_COOL] = 30,
+            [xi.mobMod.SEVERE_SPELL_CHANCE] = 100,
         },
 
-        setup = enpowerBoss,
+        setup = empowerBoss,
         death = function(battlefield, mob, count)
             npcUtil.showCrate(GetNPCByID(ID.NW_APOLLYON.npc.LOOT_CRATE))
         end,

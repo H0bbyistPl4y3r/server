@@ -284,7 +284,7 @@ function error(player, msg)
 end
 
 local function getBytePos(s, needle)
-    for i=1, string.len(s), 1 do
+    for i = 1, string.len(s), 1 do
         if (string.byte(s, i) == needle) then
             return i
         end
@@ -320,7 +320,7 @@ function onTrigger(player, bytes)
     else
         target = string.sub(bytes, 1, sppos-1)
         targ = GetPlayerByName(target)
-        if (targ == nil) then
+        if targ == nil then
             error(player, string.format( "Player named '%s' not found!", target ))
             return
         end
@@ -346,7 +346,7 @@ function onTrigger(player, bytes)
             return
         end
     else
-        local dest = string.sub(bytes, sppos+1)
+        local dest = string.sub(bytes, sppos + 1)
         if (tonumber(dest) ~= nil) then
             -- destination is a zone ID.
             zone = tonumber(dest)

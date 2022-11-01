@@ -415,7 +415,7 @@ bool CCharEntity::isNewPlayer() const
 
 void CCharEntity::setPetZoningInfo()
 {
-    if (PPet->objtype == TYPE_PET)
+    if (PPet && PPet->objtype == TYPE_PET)
     {
         switch (((CPetEntity*)PPet)->getPetType())
         {
@@ -436,6 +436,7 @@ void CCharEntity::setPetZoningInfo()
             default:
                 break;
         }
+        petZoningInfo.respawnPet = true;
     }
 }
 
@@ -942,8 +943,6 @@ bool CCharEntity::OnAttack(CAttackState& state, action_t& action)
     auto* controller{ static_cast<CPlayerController*>(PAI->GetController()) };
     controller->setLastAttackTime(server_clock::now());
     auto ret = CBattleEntity::OnAttack(state, action);
-
-    // auto* PTarget = static_cast<CBattleEntity*>(state.GetTarget());
 
     return ret;
 }

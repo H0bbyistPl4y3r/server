@@ -34,7 +34,13 @@ local onMobRoamAction
 -- @table followOptions
 -----------------------------------
 function xi.follow.follow(mob, leader, options)
-    if not leader:isSpawned() or not mob:isSpawned() or leader:getZoneID() ~= mob:getZoneID() then return false end
+    if
+        not leader:isSpawned() or
+        not mob:isSpawned() or
+        leader:getZoneID() ~= mob:getZoneID()
+    then
+        return false
+    end
 
     options = options or {}
     options.followDistance = options.followDistance or 8.0
@@ -94,7 +100,9 @@ end
 function xi.follow.clearFollowers(leader)
     local leaderId = leader:getID()
 
-    if not leaderToFollowersMap[leaderId] then return end
+    if not leaderToFollowersMap[leaderId] then
+        return
+    end
 
     for _, follower in ipairs(leaderToFollowersMap[leaderId]) do
         local followerId = follower:getID()
@@ -116,7 +124,9 @@ function xi.follow.stopFollowing(follower)
 end
 
 local function getAveragePos(mobsPos)
-    if #mobsPos == 0 then return nil end
+    if #mobsPos == 0 then
+        return nil
+    end
 
     local count = #mobsPos
     local x = 0
@@ -158,12 +168,19 @@ function onMobRoamAction(follower)
     local followerId = follower:getID()
     local leader = followerToLeaderMap[followerId]
 
-    if not follower:isSpawned() or not leader or not leader:isSpawned() or leader:getZoneID() ~= follower:getZoneID() then
+    if
+        not follower:isSpawned() or
+        not leader or
+        not leader:isSpawned() or
+        leader:getZoneID() ~= follower:getZoneID()
+    then
         xi.follow.stopFollowing(follower)
         return
     end
 
-    if follower:isFollowingPath() then return end
+    if follower:isFollowingPath() then
+        return
+    end
 
     local options = followerOptions[followerId]
     local leaderPos = leader:getPos()
@@ -209,12 +226,13 @@ end
 -- Similar to xi.follow.follow(), except the followers will fan out evenly around the target.
 -- If requiredAngle is provided, that angle (relative to the target's facing) will be kept by one of the followers.
 function xi.follow.bodyguard(mob, target, followDistance, requiredAngle, pathingFlags)
-
 end
 
 function xi.follow.getFollowers(leader)
     local followers = leaderToFollowersMap[leader:getID()]
-    if not followers or #followers == 0 then return end
+    if not followers or #followers == 0 then
+        return
+    end
 
     local clone = {}
     for _, follower in ipairs(followers) do

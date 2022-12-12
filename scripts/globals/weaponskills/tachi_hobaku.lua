@@ -18,7 +18,6 @@ require("scripts/globals/weaponskills")
 local weaponskillObject = {}
 
 weaponskillObject.onUseWeaponSkill = function(player, target, wsID, tp, primary, action, taChar)
-
     local params = {}
     params.numHits = 1
     params.ftp100 = 1 params.ftp200 = 1 params.ftp300 = 1
@@ -35,13 +34,13 @@ weaponskillObject.onUseWeaponSkill = function(player, target, wsID, tp, primary,
     local damage, criticalHit, tpHits, extraHits = doPhysicalWeaponskill(player, target, wsID, params, tp, action, primary, taChar)
 
     local chance = (tp - 1000) * applyResistanceAddEffect(player, target, xi.magic.ele.LIGHTNING, 0) > math.random() * 150
-    if (damage > 0 and chance) then
-        if (target:hasStatusEffect(xi.effect.STUN) == false) then
+    if damage > 0 and chance then
+        if not target:hasStatusEffect(xi.effect.STUN) then
             target:addStatusEffect(xi.effect.STUN, 1, 0, 4)
         end
     end
-    return tpHits, extraHits, criticalHit, damage
 
+    return tpHits, extraHits, criticalHit, damage
 end
 
 return weaponskillObject

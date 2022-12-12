@@ -15,9 +15,8 @@ function error(player, msg)
 end
 
 function onTrigger(player, amount, target)
-
     -- validate amount
-    if (amount == nil or amount < 1) then
+    if amount == nil or amount < 1 then
         error(player, "Invalid amount of gil.")
         return
     end
@@ -37,5 +36,4 @@ function onTrigger(player, amount, target)
     -- give gil to target
     targ:addGil(amount)
     player:PrintToPlayer(string.format("Gave %i gil to %s.  They now have %i gil.", amount, targ:getName(), targ:getGil()))
-
 end

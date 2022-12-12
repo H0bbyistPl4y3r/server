@@ -1338,6 +1338,7 @@ void CBattleEntity::Spawn()
     HideName(false);
     CBaseEntity::Spawn();
     m_OwnerID.clean();
+    setBattleID(0);
 }
 
 void CBattleEntity::Die()
@@ -1980,8 +1981,8 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
         }
     }
 
-    PAI->EventHandler.triggerListener("ATTACK", CLuaBaseEntity(this), CLuaBaseEntity(PTarget), &action);
-    PTarget->PAI->EventHandler.triggerListener("ATTACKED", CLuaBaseEntity(PTarget), CLuaBaseEntity(this), &action);
+    PAI->EventHandler.triggerListener("ATTACK", CLuaBaseEntity(this), CLuaBaseEntity(PTarget), CLuaAction(&action));
+    PTarget->PAI->EventHandler.triggerListener("ATTACKED", CLuaBaseEntity(PTarget), CLuaBaseEntity(this), CLuaAction(&action));
     /////////////////////////////////////////////////////////////////////////////////////////////
     // End of attack loop
     /////////////////////////////////////////////////////////////////////////////////////////////
@@ -2031,6 +2032,16 @@ void CBattleEntity::SetBattleStartTime(time_point time)
 duration CBattleEntity::GetBattleTime()
 {
     return server_clock::now() - m_battleStartTime;
+}
+
+void CBattleEntity::setBattleID(uint16 battleID)
+{
+    m_battleID = battleID;
+}
+
+uint16 CBattleEntity::getBattleID()
+{
+    return m_battleID;
 }
 
 void CBattleEntity::Tick(time_point /*unused*/)

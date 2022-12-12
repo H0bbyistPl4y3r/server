@@ -23750,6 +23750,8 @@ INSERT INTO `mob_droplist` VALUES (2854,2,0,1000,1455,0);      -- One Byne Bill 
 -- ZoneID: 145 - Zhuu Buxu The Silent
 INSERT INTO `mob_droplist` VALUES (2855,0,0,1000,12298,@ALWAYS); -- Parana Shield (Always, 100%)
 
+-- ZoneID:  37 - Goblin Slaughterman
+-- ZoneID:  37 - Moblin Dustman
 -- ZoneID:  37 - Telchines Bard
 -- ZoneID:  37 - Telchines White Mage
 -- ZoneID:  37 - Telchines Dragoon
@@ -23778,13 +23780,17 @@ INSERT INTO `mob_droplist` VALUES (2855,0,0,1000,12298,@ALWAYS); -- Parana Shiel
 -- ZoneID:  38 - Borametz
 INSERT INTO `mob_droplist` VALUES (2856,0,0,1000,1875,300); -- Ancient Beastcoin (30.0%)
 
--- ZoneID:  37 - Fire Elemental
--- ZoneID:  37 - Ice Elemental
--- ZoneID:  37 - Air Elemental
--- ZoneID:  37 - Earth Elemental
--- ZoneID:  37 - Thunder Elemental
--- ZoneID:  37 - Water Elemental
--- ZoneID:  37 - Dark Elemental
+-- ZoneID:  37 - Praetorian Guard Cccxi
+-- ZoneID:  37 - Praetorian Guard Ccxx
+-- ZoneID:  37 - Praetorian Guard Cxlviii
+-- ZoneID:  37 - Praetorian Guard Lxxiii
+-- ZoneID:  37 - Fire Elemental (Eastern)
+-- ZoneID:  37 - Ice Elemental (Eastern)
+-- ZoneID:  37 - Air Elemental (Eastern)
+-- ZoneID:  37 - Earth Elemental (Eastern)
+-- ZoneID:  37 - Thunder Elemental (Eastern)
+-- ZoneID:  37 - Water Elemental (Eastern)
+-- ZoneID:  37 - Dark Elemental (Eastern)
 -- ZoneID:  38 - Zlatorog
 -- ZoneID:  38 - Mountain Buffalo
 -- ZoneID:  38 - Thiazi
@@ -23792,12 +23798,18 @@ INSERT INTO `mob_droplist` VALUES (2856,0,0,1000,1875,300); -- Ancient Beastcoin
 -- ZoneID:  38 - Cornu
 INSERT INTO `mob_droplist` VALUES (2857,0,0,1000,1875,400); -- Ancient Beastcoin (40.0%)
 
--- ZoneID:  37 - Goblin Slaughterman
--- ZoneID:  37 - Moblin Dustman
--- ZoneID:  37 - Praetorian Guard Cccxi
--- ZoneID:  37 - Praetorian Guard Ccxx
--- ZoneID:  37 - Praetorian Guard Cxlviii
--- ZoneID:  37 - Praetorian Guard Lxxiii
+-- ZoneID:  37 - Skadi
+-- ZoneID:  37 - Thrym
+-- ZoneID:  37 - Beli
+-- ZoneID:  37 - Kari
+-- ZoneID:  37 - Kindred Warrior
+-- ZoneID:  37 - Kindred Dark Knight
+-- ZoneID:  37 - Kindred Summoner
+-- ZoneID:  37 - Kindred Black Mage
+-- ZoneID:  37 - Cryptonberry Charmer
+-- ZoneID:  37 - Cryptonberry Skulker
+-- ZoneID:  37 - Cryptonberry Abductor
+-- ZoneID:  37 - Cryptonberry Designator
 -- ZoneID:  38 - Millenary Mossback
 -- ZoneID:  38 - Apollyon Scavenger
 -- ZoneID:  38 - Cynoprosopi
@@ -23812,18 +23824,6 @@ INSERT INTO `mob_droplist` VALUES (2858,0,0,1000,1875,500); -- Ancient Beastcoin
 INSERT INTO `mob_droplist` VALUES (2859,0,0,1000,1875,700); -- Ancient Beastcoin (70.0%)
 
 -- ZoneID:  37 - Mystic_Avatar (Eastern Tower)
--- ZoneID:  37 - Skadi
--- ZoneID:  37 - Thrym
--- ZoneID:  37 - Beli
--- ZoneID:  37 - Kari
--- ZoneID:  37 - Kindred Warrior
--- ZoneID:  37 - Kindred Dark Knight
--- ZoneID:  37 - Kindred Summoner
--- ZoneID:  37 - Kindred Black Mage
--- ZoneID:  37 - Cryptonberry Charmer
--- ZoneID:  37 - Cryptonberry Skulker
--- ZoneID:  37 - Cryptonberry Abductor
--- ZoneID:  37 - Cryptonberry Designator
 -- ZoneID:  38 - Arboricole Hornet
 -- ZoneID:  38 - Arboricole Raven
 -- ZoneID:  38 - Arboricole Opo-Opo
@@ -23839,23 +23839,6 @@ INSERT INTO `mob_droplist` VALUES (2859,0,0,1000,1875,700); -- Ancient Beastcoin
 -- ZoneID:  38 - Cronos
 INSERT INTO `mob_droplist` VALUES (2860,0,0,1000,1875,800); -- Ancient Beastcoin (80.0%)
 
--- ZoneID:  37 - Grognard Mesmerizer
--- ZoneID:  37 - Grognard Footsoldier
--- ZoneID:  37 - Grognard Predator
--- ZoneID:  37 - Grognard Neckchopper
--- ZoneID:  37 - Grognard Grappler
--- ZoneID:  37 - Grognard Impaler
--- ZoneID:  37 - Star Ruby Quadav
--- ZoneID:  37 - Whitegold Quadav
--- ZoneID:  37 - Wootz Quadav
--- ZoneID:  37 - Star Sapphire Quadav
--- ZoneID:  37 - Lightsteel Quadav
--- ZoneID:  37 - Yagudo Archpriest
--- ZoneID:  37 - Yagudo Disciplinant
--- ZoneID:  37 - Yagudo Kapellmeister
--- ZoneID:  37 - Yagudo Knight Templar
--- ZoneID:  37 - Yagudo Prelatess
--- ZoneID:  37 - Yagudo Eradicator
 -- ZoneID:  38 - Air Elemental
 -- ZoneID:  38 - Dark Elemental
 -- ZoneID:  38 - Earth Elemental
@@ -23869,9 +23852,6 @@ INSERT INTO `mob_droplist` VALUES (2860,0,0,1000,1875,800); -- Ancient Beastcoin
 -- ZoneID:  38 - Sirin
 INSERT INTO `mob_droplist` VALUES (2861,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
 
--- ZoneID:  37 - Goblin Warlord
--- ZoneID:  37 - Goblin Fencer
--- ZoneID:  37 - Goblin Theurgist
 -- ZoneID:  37 - Temenos Aern Pld
 -- ZoneID:  37 - Temenos Aern Pld
 -- ZoneID:  37 - Temenos Aern Nin
@@ -23913,13 +23893,6 @@ INSERT INTO `mob_droplist` VALUES (2862,0,0,1000,1875,@ALWAYS); -- Ancient Beast
 -- ZoneID:  37 - Abyssdweller Jhabdebb
 -- ZoneID:  37 - Orichalcum Quadav
 -- ZoneID:  37 - Pee Qoho The Python
--- ZoneID:  37 - Light Elemental
--- ZoneID:  37 - Airi
--- ZoneID:  37 - Temenos Cleaner
--- ZoneID:  37 - Iruci
--- ZoneID:  37 - Temenos Weapon
--- ZoneID:  37 - Enhanced Dragon
--- ZoneID:  37 - Enhanced Ahriman
 -- ZoneID:  38 - Kronprinz Behemoth
 INSERT INTO `mob_droplist` VALUES (2863,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
 INSERT INTO `mob_droplist` VALUES (2863,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
@@ -25572,6 +25545,9 @@ INSERT INTO `mob_droplist` VALUES (3138,0,0,1000,1875,@ALWAYS); -- Ancient Beast
 INSERT INTO `mob_droplist` VALUES (3138,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
 INSERT INTO `mob_droplist` VALUES (3138,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
 
+-- ZoneID:  37 - Goblin Warlord
+-- ZoneID:  37 - Goblin Fencer
+-- ZoneID:  37 - Goblin Theurgist
 -- ZoneID:  38 - Apollyon Demon Blm
 -- ZoneID:  38 - Apollyon Demon Pld
 -- ZoneID:  38 - Apollyon Demon Drk
@@ -26809,6 +26785,63 @@ INSERT INTO `mob_droplist` VALUES (3232,0,0,1000,1875,@ALWAYS); -- Ancient Beast
 INSERT INTO `mob_droplist` VALUES (3232,0,0,1000,1875,@UNCOMMON); -- Ancient Beastcoin (Uncommon, 10%)
 INSERT INTO `mob_droplist` VALUES (3232,0,0,1000,1875,@UNCOMMON); -- Ancient Beastcoin (Uncommon, 10%)
 INSERT INTO `mob_droplist` VALUES (3232,0,0,1000,1875,@UNCOMMON); -- Ancient Beastcoin (Uncommon, 10%)
+
+-- ZoneID:  37 - Airi
+-- ZoneID:  37 - Temenos Cleaner
+-- ZoneID:  37 - Iruci
+-- ZoneID:  37 - Temenos Weapon
+-- ZoneID:  37 - Enhanced Dragon
+-- ZoneID:  37 - Enhanced Ahriman
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+INSERT INTO `mob_droplist` VALUES (3233,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+
+-- ZoneID:  37 - Fire Elemental
+-- ZoneID:  37 - Ice Elemental
+-- ZoneID:  37 - Air Elemental
+-- ZoneID:  37 - Earth Elemental
+-- ZoneID:  37 - Thunder Elemental
+-- ZoneID:  37 - Water Elemental
+-- ZoneID:  37 - Dark Elemental
+-- ZoneID:  37 - Mystic_Avatar
+INSERT INTO `mob_droplist` VALUES (3234,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3234,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+INSERT INTO `mob_droplist` VALUES (3234,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+
+-- ZoneID:  37 - Light Elemental
+-- ZoneID:  37 - Mystic_Avatar (Carbuncle)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+INSERT INTO `mob_droplist` VALUES (3235,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+
+-- ZoneID:  37 - Grognard Mesmerizer
+-- ZoneID:  37 - Grognard Footsoldier
+-- ZoneID:  37 - Grognard Predator
+-- ZoneID:  37 - Grognard Neckchopper
+-- ZoneID:  37 - Grognard Grappler
+-- ZoneID:  37 - Grognard Impaler
+-- ZoneID:  37 - Star Ruby Quadav
+-- ZoneID:  37 - Whitegold Quadav
+-- ZoneID:  37 - Wootz Quadav
+-- ZoneID:  37 - Star Sapphire Quadav
+-- ZoneID:  37 - Lightsteel Quadav
+-- ZoneID:  37 - Yagudo Archpriest
+-- ZoneID:  37 - Yagudo Disciplinant
+-- ZoneID:  37 - Yagudo Kapellmeister
+-- ZoneID:  37 - Yagudo Knight Templar
+-- ZoneID:  37 - Yagudo Prelatess
+-- ZoneID:  37 - Yagudo Eradicator
+INSERT INTO `mob_droplist` VALUES (3236,0,0,1000,1875,@ALWAYS); -- Ancient Beastcoin (Always, 100%)
+INSERT INTO `mob_droplist` VALUES (3236,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
+INSERT INTO `mob_droplist` VALUES (3236,0,0,1000,1875,@VCOMMON); -- Ancient Beastcoin (Very Common, 24%)
 
 /*!40000 ALTER TABLE `mob_droplist` ENABLE KEYS */;
 UNLOCK TABLES;

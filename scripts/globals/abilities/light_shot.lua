@@ -11,7 +11,10 @@ local abilityObject = {}
 abilityObject.onAbilityCheck = function(player, target, ability)
     --ranged weapon/ammo: You do not have an appropriate ranged weapon equipped.
     --no card: <name> cannot perform that action.
-    if player:getWeaponSkillType(xi.slot.RANGED) ~= xi.skill.MARKSMANSHIP or player:getWeaponSkillType(xi.slot.AMMO) ~= xi.skill.MARKSMANSHIP then
+    if
+        player:getWeaponSkillType(xi.slot.RANGED) ~= xi.skill.MARKSMANSHIP or
+        player:getWeaponSkillType(xi.slot.AMMO) ~= xi.skill.MARKSMANSHIP
+    then
         return 216, 0
     end
 
@@ -37,11 +40,13 @@ abilityObject.onUseAbility = function(player, target, ability)
     local effects = {}
 
     local dia = target:getStatusEffect(xi.effect.DIA)
+
     if dia ~= nil then
         table.insert(effects, dia)
     end
 
     local threnody = target:getStatusEffect(xi.effect.THRENODY)
+
     if threnody ~= nil and threnody:getSubPower() == xi.mod.DARK_MEVA then
         table.insert(effects, threnody)
     end
@@ -61,6 +66,7 @@ abilityObject.onUseAbility = function(player, target, ability)
         subpower = subpower * 1.5
         target:delStatusEffectSilent(effectId)
         target:addStatusEffect(effectId, power, tick, duration, subId, subpower, tier)
+
         local newEffect = target:getStatusEffect(effectId)
         newEffect:setStartTime(startTime)
     end

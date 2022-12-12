@@ -145,6 +145,7 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
 
         chance = xi.additionalEffect.levelCorrection(defender:getMainLvl(), attacker:getMainLvl(), chance)
     end
+
     --------------------------------------
 
     if addType == procType.DAMAGE then
@@ -179,7 +180,10 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
         attacker:addMP(magicPoints)
         msgParam = magicPoints
 
-    elseif addType == procType.HP_DRAIN or (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 1) then
+    elseif
+        addType == procType.HP_DRAIN or
+        (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 1)
+    then
         damage = xi.additionalEffect.calcDamage(attacker, element, defender, damage)
 
         if damage > defender:getHP() then
@@ -191,7 +195,10 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
         defender:addHP(-damage)
         attacker:addHP(damage)
 
-    elseif addType == procType.MP_DRAIN or (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 2) then
+    elseif
+        addType == procType.MP_DRAIN or
+        (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 2)
+    then
         damage = xi.additionalEffect.calcDamage(attacker, element, defender, damage)
 
         if damage > defender:getMP() then
@@ -203,7 +210,10 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
         defender:addMP(-damage)
         attacker:addMP(damage)
 
-    elseif addType == procType.TP_DRAIN or (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 3) then
+    elseif
+        addType == procType.TP_DRAIN or
+        (addType == procType.HPMPTP_DRAIN and math.random(1, 3) == 3)
+    then
         damage = xi.additionalEffect.calcDamage(attacker, element, defender, damage)
 
         if damage > defender:getTP() then
@@ -241,7 +251,10 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
             msgParam = 0
         elseif addStatus == xi.effect.BLINK then -- BLINK http://www.ffxiah.com/item/18830/gusterion
             -- Does not stack with or replace other shadows
-            if attacker:hasStatusEffect(xi.effect.BLINK) or attacker:hasStatusEffect(xi.effect.UTSUSEMI) then
+            if
+                attacker:hasStatusEffect(xi.effect.BLINK) or
+                attacker:hasStatusEffect(xi.effect.UTSUSEMI)
+            then
                 return 0, 0, 0
             else
                 attacker:addStatusEffect(xi.effect.BLINK, power, 0, duration)

@@ -20,7 +20,7 @@ local function registerRegionAroundNPC(zone, NPCID, zoneID)
     local z = npc:getZPos()
     local distance = 7
 
-    zone:registerRegion(zoneID,
+    zone:registerTriggerArea(zoneID,
         x - distance, y - distance, z - distance,
         x + distance, y + distance, z + distance)
 end
@@ -30,15 +30,11 @@ zoneObject.onInitialize = function(zone)
     GetMobByID(ID.mob.AHTU):setRespawnTime(math.random(900, 10800))
 
     -- Prepare everything for Full Speed Ahead!
-    local syrillia   = zone:queryEntitiesByName("Syrillia")[1]
-    local syrilliaID = syrillia:getID()
-
-    ID.npc.SYRILLIA         = syrilliaID
-    ID.npc.BLUE_BEAM_BASE   = syrilliaID + 1
-    ID.npc.RAPTOR_FOOD_BASE = syrilliaID + 9
+    zones[xi.zone.BATALLIA_DOWNS].npc.BLUE_BEAM_BASE   = ID.npc.SYRILLIA + 1
+    zones[xi.zone.BATALLIA_DOWNS].npc.RAPTOR_FOOD_BASE = ID.npc.SYRILLIA + 9
 
     for i = 0, 7 do
-        registerRegionAroundNPC(zone, ID.npc.RAPTOR_FOOD_BASE + i, i + 1)
+        registerRegionAroundNPC(zone, zones[xi.zone.BATALLIA_DOWNS].npc.RAPTOR_FOOD_BASE + i, i + 1)
     end
 
     registerRegionAroundNPC(zone, ID.npc.SYRILLIA, 9)
@@ -49,7 +45,11 @@ end
 zoneObject.onZoneIn = function(player, prevZone)
     local cs = -1
 
-    if (player:getXPos() == 0 and player:getYPos() == 0 and player:getZPos() == 0) then
+    if
+        player:getXPos() == 0 and
+        player:getYPos() == 0 and
+        player:getZPos() == 0
+    then
         player:setPos(-693.609, -14.583, 173.59, 30)
     end
 
@@ -72,9 +72,9 @@ zoneObject.onConquestUpdate = function(zone, updatetype)
     xi.conq.onConquestUpdate(zone, updatetype)
 end
 
-zoneObject.onRegionEnter = function(player, region)
+zoneObject.onTriggerAreaEnter = function(player, triggerArea)
     if player:hasStatusEffect(xi.effect.FULL_SPEED_AHEAD) then
-        xi.fsa.onRegionEnter(player, region:GetRegionID())
+        xi.fsa.onTriggerAreaEnter(player, triggerArea:GetTriggerAreaID())
     end
 end
 

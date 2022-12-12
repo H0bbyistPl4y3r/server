@@ -28,7 +28,11 @@ end
 
 entity.onMobFight = function(mob, target)
     -- reduce regen after nine Xzomits and Hpemdes are killed
-    if mob:getLocalVar("JoL_Regen_Reduction") == 0 and mob:getLocalVar("JoL_Qn_xzomit_Killed") >= 9 and mob:getLocalVar("JoL_Qn_hpemde_Killed") >= 9 then
+    if
+        mob:getLocalVar("JoL_Regen_Reduction") == 0 and
+        mob:getLocalVar("JoL_Qn_xzomit_Killed") >= 9 and
+        mob:getLocalVar("JoL_Qn_hpemde_Killed") >= 9
+    then
         mob:setLocalVar("JoL_Regen_Reduction", 1)
         mob:addMod(xi.mod.REGEN, -260)
     end
@@ -72,6 +76,7 @@ entity.onMobFight = function(mob, target)
                 SpawnMob(phuaboDn[i]):updateEnmity(target)
             end
         end
+
         mob:setLocalVar("SPAWNS", spawns + 1)
     end
 end

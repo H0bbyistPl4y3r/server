@@ -967,6 +967,9 @@ xi.mod =
     INT                             = 12,
     MND                             = 13,
     CHR                             = 14,
+
+    -- Magic Evasion versus elements
+    -- This has been repeatedly mixed up with SDT - be careful!
     FIRE_MEVA                       = 15,
     ICE_MEVA                        = 16,
     WIND_MEVA                       = 17,
@@ -975,6 +978,17 @@ xi.mod =
     WATER_MEVA                      = 20,
     LIGHT_MEVA                      = 21,
     DARK_MEVA                       = 22,
+
+    -- Magic Evasion RANK versus elements (resistance ranks)
+    FIRE_RES_RANK                   = 192, -- Fire Resistance Rank
+    ICE_RES_RANK                    = 193, -- Ice Resistance Rank
+    WIND_RES_RANK                   = 194, -- Wind Resistance Rank
+    EARTH_RES_RANK                  = 195, -- Earth Resistance Rank
+    THUNDER_RES_RANK                = 196, -- Thunder Resistance Rank
+    WATER_RES_RANK                  = 197, -- Water Resistance Rank
+    LIGHT_RES_RANK                  = 198, -- Light Resistance Rank
+    DARK_RES_RANK                   = 199, -- Dark Resistance Rank
+
     ATT                             = 23,
     RATT                            = 24,
     ACC                             = 25,
@@ -1183,6 +1197,23 @@ xi.mod =
     LULLABYRES                      = 254,
     DEATHRES                        = 255,
     STATUSRES                       = 958, -- "Resistance to All Status Ailments"
+    SLEEP_MEVA                      = 200,
+    POISON_MEVA                     = 201,
+    PARALYZE_MEVA                   = 202,
+    BLIND_MEVA                      = 203,
+    SILENCE_MEVA                    = 204,
+    VIRUS_MEVA                      = 205,
+    PETRIFY_MEVA                    = 206,
+    BIND_MEVA                       = 207,
+    CURSE_MEVA                      = 208,
+    GRAVITY_MEVA                    = 209,
+    SLOW_MEVA                       = 210,
+    STUN_MEVA                       = 211,
+    CHARM_MEVA                      = 212,
+    AMNESIA_MEVA                    = 213,
+    LULLABY_MEVA                    = 214,
+    DEATH_MEVA                      = 215,
+    STATUS_MEVA                     = 216,
     AFTERMATH                       = 256,
     PARALYZE                        = 257,
     MIJIN_RERAISE                   = 258,
@@ -1249,7 +1280,7 @@ xi.mod =
     BUST                            = 332,
     FINISHING_MOVES                 = 333,
     SAMBA_DURATION                  = 490, -- Samba duration bonus
-    WALTZ_POTENTCY                  = 491, -- Waltz Potentcy Bonus
+    WALTZ_POTENCY                   = 491, -- Waltz Potency Bonus
     JIG_DURATION                    = 492, -- Jig duration bonus in percents
     VFLOURISH_MACC                  = 493, -- Violent Flourish accuracy bonus
     STEP_FINISH                     = 494, -- Bonus finishing moves from steps
@@ -1283,6 +1314,13 @@ xi.mod =
     PALISADE_BLOCK_BONUS            = 1066, -- Increases base block rate while under the effects of Palisade (additive, not multiplicative)
     REPRISAL_BLOCK_BONUS            = 1067, -- Increases block rate while under the effects of Reprisal (multiplicative, not additive)
     REPRISAL_SPIKES_BONUS           = 1068, -- Increases Reprisal spikes damage by percentage (e.g. mod value of 50 will increase spikes damage by 50%)
+
+    -- Dark Knight
+    ARCANE_CIRCLE_POTENCY           = 1069, -- Increases the potency of the Arcane Circle effect (e.g. mod value 2 = +2% Arcana Killer)
+    ENHANCES_BLOOD_WEAPON           = 1070, -- Enhances "Blood Weapon" effect (increases Blood Weapon's duration in seconds)
+    DARK_MAGIC_CAST                 = 1071, -- Reduces Dark Magic Casting Time by percentage (e.g. mod value -10 = -10% cast time)
+    DARK_MAGIC_DURATION             = 1072, -- Increases Dark Magic spell durations by percentage (e.g. mod value 10 = +10% duration)
+    ENHANCES_DARK_SEAL              = 1073, -- Enhances "Dark Seal" effect (Increases Dark Magic spell durations by 10% per Dark Seal merit while Dark Seal active)
 
     -- Dragoon
     WYVERN_LVL_BONUS                = 1043, -- Wyvern: Lv.+ (Increases wyvern's base level above 99)
@@ -1357,9 +1395,15 @@ xi.mod =
     STEALTH                         = 358,
     RAPID_SHOT                      = 359,
     CHARM_TIME                      = 360,
-    JUMP_TP_BONUS                   = 361,
-    JUMP_ATT_BONUS                  = 362,
-    HIGH_JUMP_ENMITY_REDUCTION      = 363,
+    JUMP_TP_BONUS                   = 361, -- bonus tp player receives when using jump
+    JUMP_SPIRIT_TP_BONUS            = 285, -- bonus tp player receives when using jump for spirit jump only
+    JUMP_ATT_BONUS                  = 362, -- ATT% bonus for all jumps
+    JUMP_SOUL_SPIRIT_ATT_BONUS      = 286, -- ATT% bonus for Soul & Spirit jump only
+    JUMP_ACC_BONUS                  = 936, -- accuracy bonus for all jumps
+    JUMP_DOUBLE_ATTACK              = 888, -- DA% bonus for all jumps
+    HIGH_JUMP_ENMITY_REDUCTION      = 363, -- for gear that reduces more enmity from high jump
+    ENHANCES_STRAFE                 = 282, -- Strafe merit augment, +50 TP gained per merit level on breath use.
+    ENHANCES_SPIRIT_LINK            = 281, -- Adds erase/-na to Spirit Link
     REWARD_HP_BONUS                 = 364,
     SNAP_SHOT                       = 365,
 
@@ -1409,6 +1453,7 @@ xi.mod =
     SUBLIMATION_BONUS               = 401,
     GRIMOIRE_SPELLCASTING           = 489, -- "Grimoire: Reduces spellcasting time" bonus
     WYVERN_BREATH                   = 402,
+    UNCAPPED_WYVERN_BREATH          = 284, -- Uncapped wyvern breath boost. Used on retail for augments, normal gear should use WYVERN_BREATH.
     REGEN_DOWN                      = 404, -- poison
     REFRESH_DOWN                    = 405, -- plague, reduce mp
     REGAIN_DOWN                     = 406, -- plague, reduce tp
@@ -1602,6 +1647,7 @@ xi.mod =
     RAPTURE_AMOUNT                  = 568, -- Bonus amount added to Rapture effect
     EBULLIENCE_AMOUNT               = 569, -- Bonus amount added to Ebullience effect
     WYVERN_EFFECTIVE_BREATH         = 829, -- Increases the threshold for triggering healing breath
+    ENHANCE_DEEP_BREATHING          = 283, -- Add 5/256 to deep breathing bonus per merit level when calculating healing breath
     AQUAVEIL_COUNT                  = 832, -- Modifies the amount of hits that Aquaveil absorbs before being removed
     SONG_RECAST_DELAY               = 833, -- Reduces song recast time in seconds.
     ENH_MAGIC_DURATION              = 890, -- Enhancing Magic Duration increase %
@@ -1644,7 +1690,7 @@ xi.mod =
     AUGMENTS_AURA_STEAL             = 889, -- 20% chance of 2 effects to be dispelled or stolen per merit level
     AUGMENTS_CONSPIRATOR            = 912, -- Applies Conspirator benefits to player at the top of the hate list
     JUG_LEVEL_RANGE                 = 564, -- Decreases the level range of spawned jug pets. Maxes out at 2.
-    FORCE_JUMP_CRIT                 = 828, -- Critical hit rate bonus for jump and high jump
+    FORCE_JUMP_CRIT                 = 828, -- Force critical hit for all jumps
     QUICK_DRAW_DMG_PERCENT          = 834, -- Percentage increase to QD damage
 
     -- Crafting food effects
@@ -1766,11 +1812,13 @@ xi.mod =
     TRUE_SHOT_EFFECT        = 1053, -- TODO: True Shot Ranged Damage increase (percent)
     DEAD_AIM_EFFECT         = 1054, -- TODO: Dead Aim Critical Damage increase (percent)
     THIRD_EYE_BONUS         = 1055, -- TODO: Bonus Third Eye Evasions (count)
-    WYVERN_ATTRIBUTE_DA     = 1056, -- TODO: Adds an amount of Double Attack to Dragoon each time Wyverns Attributes Increase (percent)
-    DRAGOON_BREATH_RECAST   = 1057, -- TODO: Restoring/Smithing Breath Recast Reduction (seconds)
+    WYVERN_ATTRIBUTE_DA     = 1056, -- Adds an amount of Double Attack to Dragoon each time Wyverns Attributes Increase (percent)
+    DRAGOON_BREATH_RECAST   = 1057, -- Restoring/Smithing Breath Recast Reduction (seconds)
     BLUE_JOB_TRAIT_BONUS    = 1058, -- TODO: Increases job traits gained from equipped blue magic (percent)
     BLUE_MAGIC_EFFECT       = 1059, -- TODO: Bonus to Attribute Value of spell (percent)
     QUICK_DRAW_RECAST       = 1060, -- TODO: Quick Draw Charge Reduction (seconds)
+
+    DIG_BYPASS_FATIGUE      = 1074, -- Chocobo digging modifier found in "Blue Race Silks". Modifier works as a direct percent.
 
     -- IF YOU ADD ANY NEW MODIFIER HERE, ADD IT IN src/map/modifier.h ASWELL!
 
@@ -2636,7 +2684,7 @@ xi.jobSpecialAbility =
     -- TRANCE               = 2710,
     -- ELEMENTAL_SFORZO     = 3265,
     -- ELEMENTAL_SFORZO     = 3479,
-     BOLSTER              = 3482,
+    BOLSTER              = 3482,
 }
 xi.jsa = xi.jobSpecialAbility
 
@@ -2991,8 +3039,10 @@ xi.mount =
     RED_RAPTOR     = 31,
     IRON_GIANT     = 32,
     BYAKKO         = 33,
+    NOBLE_CHOCOBO  = 34, -- NOTE: This is currently blank, probably needs additional packets sent
+    IXION          = 35,
     --
-    MOUNT_MAX      = 34,
+    MOUNT_MAX      = 36,
 }
 
 -----------------------------------

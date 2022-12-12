@@ -37,12 +37,29 @@ end
 local function getFenrirRewardMask(player)
     local rewardMask = 0
 
-    if player:findItem(18165) then rewardMask = rewardMask + 1;  end -- Fenrir's Stone
-    if player:findItem(13572) then rewardMask = rewardMask + 2;  end -- Fenrir's Cape
-    if player:findItem(13138) then rewardMask = rewardMask + 4;  end -- Fenrir's Torque
-    if player:findItem(13399) then rewardMask = rewardMask + 8;  end -- Fenrir's Earring
-    if player:findItem(1208)  then rewardMask = rewardMask + 16; end -- Ancient's Key
-    if player:hasSpell(297)   then rewardMask = rewardMask + 64; end  -- Pact
+    if player:findItem(18165) then
+        rewardMask = rewardMask + 1
+    end -- Fenrir's Stone
+
+    if player:findItem(13572) then
+        rewardMask = rewardMask + 2
+    end -- Fenrir's Cape
+
+    if player:findItem(13138) then
+        rewardMask = rewardMask + 4
+    end -- Fenrir's Torque
+
+    if player:findItem(13399) then
+        rewardMask = rewardMask + 8
+    end -- Fenrir's Earring
+
+    if player:findItem(1208) then
+        rewardMask = rewardMask + 16
+    end -- Ancient's Key
+
+    if player:hasSpell(297) then
+        rewardMask = rewardMask + 64
+    end  -- Pact
 
     if
         not player:hasKeyItem(xi.ki.TRAINERS_WHISTLE) or
@@ -81,7 +98,10 @@ entity.onTrigger = function(player, npc)
     elseif tuningIn == QUEST_COMPLETED and tuningOut == QUEST_AVAILABLE then
         player:startEvent(888) -- Starting dialogue
 
-    elseif tuningOut == QUEST_ACCEPTED and player:getCharVar("TuningOut_Progress") == 8 then
+    elseif
+        tuningOut == QUEST_ACCEPTED and
+        player:getCharVar("TuningOut_Progress") == 8
+    then
         player:startEvent(897) -- Finishing dialogue
 
     -- The Moonlit Path and Other Fenrir Stuff!
@@ -95,7 +115,7 @@ entity.onTrigger = function(player, npc)
 
         player:startEvent(842, 0, 1125)
     elseif moonlitPath == QUEST_ACCEPTED then
-        if (player:hasKeyItem(xi.ki.MOON_BAUBLE)) then -- Default text after acquiring moon bauble and before fighting Fenrir
+        if player:hasKeyItem(xi.ki.MOON_BAUBLE) then -- Default text after acquiring moon bauble and before fighting Fenrir
             player:startEvent(845, 0, 1125, 334)
         elseif player:hasKeyItem(xi.ki.WHISPER_OF_THE_MOON) then -- First turn-in
             local availRewards = 0
@@ -120,7 +140,7 @@ entity.onTrigger = function(player, npc)
             local availRewards = getFenrirRewardMask(player)
 
             player:startEvent(850, 0, 13399, 1208, 1125, availRewards, 18165, 13572)
-        elseif (os.time() > player:getCharVar("MoonlitPath_date")) then --24 hours have passed, flag a new fight
+        elseif os.time() > player:getCharVar("MoonlitPath_date") then --24 hours have passed, flag a new fight
             player:startEvent(848, 0, 1125, 334)
         end
     elseif tuningIn == QUEST_ACCEPTED then
@@ -158,11 +178,16 @@ entity.onEventFinish = function(player, csid, option)
         player:delQuest(xi.quest.log_id.OTHER_AREAS, xi.quest.id.otherAreas.TRIAL_BY_LIGHTNING)
     elseif csid == 846 or csid == 850 then -- Turn-in event
         local reward = 0
-        if option == 1 then reward = 18165 -- Fenrir's Stone
-        elseif option == 2 then reward = 13572 -- Fenrir's Cape
-        elseif option == 3 then reward = 13138 -- Fenrir's Torque
-        elseif option == 4 then reward = 13399 -- Fenrir's Earring
-        elseif option == 5 then reward = 1208 -- Ancient's Key
+        if option == 1 then
+            reward = 18165 -- Fenrir's Stone
+        elseif option == 2 then
+            reward = 13572 -- Fenrir's Cape
+        elseif option == 3 then
+            reward = 13138 -- Fenrir's Torque
+        elseif option == 4 then
+            reward = 13399 -- Fenrir's Earring
+        elseif option == 5 then
+            reward = 1208 -- Ancient's Key
         elseif option == 6 then
             player:addGil(xi.settings.main.GIL_RATE * 15000)
             player:messageSpecial(ID.text.GIL_OBTAINED, xi.settings.main.GIL_RATE * 15000) -- Gil
@@ -189,7 +214,11 @@ entity.onEventFinish = function(player, csid, option)
             npcUtil.giveItem(player, reward)
         end
 
-        if player:getNation() == xi.nation.WINDURST and player:getRank(player:getNation()) == 10 and player:getQuestStatus(xi.quest.log_id.WINDURST, xi.quest.id.windurst.THE_PROMISE) == QUEST_COMPLETED then
+        if
+            player:getNation() == xi.nation.WINDURST and
+            player:getRank(player:getNation()) == 10 and
+            player:getQuestStatus(xi.quest.log_id.WINDURST, xi.quest.id.windurst.THE_PROMISE) == QUEST_COMPLETED
+        then
             npcUtil.giveKeyItem(player, xi.ki.DARK_MANA_ORB)
         end
     elseif csid == 848 then

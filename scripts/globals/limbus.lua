@@ -14,10 +14,11 @@ xi.limbus = xi.limbus or {}
 function xi.limbus.enter(player, entrance)
     switch (entrance): caseof
     {
-        [0] = function ()
+        [0] = function()
             player:setPos(-668, 0.1, -666, 209, 38)  --  instance entrer -599 0 -600
         end, --  sortiezone -642, -4, -642, -637, 4, -637
-        [1] = function ()
+
+        [1] = function()
             player:setPos(643, 0.1, -600, 124, 38)  --  instance entrer 600 1 -600
         end, --  sortiezone  637, -4, -642, 642, 4, -637
     }
@@ -27,58 +28,9 @@ function xi.limbus.setupArmouryCrates(bfid, hide)
     local ID = zones[xi.zone.TEMENOS]
     switch (bfid): caseof
     {
-        -- Temenos: Western Tower
-        [1298] = function()
-            for i = 1, #ID.npc.TEMENOS_W_CRATE - 1 do
-                for j = 0, 2 do
-                    GetNPCByID(ID.npc.TEMENOS_W_CRATE[i] + j):setStatus(xi.status.DISAPPEAR)
-                end
-            end
-
-            GetNPCByID(ID.npc.TEMENOS_W_CRATE[7]):setStatus(xi.status.DISAPPEAR)
-        end,
-
-        -- Temenos: Northern Tower
-        [1299] = function()
-            for i = 1, #ID.npc.TEMENOS_N_CRATE-1 do
-                for j = 0, 2 do
-                    GetNPCByID(ID.npc.TEMENOS_N_CRATE[i] + j):setStatus(xi.status.DISAPPEAR)
-                end
-            end
-
-            GetNPCByID(ID.npc.TEMENOS_N_CRATE[7]):setStatus(xi.status.DISAPPEAR)
-        end,
-
-        -- Temenos: Eastern Tower
-        [1300] = function()
-            for i = 1, #ID.npc.TEMENOS_E_CRATE-1 do
-                for j = 0, 3 do
-                    GetNPCByID(ID.npc.TEMENOS_E_CRATE[i] + j):setStatus(xi.status.DISAPPEAR)
-                end
-            end
-
-            GetNPCByID(ID.npc.TEMENOS_E_CRATE[7]):setStatus(xi.status.DISAPPEAR)
-            GetNPCByID(ID.npc.TEMENOS_E_CRATE[7] + 1):setStatus(xi.status.DISAPPEAR)
-        end,
-
         -- Central Temenos: Basement
         [1301] = function()
             GetNPCByID(ID.npc.TEMENOS_C_CRATE[5]):setStatus(xi.status.DISAPPEAR)
-        end,
-
-        -- Central Temenos: 1st Floor
-        [1303] = function()
-            GetNPCByID(ID.npc.TEMENOS_C_CRATE[1]):setStatus(xi.status.DISAPPEAR)
-        end,
-
-        -- Central Temenos: 2nd Floor
-        [1304] = function()
-            GetNPCByID(ID.npc.TEMENOS_C_CRATE[2]):setStatus(xi.status.DISAPPEAR)
-        end,
-
-        -- Central Temenos: 3rd Floor
-        [1305] = function()
-            GetNPCByID(ID.npc.TEMENOS_C_CRATE[3]):setStatus(xi.status.DISAPPEAR)
         end,
 
         -- Central Temenos: 4th Floor
@@ -326,6 +278,7 @@ function Limbus:onBattlefieldInitialise(battlefield)
         for i, crateID in ipairs(ID.npc.RECOVER_CRATES) do
             local crate = GetEntityByID(crateID)
             xi.limbus.hideCrate(crate)
+            crate:setBattleID(1) -- Different battle ID prevents the crate from being hit by AOEs
             crate:addListener("ON_TRIGGER", "TRIGGER_RECOVER_CRATE", utils.bind(self.handleOpenRecoverCrate, self))
         end
     end
@@ -435,11 +388,14 @@ function Limbus:openDoor(battlefield, floor)
         player:messageSpecial(ID.text.GATE_OPEN)
         player:messageSpecial(ID.text.TIME_LEFT, remaining)
     end
+
     door:setAnimation(xi.animation.OPEN_DOOR)
 end
 
 function Limbus:closeDoors()
-    for _, doorID in ipairs(self.ID.npc.PORTAL) do
-        GetNPCByID(doorID):setAnimation(xi.animation.CLOSE_DOOR)
+    if self.ID.npc.PORTAL then
+        for _, doorID in ipairs(self.ID.npc.PORTAL) do
+            GetNPCByID(doorID):setAnimation(xi.animation.CLOSE_DOOR)
+        end
     end
 end

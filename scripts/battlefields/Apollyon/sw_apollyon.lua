@@ -37,6 +37,7 @@ function content:onBattlefieldRegister(player, battlefield)
     elseif race == xi.race.TARU_F then
         race = xi.race.TARU_M
     end
+
     battlefield:setLocalVar("initiatorRace", race)
 end
 
@@ -307,7 +308,9 @@ content.groups =
             local add = GetMobByID(addID)
             add:setSpawn(mob:getXPos(), mob:getYPos(), mob:getZPos(), mob:getRotPos())
             SpawnMob(addID)
-            local target = mob:getTarget()
+
+            local enmityList = mob:getEnmityList()
+            local target = utils.randomEntry(enmityList)["entity"]
             if target ~= nil then
                 add:updateEnmity(target)
             end

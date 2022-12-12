@@ -15,7 +15,6 @@ function error(player, msg)
 end
 
 function onTrigger(player, amount, target)
-
     -- validate target
     local targ
     if target == nil then
@@ -30,16 +29,16 @@ function onTrigger(player, amount, target)
 
     -- validate amount
     local oldAmount = targ:getGil()
-    if (amount == nil or amount < 1) then
+    if amount == nil or amount < 1 then
         error(player, "Invalid amount of gil.")
         return
     end
-    if (amount > oldAmount) then
+
+    if amount > oldAmount then
         amount = oldAmount
     end
 
     -- remove gil
     targ:delGil(amount)
     player:PrintToPlayer(string.format("Removed %i gil from %s.  They now have %i gil.", amount, targ:getName(), targ:getGil()))
-
 end

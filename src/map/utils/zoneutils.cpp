@@ -26,6 +26,7 @@
 
 #include "../ai/ai_container.h"
 
+#include "../battlefield.h"
 #include "../campaign_system.h"
 #include "../conquest_system.h"
 #include "../entities/mobentity.h"
@@ -131,7 +132,7 @@ namespace zoneutils
         }
     }
 
-    CCharEntity* GetCharByName(int8* name)
+    CCharEntity* GetCharByName(std::string name)
     {
         for (auto PZone : g_PZoneList)
         {
@@ -340,6 +341,7 @@ namespace zoneutils
             slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, \
             fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
             fire_meva, ice_meva, wind_meva, earth_meva, lightning_meva, water_meva, light_meva, dark_meva, \
+            fire_res_rank, ice_res_rank, wind_res_rank, earth_res_rank, lightning_res_rank, water_res_rank, light_res_rank, dark_res_rank, \
             Element, mob_pools.familyid, mob_family_system.superFamilyID, name_prefix, entityFlags, animationsub, \
             (mob_family_system.HP / 100), (mob_family_system.MP / 100), hasSpellScript, spellList, mob_groups.poolid, \
             allegiance, namevis, aggro, roamflag, mob_pools.skill_list_id, mob_pools.true_detection, mob_family_system.detects, \
@@ -445,22 +447,20 @@ namespace zoneutils
                     PMob->setModifier(Mod::LIGHT_MEVA, (int16)(sql->GetIntData(56)));
                     PMob->setModifier(Mod::DARK_MEVA, (int16)(sql->GetIntData(57)));
 
-                    /* Todo: hook this up, seems to force resist tiering
-                    PMob->setModifier(Mod::FIRE_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::ICE_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::WIND_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::EARTH_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::THUNDER_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::WATER_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::LIGHT_RES_RANK, (int16)(sql->GetIntData(??)));
-                    PMob->setModifier(Mod::DARK_RES_RANK, (int16)(sql->GetIntData(??)));
-                    */
+                    PMob->setModifier(Mod::FIRE_RES_RANK, (int8)(sql->GetIntData(58)));
+                    PMob->setModifier(Mod::ICE_RES_RANK, (int8)(sql->GetIntData(59)));
+                    PMob->setModifier(Mod::WIND_RES_RANK, (int8)(sql->GetIntData(60)));
+                    PMob->setModifier(Mod::EARTH_RES_RANK, (int8)(sql->GetIntData(61)));
+                    PMob->setModifier(Mod::THUNDER_RES_RANK, (int8)(sql->GetIntData(62)));
+                    PMob->setModifier(Mod::WATER_RES_RANK, (int8)(sql->GetIntData(63)));
+                    PMob->setModifier(Mod::LIGHT_RES_RANK, (int8)(sql->GetIntData(64)));
+                    PMob->setModifier(Mod::DARK_RES_RANK, (int8)(sql->GetIntData(65)));
 
-                    PMob->m_Element     = (uint8)sql->GetIntData(58);
-                    PMob->m_Family      = (uint16)sql->GetIntData(59);
-                    PMob->m_SuperFamily = (uint16)sql->GetIntData(60);
-                    PMob->m_name_prefix = (uint8)sql->GetIntData(61);
-                    PMob->m_flags       = (uint32)sql->GetIntData(62);
+                    PMob->m_Element     = (uint8)sql->GetIntData(66);
+                    PMob->m_Family      = (uint16)sql->GetIntData(67);
+                    PMob->m_SuperFamily = (uint16)sql->GetIntData(68);
+                    PMob->m_name_prefix = (uint8)sql->GetIntData(69);
+                    PMob->m_flags       = (uint32)sql->GetIntData(70);
 
                     // Cap Level if Necessary (Don't Cap NMs)
                     if (normalLevelRangeMin > 0 && !(PMob->m_Type & MOBTYPE_NOTORIOUS) && PMob->m_minLevel > normalLevelRangeMin)
@@ -476,7 +476,7 @@ namespace zoneutils
                     // Special sub animation for Mob (yovra, jailer of love, phuabo)
                     // yovra 1: On top/in the sky, 2: , 3: On top/in the sky
                     // phuabo 1: Underwater, 2: Out of the water, 3: Goes back underwater
-                    PMob->animationsub = (uint32)sql->GetIntData(63);
+                    PMob->animationsub = (uint32)sql->GetIntData(71);
 
                     if (PMob->animationsub != 0)
                     {
@@ -484,28 +484,28 @@ namespace zoneutils
                     }
 
                     // Setup HP / MP Stat Percentage Boost
-                    PMob->HPscale = sql->GetFloatData(64);
-                    PMob->MPscale = sql->GetFloatData(65);
+                    PMob->HPscale = sql->GetFloatData(72);
+                    PMob->MPscale = sql->GetFloatData(73);
 
                     // TODO: Remove me
                     // Check if we should be looking up scripts for this mob
-                    // PMob->m_HasSpellScript = (uint8)sql->GetIntData(65);
+                    // PMob->m_HasSpellScript = (uint8)sql->GetIntData(74);
 
-                    PMob->m_SpellListContainer = mobSpellList::GetMobSpellList(sql->GetIntData(67));
+                    PMob->m_SpellListContainer = mobSpellList::GetMobSpellList(sql->GetIntData(75));
 
-                    PMob->m_Pool = sql->GetUIntData(68);
+                    PMob->m_Pool = sql->GetUIntData(76);
 
-                    PMob->allegiance = static_cast<ALLEGIANCE_TYPE>(sql->GetUIntData(69));
-                    PMob->namevis    = sql->GetUIntData(70);
-                    PMob->m_Aggro    = sql->GetUIntData(71);
+                    PMob->allegiance = static_cast<ALLEGIANCE_TYPE>(sql->GetUIntData(77));
+                    PMob->namevis    = sql->GetUIntData(78);
+                    PMob->m_Aggro    = sql->GetUIntData(79);
 
-                    PMob->m_roamFlags    = (uint16)sql->GetUIntData(72);
-                    PMob->m_MobSkillList = sql->GetUIntData(73);
+                    PMob->m_roamFlags    = (uint16)sql->GetUIntData(80);
+                    PMob->m_MobSkillList = sql->GetUIntData(81);
 
-                    PMob->m_TrueDetection = sql->GetUIntData(74);
-                    PMob->m_Detects       = sql->GetUIntData(75);
+                    PMob->m_TrueDetection = sql->GetUIntData(82);
+                    PMob->setMobMod(MOBMOD_DETECTION, sql->GetUIntData(83));
 
-                    PMob->setMobMod(MOBMOD_CHARMABLE, sql->GetUIntData(76));
+                    PMob->setMobMod(MOBMOD_CHARMABLE, sql->GetUIntData(84));
 
                     // Overwrite base family charmables depending on mob type. Disallowed mobs which should be charmable
                     // can be set in mob_spawn_mods or in their onInitialize
@@ -537,8 +537,12 @@ namespace zoneutils
                 luautils::ApplyZoneMixins(PMob);
                 PMob->saveModifiers();
                 PMob->saveMobModifiers();
-                PMob->m_AllowRespawn = PMob->m_SpawnType == SPAWNTYPE_NORMAL;
+            });
 
+            // Spawn mobs after they've all been initialized. Spawning some mobs will spawn other mobs that may not yet be initialized.
+            PZone->ForEachMob([](CMobEntity* PMob)
+            {
+                PMob->m_AllowRespawn = PMob->m_SpawnType == SPAWNTYPE_NORMAL;
                 if (PMob->m_AllowRespawn)
                 {
                     PMob->Spawn();
@@ -609,18 +613,20 @@ namespace zoneutils
 
     CZone* CreateZone(uint16 ZoneID)
     {
-        static const char* Query = "SELECT zonetype FROM zone_settings "
+        static const char* Query = "SELECT zonetype, restriction FROM zone_settings "
                                    "WHERE zoneid = %u LIMIT 1";
 
         if (sql->Query(Query, ZoneID) != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
         {
-            if (static_cast<ZONE_TYPE>(sql->GetUIntData(0)) == ZONE_TYPE::DUNGEON_INSTANCED)
+            ZONE_TYPE zoneType    = static_cast<ZONE_TYPE>(sql->GetUIntData(0));
+            uint8     restriction = static_cast<uint8>(sql->GetUIntData(1));
+            if (zoneType == ZONE_TYPE::DUNGEON_INSTANCED)
             {
-                return new CZoneInstance((ZONEID)ZoneID, GetCurrentRegion(ZoneID), GetCurrentContinent(ZoneID));
+                return new CZoneInstance((ZONEID)ZoneID, GetCurrentRegion(ZoneID), GetCurrentContinent(ZoneID), restriction);
             }
             else
             {
-                return new CZone((ZONEID)ZoneID, GetCurrentRegion(ZoneID), GetCurrentContinent(ZoneID));
+                return new CZone((ZONEID)ZoneID, GetCurrentRegion(ZoneID), GetCurrentContinent(ZoneID), restriction);
             }
         }
         else
@@ -660,6 +666,8 @@ namespace zoneutils
             ShowCritical("Unable to load any zones! Check IP and port params");
             do_final(EXIT_FAILURE);
         }
+
+        ShowInfo(fmt::format("Loading {} zones", zones.size()));
 
         for (auto zone : zones)
         {
@@ -1090,6 +1098,17 @@ namespace zoneutils
     bool IsResidentialArea(CCharEntity* PChar)
     {
         return PChar->m_moghouseID != 0;
+    }
+
+    void AfterZoneIn(CBaseEntity* PEntity)
+    {
+        CCharEntity* PChar = dynamic_cast<CCharEntity*>(PEntity);
+        if (PChar != nullptr && (PChar->PBattlefield == nullptr || !PChar->PBattlefield->isEntered(PChar)))
+        {
+            GetZone(PChar->getZone())->updateCharLevelRestriction(PChar);
+        }
+
+        luautils::AfterZoneIn(PChar);
     }
 
 }; // namespace zoneutils

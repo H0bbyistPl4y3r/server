@@ -37,6 +37,8 @@ CREATE TABLE `zone_settings` (
 -- Dumping data for table `zone_settings`
 --
 
+-- NOTE: To disable a zone, you must set the zoneip and zoneport to '' and 0 respectively!
+
 LOCK TABLES `zone_settings` WRITE;
 /*!40000 ALTER TABLE `zone_settings` DISABLE KEYS */;
 INSERT INTO `zone_settings` VALUES (0,1,'127.0.0.1',54230,'unknown',0,0,0,0,0,0.00,32); -- Demonstration Area from pre-release: Has no client side mesh, use wallhack to get around.
@@ -55,21 +57,21 @@ INSERT INTO `zone_settings` VALUES (12,3,'127.0.0.1',54230,'Newton_Movalpolos',2
 INSERT INTO `zone_settings` VALUES (13,4,'127.0.0.1',54230,'Mine_Shaft_2716',0,0,220,220,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (14,3,'127.0.0.1',54230,'Hall_of_Transference',0,0,115,218,0,0.00,2200);
 INSERT INTO `zone_settings` VALUES (15,2,'127.0.0.1',54230,'Abyssea-Konschtat',51,51,52,52,0,0.00,2202);
-INSERT INTO `zone_settings` VALUES (16,3,'127.0.0.1',54230,'Promyvion-Holla',222,222,115,218,30,0.00,2201);
+INSERT INTO `zone_settings` VALUES (16,3,'127.0.0.1',54230,'Promyvion-Holla',222,222,115,218,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (17,4,'127.0.0.1',54230,'Spire_of_Holla',0,0,220,220,0,0.00,2201);
-INSERT INTO `zone_settings` VALUES (18,3,'127.0.0.1',54230,'Promyvion-Dem',222,222,115,218,30,0.00,2201);
+INSERT INTO `zone_settings` VALUES (18,3,'127.0.0.1',54230,'Promyvion-Dem',222,222,115,218,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (19,4,'127.0.0.1',54230,'Spire_of_Dem',0,0,220,220,0,0.00,2201);
-INSERT INTO `zone_settings` VALUES (20,3,'127.0.0.1',54230,'Promyvion-Mea',222,222,115,218,30,0.00,2201);
+INSERT INTO `zone_settings` VALUES (20,3,'127.0.0.1',54230,'Promyvion-Mea',222,222,115,218,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (21,4,'127.0.0.1',54230,'Spire_of_Mea',0,0,220,220,0,0.00,2201);
-INSERT INTO `zone_settings` VALUES (22,3,'127.0.0.1',54230,'Promyvion-Vahzl',222,222,115,218,50,0.00,2201);
+INSERT INTO `zone_settings` VALUES (22,3,'127.0.0.1',54230,'Promyvion-Vahzl',222,222,115,218,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (23,4,'127.0.0.1',54230,'Spire_of_Vahzl',0,0,220,220,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (24,2,'127.0.0.1',54230,'Lufaise_Meadows',230,230,101,219,0,0.00,2204);
 INSERT INTO `zone_settings` VALUES (25,2,'127.0.0.1',54230,'Misareaux_Coast',230,230,101,219,0,0.00,2204);
 INSERT INTO `zone_settings` VALUES (26,1,'127.0.0.1',54230,'Tavnazian_Safehold',245,245,245,245,0,0.00,1640);
-INSERT INTO `zone_settings` VALUES (27,3,'127.0.0.1',54230,'Phomiuna_Aqueducts',0,0,115,218,40,0.00,2201);
-INSERT INTO `zone_settings` VALUES (28,3,'127.0.0.1',54230,'Sacrarium',0,0,115,218,50,0.00,2201);
-INSERT INTO `zone_settings` VALUES (29,3,'127.0.0.1',54230,'Riverne-Site_B01',0,0,115,218,50,0.00,2201);
-INSERT INTO `zone_settings` VALUES (30,3,'127.0.0.1',54230,'Riverne-Site_A01',0,0,115,218,40,0.00,2201);
+INSERT INTO `zone_settings` VALUES (27,3,'127.0.0.1',54230,'Phomiuna_Aqueducts',0,0,115,218,0,0.00,2201);
+INSERT INTO `zone_settings` VALUES (28,3,'127.0.0.1',54230,'Sacrarium',0,0,115,218,0,0.00,2201);
+INSERT INTO `zone_settings` VALUES (29,3,'127.0.0.1',54230,'Riverne-Site_B01',0,0,115,218,0,0.00,2201);
+INSERT INTO `zone_settings` VALUES (30,3,'127.0.0.1',54230,'Riverne-Site_A01',0,0,115,218,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (31,4,'127.0.0.1',54230,'Monarch_Linn',0,0,220,220,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (32,1,'127.0.0.1',54230,'Sealions_Den',245,245,220,220,0,0.00,2201);
 INSERT INTO `zone_settings` VALUES (33,2,'127.0.0.1',54230,'AlTaieu',233,233,101,219,0,0.00,2200);
@@ -338,6 +340,8 @@ INSERT INTO `zone_settings` VALUES (295,5,'127.0.0.1',54230,'Dynamis-Bastok_[D]'
 INSERT INTO `zone_settings` VALUES (296,5,'127.0.0.1',54230,'Dynamis-Windurst_[D]',88,88,88,88,0,0.00,2448);
 INSERT INTO `zone_settings` VALUES (297,5,'127.0.0.1',54230,'Dynamis-Jeuno_[D]',88,88,88,88,0,0.00,2448);
 INSERT INTO `zone_settings` VALUES (298,0,'127.0.0.1',54230,'Walk_of_Echoes_[P1]',186,186,186,186,0,0.00,2048);
+
+-- NOTE: To disable a zone, you must set the zoneip and zoneport to '' and 0 respectively!
 
 /*!40000 ALTER TABLE `zone_settings` ENABLE KEYS */;
 UNLOCK TABLES;

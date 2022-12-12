@@ -305,6 +305,9 @@ void CLuaBattlefield::lose()
 
 void CLuaBattlefield::addGroups(sol::table groups, bool hasMultipleArenas)
 {
+    // get the global function "applyMixins"
+    sol::function applyMixins = lua["applyMixins"];
+
     // Ensure that each area has its own super linking
     int16 superlinkId = 1000 * m_PLuaBattlefield->GetArea();
     // The lowest entity ID allowed within the battlefield. Used for battlefields with multiple areas.
@@ -342,23 +345,30 @@ void CLuaBattlefield::addGroups(sol::table groups, bool hasMultipleArenas)
         {
             uint32 stride = uint32(entityIds.size()) / m_PLuaBattlefield->GetZone()->m_BattlefieldHandler->MaxBattlefieldAreas();
 
-            // Look to see if there's an Armoury Crate after the last monster in the first area. If so then we need to increase the stride.
+            // Look to see if there's an Armoury Crate within the group of monsters
             static const std::string ARMOURY_CRATE = "Armoury_Crate";
 
-            uint32       potentialCrateId = lowestId + stride;
-            CBaseEntity* entity           = zoneutils::GetEntity(potentialCrateId, TYPE_NPC);
-            bool         hasArmouryCrate  = entity != nullptr && entity->name == ARMOURY_CRATE;
-            if (hasArmouryCrate)
+            uint32 armouryCrateOffset = 0;
+            uint32 potentialCrateId   = lowestId + stride;
+            while (potentialCrateId >= lowestId)
             {
-                ++stride;
+                CBaseEntity* entity = zoneutils::GetEntity(potentialCrateId, TYPE_NPC);
+                if (entity != nullptr && entity->name == ARMOURY_CRATE)
+                {
+                    armouryCrateOffset = potentialCrateId - lowestId;
+                    // If an Armoury Crate is in the battlefield we need to account for it in the stride
+                    ++stride;
+                    break;
+                }
+                --potentialCrateId;
             }
 
             uint32 offset = stride * (m_PLuaBattlefield->GetArea() - 1);
             lowestId += offset;
             highestId = lowestId + stride - 1;
-            if (hasArmouryCrate)
+            if (armouryCrateOffset != 0)
             {
-                m_PLuaBattlefield->setArmouryCrate(highestId);
+                m_PLuaBattlefield->setArmouryCrate(lowestId + armouryCrateOffset);
             }
         }
     }
@@ -536,6 +546,23 @@ void CLuaBattlefield::addGroups(sol::table groups, bool hasMultipleArenas)
                     PMob->setMobMod(modifier.first.as<uint16>(), modifier.second.as<uint16>());
                 }
                 PMob->saveMobModifiers();
+            }
+        }
+
+        auto mixins = groupData.get<sol::table>("mixins");
+        if (mixins.valid() && applyMixins.valid())
+        {
+            // get the parameter "mixinOptions" (optional)
+            auto mixinOptions = groupData["mixinOptions"];
+
+            for (CBaseEntity* entity : groupEntities)
+            {
+                auto result = applyMixins(CLuaBaseEntity(entity), mixins, mixinOptions);
+                if (!result.valid())
+                {
+                    sol::error err = result;
+                    ShowError("luautils::applyMixins: %s", err.what());
+                }
             }
         }
 

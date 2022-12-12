@@ -23,7 +23,6 @@ spellObject.onMagicCastingCheck = function(caster, target, spell)
 end
 
 spellObject.onSpellCast = function(caster, target, spell)
-
     local params = {}
     params.diff = caster:getStat(xi.mod.INT) - target:getStat(xi.mod.INT)
     params.attribute = xi.mod.INT
@@ -46,7 +45,7 @@ spellObject.onSpellCast = function(caster, target, spell)
     local damage = BlueMagicalSpell(caster, target, spell, params, INT_BASED)
     damage = BlueFinalAdjustments(caster, target, spell, damage, params)
 
-    if (damage > 0 and resist > 0.0625) then
+    if damage > 0 and resist > 0.0625 then
         local typeEffect = xi.effect.BIND
         target:delStatusEffect(typeEffect) -- Wiki says it can overwrite itself or other binds
         target:addStatusEffect(typeEffect, 1, 0, getBlueEffectDuration(caster, resist, typeEffect))

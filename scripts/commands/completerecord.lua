@@ -15,9 +15,8 @@ function error(player, msg)
 end
 
 function onTrigger(player, recordID, target)
-
     -- validate logId
-    if (recordID == nil) then
+    if recordID == nil then
         error(player, "Invalid recordID.")
         return
     end
@@ -36,5 +35,5 @@ function onTrigger(player, recordID, target)
 
     -- complete quest
     targ:setEminenceCompleted(recordID)
-    player:PrintToPlayer(string.format( "Completed RoE Record with ID %u for %s", recordID, targ:getName()))
+    player:PrintToPlayer(string.format("Completed RoE Record with ID %u for %s", recordID, targ:getName()))
 end

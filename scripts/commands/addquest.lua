@@ -18,22 +18,23 @@ function error(player, msg)
 end
 
 function onTrigger(player, logId, questId, target)
-
     -- validate logId
     local questLog = logIdHelpers.getQuestLogInfo(logId)
-    if (questLog == nil) then
+    if questLog == nil then
         error(player, "Invalid logID.")
         return
     end
+
     local logName = questLog.full_name
     logId = questLog.quest_log
 
     -- validate questId
     local areaQuestIds = xi.quest.id[xi.quest.area[logId]]
-    if (questId ~= nil) then
+    if questId ~= nil then
         questId = tonumber(questId) or areaQuestIds[string.upper(questId)]
     end
-    if (questId == nil or questId < 0) then
+
+    if questId == nil or questId < 0 then
         error(player, "Invalid questID.")
         return
     end

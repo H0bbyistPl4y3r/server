@@ -29,6 +29,8 @@
 #include "common/taskmgr.h"
 #include "common/timer.h"
 #include "common/version.h"
+#include "common/watchdog.h"
+
 #include <sstream>
 #if defined(__linux__) || defined(__APPLE__)
 #define BACKWARD_HAS_BFD 1
@@ -54,12 +56,6 @@
 #endif
 
 std::atomic<bool> gRunFlag = true;
-
-int    arg_c = 0;
-char** arg_v = nullptr;
-
-char* SERVER_NAME = nullptr;
-char  SERVER_TYPE = XI_SERVER_NONE;
 
 std::array<std::unique_ptr<socket_data>, FD_SETSIZE> sessions;
 
@@ -200,20 +196,8 @@ int main(int argc, char** argv)
     SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS | (prev_mode & ~ENABLE_QUICK_EDIT_MODE));
 #endif // _WIN32
 
-    { // initialize program arguments
-        char* p1 = SERVER_NAME = argv[0];
-        char* p2               = p1;
-        while ((p1 = strchr(p2, '/')) != nullptr || (p1 = strchr(p2, '\\')) != nullptr)
-        {
-            SERVER_NAME = ++p1;
-            p2          = p1;
-        }
-        arg_c = argc;
-        arg_v = argv;
-    }
-
     log_init(argc, argv);
-    set_server_type();
+    set_socket_type();
     usercheck();
     signals_init();
     timer_init();
@@ -229,10 +213,19 @@ int main(int argc, char** argv)
     { // Main runtime cycle
         duration next = std::chrono::milliseconds(200);
 
+        // clang-format off
+        auto watchdog = Watchdog(2000ms, [&]()
+        {
+            ShowCritical("Process main tick has taken 2000ms or more. Are you debugging or stuck in a loop?");
+            ShowCritical("Detaching watchdog thread, it will not fire again until restart.");
+        });
+        // clang-format on
+
         while (gRunFlag)
         {
             next = CTaskMgr::getInstance()->DoTimer(server_clock::now());
             do_sockets(&rfd, next);
+            watchdog.update();
         }
     }
 

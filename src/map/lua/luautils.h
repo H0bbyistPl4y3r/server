@@ -30,10 +30,6 @@
 #include "common/lua.h"
 extern sol::state lua;
 
-#ifdef TRACY_ENABLE
-#include "TracyLua.hpp"
-#endif
-
 // Sol compilation definitions are in the base CMakeLists file
 // SOL_ALL_SAFETIES_ON = 1
 // SOL_NO_CHECK_NUMBER_PRECISION = 1
@@ -49,8 +45,8 @@ extern sol::state lua;
     lua.new_usertype<BindingTypeName>(className)
 #define SOL_REGISTER(FuncName, Func) lua[className][FuncName] = &Func
 
-#include "../items/item_equipment.h"
-#include "../spell.h"
+#include "items/item_equipment.h"
+#include "spell.h"
 
 #include "lua_ability.h"
 #include "lua_action.h"
@@ -60,10 +56,10 @@ extern sol::state lua;
 #include "lua_item.h"
 #include "lua_mobskill.h"
 #include "lua_petskill.h"
-#include "lua_region.h"
 #include "lua_spell.h"
 #include "lua_statuseffect.h"
 #include "lua_trade_container.h"
+#include "lua_trigger_area.h"
 #include "lua_zone.h"
 
 /************************************************************************
@@ -83,7 +79,7 @@ class CBattlefield;
 class CItem;
 class CMobSkill;
 class CPetSkill;
-class CRegion;
+class CTriggerArea;
 class CStatusEffect;
 class CTradeContainer;
 class CItemPuppet;
@@ -102,7 +98,7 @@ class CLuaInstance;
 class CLuaItem;
 class CLuaMobSkill;
 class CLuaPetSkill;
-class CLuaRegion;
+class CLuaTriggerArea;
 class CLuaSpell;
 class CLuaStatusEffect;
 class CLuaTradeContainer;
@@ -136,12 +132,13 @@ namespace luautils
 
     void PopulateIDLookups(std::optional<uint16> maybeZoneId = std::nullopt);
 
-    void  SendEntityVisualPacket(uint32 npcid, const char* command);
-    void  InitInteractionGlobal();
-    auto  GetZone(uint16 zoneId) -> std::optional<CLuaZone>;
-    auto  GetNPCByID(uint32 npcid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
-    auto  GetMobByID(uint32 mobid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
-    auto  GetEntityByID(uint32 mobid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
+    void SendEntityVisualPacket(uint32 npcid, const char* command);
+    void InitInteractionGlobal();
+    auto GetZone(uint16 zoneId) -> std::optional<CLuaZone>;
+    auto GetNPCByID(uint32 npcid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
+    auto GetMobByID(uint32 mobid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
+    auto GetEntityByID(uint32 mobid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
+
     void  WeekUpdateConquest(sol::variadic_args va);
     uint8 GetRegionOwner(uint8 type);
     uint8 GetRegionInfluence(uint8 type); // Return influence graphics
@@ -202,17 +199,19 @@ namespace luautils
     int32 OnTOTDChange(uint16 ZoneID, uint8 TOTD);
 
     int32 OnGameIn(CCharEntity* PChar, bool zoning);
-    void  OnZoneIn(CCharEntity* PChar);                        // triggers when a player zones into a zone
-    void  OnZoneOut(CCharEntity* PChar);                       // triggers when a player leaves a zone
-    void  AfterZoneIn(CBaseEntity* PChar);                     // triggers after a player has finished zoning in
-    int32 OnZoneInitialise(uint16 ZoneID);                     // triggers when zone is loaded
-    void  OnZoneTick(CZone* PZone);                            // triggers when the zone is ticked
-    int32 OnRegionEnter(CCharEntity* PChar, CRegion* PRegion); // when player enters a region of a zone
-    int32 OnRegionLeave(CCharEntity* PChar, CRegion* Pregion); // when player leaves a region of a zone
+    void  OnZoneIn(CCharEntity* PChar);                                       // triggers when a player zones into a zone
+    void  OnZoneOut(CCharEntity* PChar);                                      // triggers when a player leaves a zone
+    void  AfterZoneIn(CBaseEntity* PChar);                                    // triggers after a player has finished zoning in
+    int32 OnZoneInitialise(uint16 ZoneID);                                    // triggers when zone is loaded
+    void  OnZoneTick(CZone* PZone);                                           // triggers when the zone is ticked
+    int32 OnTriggerAreaEnter(CCharEntity* PChar, CTriggerArea* PTriggerArea); // when player enters a trigger area in a zone
+    int32 OnTriggerAreaLeave(CCharEntity* PChar, CTriggerArea* PTriggerArea); // when player leaves a trigger area in a zone
     int32 OnTransportEvent(CCharEntity* PChar, uint32 TransportID);
     void  OnTimeTrigger(CNpcEntity* PNpc, uint8 triggerID);
     int32 OnConquestUpdate(CZone* PZone, ConquestUpdate type); // hourly conquest update
 
+    void OnServerStart();
+    void OnJSTMidnight();
     void OnTimeServerTick();
 
     int32 OnTrigger(CCharEntity* PChar, CBaseEntity* PNpc);                                // triggered when user targets npc and clicks action button
@@ -262,6 +261,8 @@ namespace luautils
     int32 OnCriticalHit(CBattleEntity* PMob, CBattleEntity* PAttacker);
     int32 OnMobDeath(CBaseEntity* PMob, CBaseEntity* PKiller); // triggers on mob death
     int32 OnMobDespawn(CBaseEntity* PMob);                     // triggers on mob despawn (death not assured)
+
+    int32 OnPetLevelRestriction(CBaseEntity* PMob); // Triggers onPetLevelRestriction in global pet script
 
     int32 OnPath(CBaseEntity* PEntity);         // triggers when an entity is on a pathfind point
     int32 OnPathPoint(CBaseEntity* PEntity);    // triggers when an entity stops on a path point and has finished waiting at it

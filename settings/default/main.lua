@@ -12,7 +12,7 @@ xi.settings = xi.settings or {}
 xi.settings.main =
 {
     -- Server name (not longer than 15 characters)
-    SERVER_NAME = "Nameless",
+    SERVER_NAME = "Vana'Diel",
 
     SERVER_MESSAGE =
         "Please visit https://github.com/LandSandBoat/server for the latest information on the project.\n" ..
@@ -86,10 +86,10 @@ xi.settings.main =
     MAX_LEVEL                      = 99, -- Level max of the server, lowers the attainable cap by disabling Limit Break quests.
     NORMAL_MOB_MAX_LEVEL_RANGE_MIN = 0,  -- Lower Bound of Max Level Range for Normal Mobs (0 = Uncapped)
     NORMAL_MOB_MAX_LEVEL_RANGE_MAX = 0,  -- Upper Bound of Max Level Range for Normal Mobs (0 = Uncapped)
-    START_GIL                      = 10, -- Amount of gil given to newly created characters.
+    START_GIL                      = 100, -- Amount of gil given to newly created characters.
     START_INVENTORY                = 30, -- Starting inventory and satchel size.  Ignores values < 30.  Do not set above 80!
     NEW_CHARACTER_CUTSCENE         = 1,  -- Set to 1 to enable opening cutscenes, 0 to disable.
-    SUBJOB_QUEST_LEVEL             = 18, -- Minimum level to accept either subjob quest.  Set to 0 to start the game with subjobs unlocked.
+    SUBJOB_QUEST_LEVEL             = 0, -- Minimum level to accept either subjob quest.  Set to 0 to start the game with subjobs unlocked.
     ADVANCED_JOB_LEVEL             = 30, -- Minimum level to accept advanced job quests.  Set to 0 to start the game with advanced jobs.
     ALL_MAPS                       = 0,  -- Set to 1 to give starting characters all the maps.
     UNLOCK_OUTPOST_WARPS           = 0,  -- Set to 1 to give starting characters all outpost warps.  2 to add Tu'Lia and Tavnazia.
@@ -140,13 +140,13 @@ xi.settings.main =
     EXCAVATION_BREAK_CHANCE = 33, -- % chance for the pickaxe to break during excavation.  Set between 0 and 100.
     LOGGING_BREAK_CHANCE    = 33, -- % chance for the hatchet to break during logging.  Set between 0 and 100.
     MINING_BREAK_CHANCE     = 33, -- % chance for the pickaxe to break during mining.  Set between 0 and 100.
-    HARVESTING_RATE         = 50, -- % chance to recieve an item from haresting.  Set between 0 and 100.
-    EXCAVATION_RATE         = 50, -- % chance to recieve an item from excavation.  Set between 0 and 100.
-    LOGGING_RATE            = 50, -- % chance to recieve an item from logging.  Set between 0 and 100.
-    MINING_RATE             = 50, -- % chance to recieve an item from mining.  Set between 0 and 100.
+    HARVESTING_RATE         = 85, -- % chance to recieve an item from haresting.  Set between 0 and 100.
+    EXCAVATION_RATE         = 85, -- % chance to recieve an item from excavation.  Set between 0 and 100.
+    LOGGING_RATE            = 85, -- % chance to recieve an item from logging.  Set between 0 and 100.
+    MINING_RATE             = 85, -- % chance to recieve an item from mining.  Set between 0 and 100.
     DIGGING_RATE            = 85, -- % chance to receive an item from chocbo digging during favorable weather.  Set between 0 and 100.
 
-    HEALING_TP_CHANGE       = -100, -- Change in TP for each healing tick. Default is -100
+    HEALING_TP_CHANGE       = -50, -- Change in TP for each healing tick. Default is -100
 
     -- SE implemented coffer/chest illusion time in order to prevent coffer farming. No-one in the same area can open a chest or coffer for loot (gil, gems & items)
     -- till a random time between MIN_ILLSION_TIME and MAX_ILLUSION_TIME. During this time players can loot keyitem and item related to quests (AF, maps... etc.)
@@ -224,8 +224,8 @@ xi.settings.main =
     RIVERNE_PORTERS              = 120,   -- Time in seconds that Unstable Displacements in Cape Riverne stay open after trading a scale.
     LANTERNS_STAY_LIT            = 1200,  -- time in seconds that lanterns in the Den of Rancor stay lit.
     ENABLE_COP_ZONE_CAP          = 0,     -- Enable or disable lvl cap
-    ALLOW_MULTIPLE_EXP_RINGS     = 0,     -- Set to 1 to remove ownership restrictions on the Chariot/Empress/Emperor Band trio.
-    BYPASS_EXP_RING_ONE_PER_WEEK = 0,     -- Set to 1 to bypass the limit of one ring per Conquest Tally Week.
+    ALLOW_MULTIPLE_EXP_RINGS     = 1,     -- Set to 1 to remove ownership restrictions on the Chariot/Empress/Emperor Band trio.
+    BYPASS_EXP_RING_ONE_PER_WEEK = 1,     -- Set to 1 to bypass the limit of one ring per Conquest Tally Week.
     NUMBER_OF_DM_EARRINGS        = 1,     -- Number of earrings players can simultaneously own from Divine Might before scripts start blocking them (Default: 1)
     HOMEPOINT_TELEPORT           = 1,     -- Enables the homepoint teleport system
     DIG_ABUNDANCE_BONUS          = 0,     -- Increase chance of digging up an item (450  = item digup chance +45)

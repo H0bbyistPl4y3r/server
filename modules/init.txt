@@ -36,5 +36,5 @@
 #
 # Live example:
 
-custom/commands/
-custom/lua/test_npcs_in_gm_home.lua
+custom/lua/homepoint_heal.lua
+custom/lua/mission_wardrobe_unlocks.lua

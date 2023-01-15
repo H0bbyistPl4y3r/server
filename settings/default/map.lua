@@ -34,7 +34,7 @@ xi.settings.map =
     PACKETGUARD_ENABLED = true,
 
     -- Minimal number of 0x3A packets which uses for detect lightluggage (set 0 for disable)
-    LIGHTLUGGAGE_BLOCK = 0,
+    LIGHTLUGGAGE_BLOCK = 4,
 
     -- Enable or disable Recycle Bin (Set to false for items to be dropped immediately)
     ENABLE_ITEM_RECYCLE_BIN = true,
@@ -121,7 +121,7 @@ xi.settings.map =
     CRAFT_COMMON_CAP = 700,
 
     -- Amount of points allowed in crafts over the level defined above. Points are shared across all crafting skills. (Retail = 400; All skills can go to max = 3200)
-    CRAFT_SPECIALIZATION_POINTS = 3200,
+    CRAFT_SPECIALIZATION_POINTS = 400,
 
     -- Enables fishing. 0 = Disabled. 1 = Enable. ENABLE AT YOUR OWN RISK.
     FISHING_ENABLE = false,
@@ -132,23 +132,19 @@ xi.settings.map =
     -- Enable/disable skill-ups from bloodpacts
     SKILLUP_BLOODPACT = true,
 
-    -- Adjust rate of TP gain for mobs, pets (includes charmed pets), fellows, trusts and players.
-    -- Acts as a multiplier, so default is 1.
-    MOB_TP_MULTIPLIER    = 1.0,
-    PET_TP_MULTIPLIER    = 1.5,
+    -- Adjust rate of TP gain for mobs, and players. Acts as a multiplier, so default is 1.
+    MOB_TP_MULTIPLIER    = 0.5,
     PLAYER_TP_MULTIPLIER = 1.0,
-    TRUST_TP_MULTIPLIER  = 1.5,
-    FELLOW_TP_MULTIPLIER = 1.0,
 
     -- Adjust max HP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_HP_MULTIPLIER        = 1.0,
-    MOB_HP_MULTIPLIER       = 1.0,
+    NM_HP_MULTIPLIER        = 0.9,
+    MOB_HP_MULTIPLIER       = 0.5,
     PLAYER_HP_MULTIPLIER    = 1.0,
     ALTER_EGO_HP_MULTIPLIER = 1.5,
 
     -- Adjust max MP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_MP_MULTIPLIER        = 1.0,
-    MOB_MP_MULTIPLIER       = 1.0,
+    NM_MP_MULTIPLIER        = 0.9,
+    MOB_MP_MULTIPLIER       = 0.5,
     PLAYER_MP_MULTIPLIER    = 1.0,
     ALTER_EGO_MP_MULTIPLIER = 1.5,
 
@@ -166,8 +162,8 @@ xi.settings.map =
     INCLUDE_MOB_SJ = false,
 
     -- Adjust base stats (str/vit/etc.) for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
-    NM_STAT_MULTIPLIER        = 1.0,
-    MOB_STAT_MULTIPLIER       = 1.0,
+    NM_STAT_MULTIPLIER        = 0.9,
+    MOB_STAT_MULTIPLIER       = 0.5,
     PLAYER_STAT_MULTIPLIER    = 1.0,
     ALTER_EGO_STAT_MULTIPLIER = 1.5,
 
@@ -241,7 +237,7 @@ xi.settings.map =
     HEALING_TICK_DELAY = 10,
 
     -- Set to 1 to enable server side anti-cheating measurements
-    ANTICHEAT_ENABLED = false,
+    ANTICHEAT_ENABLED = true,
 
     -- Set to 1 to completely disable auto-jailing offenders
     ANTICHEAT_JAIL_DISABLE = false,

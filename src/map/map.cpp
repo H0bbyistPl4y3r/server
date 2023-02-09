@@ -73,27 +73,6 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include <io.h>
 #endif
 
-#ifdef TRACY_ENABLE
-void* operator new(std::size_t count)
-{
-    auto ptr = malloc(count);
-    TracyAlloc(ptr, count);
-    return ptr;
-}
-
-void operator delete(void* ptr) noexcept
-{
-    TracyFree(ptr);
-    free(ptr);
-}
-
-void operator delete(void* ptr, std::size_t count)
-{
-    TracyFree(ptr);
-    free(ptr);
-}
-#endif // TRACY_ENABLE
-
 const char* MAP_CONF_FILENAME = nullptr;
 
 int8* g_PBuff   = nullptr; // Global packet clipboard
@@ -225,6 +204,7 @@ int32 do_init(int32 argc, char** argv)
 
     ShowInfo(sql->GetClientVersion().c_str());
     ShowInfo(sql->GetServerVersion().c_str());
+    sql->CheckCharset();
 
     luautils::init(); // Also calls moduleutils::LoadLuaModules();
 
@@ -272,6 +252,16 @@ int32 do_init(int32 argc, char** argv)
     jobpointutils::LoadGifts();
     daily::LoadDailyItems();
     roeutils::UpdateUnityRankings();
+
+    if (!std::filesystem::exists("./navmeshes/") || std::filesystem::is_empty("./navmeshes/"))
+    {
+        ShowInfo("./navmeshes/ directory isn't present or is empty");
+    }
+
+    if (!std::filesystem::exists("./losmeshes/") || std::filesystem::is_empty("./losmeshes/"))
+    {
+        ShowInfo("./losmeshes/ directory isn't present or is empty");
+    }
 
     ShowInfo("do_init: loading zones");
     zoneutils::LoadZoneList();

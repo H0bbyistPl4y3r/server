@@ -325,7 +325,7 @@ namespace petutils
     {
         while (!g_PPetList.empty())
         {
-            delete *g_PPetList.begin();
+            destroy(*g_PPetList.begin());
             g_PPetList.erase(g_PPetList.begin());
         }
     }
@@ -1012,7 +1012,7 @@ namespace petutils
         LoadAvatarStats(PMaster, PPet);                                                                               // follows PC calcs (w/o SJ)
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDelay((uint16)(floor(1000.0f * (320.0f / 60.0f)))); // 320 delay
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setBaseDelay((uint16)(floor(1000.0f * (320.0f / 60.0f))));
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage((uint16)(1 + floor(mLvl * 0.9f)));
+        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage((uint16)(floor(mLvl / 2) + 3));
         // Set A+ weapon skill
         PPet->setModifier(Mod::ATT, battleutils::GetMaxSkill(SKILL_GREAT_AXE, JOB_WAR, mLvl > 99 ? 99 : mLvl));
         PPet->setModifier(Mod::ACC, battleutils::GetMaxSkill(SKILL_GREAT_AXE, JOB_WAR, mLvl > 99 ? 99 : mLvl));
@@ -1125,7 +1125,7 @@ namespace petutils
         FinalizePetStatistics(PMaster, PPet);
     }
 
-    void CalculateLoupanStats(CBattleEntity* PMaster, CPetEntity* PPet)
+    void CalculateLuopanStats(CBattleEntity* PMaster, CPetEntity* PPet)
     {
         PPet->SetMLevel(PMaster->GetMLevel());
         PPet->health.maxhp = (uint32)floor((250 * PPet->GetMLevel()) / 15);
@@ -1842,7 +1842,7 @@ namespace petutils
         }
         else if (PPet->getPetType() == PET_TYPE::LUOPAN && PMaster->objtype == TYPE_PC)
         {
-            CalculateLoupanStats(PMaster, PPet);
+            CalculateLuopanStats(PMaster, PPet);
         }
 
         PPet->setSpawnLevel(PPet->GetMLevel());

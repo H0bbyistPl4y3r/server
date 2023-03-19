@@ -248,6 +248,22 @@ void SmallPacket0x00A(map_session_data_t* const PSession, CCharEntity* const PCh
         return;
     }
 
+    /*
+     * Handle out of sync zone correction..
+     */
+    if (data.ref<uint16_t>(0x02) > 1)
+    {
+        PSession->server_packet_id = data.ref<uint16_t>(0x02);
+
+        // Clear all pending packets for this character.
+        // This incoming 0x00A from the client wants us to set the the starting sync count for all new packets to the sync count from 0x02.
+        // If we do not do this, all further packets may be ignored by the client and will result in disconnection from the server.
+        if (PChar)
+        {
+            PChar->clearPacketList();
+        }
+    }
+
     if (PSession->blowfish.status == BLOWFISH_WAITING) // Generate new blowfish session, call zone in, etc, only once.
     {
         PChar->clearPacketList();
@@ -2287,8 +2303,49 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
     uint8 boxtype = data.ref<uint8>(0x05);
     uint8 slotID  = data.ref<uint8>(0x06);
 
-    ShowInfo("DeliveryBox Action (%02hx)", data.ref<uint8>(0x04));
-    PrintPacket(data);
+    constexpr auto actionToStr = [](uint8 actionIn)
+    {
+        switch (actionIn)
+        {
+            case 0x01:
+                return "Send old items";
+            case 0x02:
+                return "Add item";
+            case 0x03:
+                return "Send confirmation";
+            case 0x04:
+                return "Cancel item";
+            case 0x05:
+                return "Send item count";
+            case 0x06:
+                return "Send new items";
+            case 0x07:
+                return "Remove delivered item";
+            case 0x08:
+                return "Update delivery slot";
+            case 0x09:
+                return "Return to sender";
+            case 0x0A:
+                return "Take item";
+            case 0x0B:
+                return "Remove item";
+            case 0x0C:
+                return "Confirm name";
+            case 0x0D:
+                return "Open send box";
+            case 0x0E:
+                return "Open recv box";
+            case 0x0F:
+                return "Close box";
+            default:
+                return "Unknown";
+        }
+    };
+
+    if (settings::get<bool>("logging.DEBUG_DELIVERY_BOX"))
+    {
+        ShowDebug(fmt::format("DeliveryBox Action 0x{:02X} ({}) by {}", action, actionToStr(action), PChar->name));
+    }
 
     if (jailutils::InPrison(PChar)) // If jailed, no mailbox menu for you.
     {
@@ -2297,7 +2354,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
 
     if (!zoneutils::IsResidentialArea(PChar) && PChar->m_GMlevel == 0 && !PChar->loc.zone->CanUseMisc(MISC_AH) && !PChar->loc.zone->CanUseMisc(MISC_MOGMENU))
     {
-        ShowDebug("%s is trying to use the delivery box in a disallowed zone [%s]", PChar->GetName(), PChar->loc.zone->GetName());
+        ShowWarning("%s is trying to use the delivery box in a disallowed zone [%s]", PChar->GetName(), PChar->loc.zone->GetName());
         return;
     }
 
@@ -2314,29 +2371,14 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
         return;
     }
 
-    // 0x01 - Send old items
-    // 0x02 - Add items to be sent
-    // 0x03 - Send confirmation
-    // 0x04 - Cancel sending item
-    // 0x05 - Send client new item count
-    // 0x06 - Send new items
-    // 0x07 - Removes a delivered item from sending box
-    // 0x08 - Update delivery cell before removing
-    // 0x09 - Return to sender
-    // 0x0a - Take item from cell
-    // 0x0b - Remove item from cell
-    // 0x0c - Confirm name before sending
-    // 0x0d - Opening to send mail
-    // 0x0e - Opening to receive mail
-    // 0x0f - Closing mail window
-
     switch (action)
     {
+        // 0x01 - Send old items
         case 0x01:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (boxtype < 1 || boxtype > 2 || !charutils::isAnyDeliveryBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in an invalid state (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2393,11 +2435,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x02: // add items to send box
+        // 0x02 - Add items to be sent
+        case 0x02:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isSendBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_SEND_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2461,17 +2504,18 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                     }
                     else
                     {
-                        delete PUBoxItem;
+                        destroy(PUBoxItem);
                     }
                 }
             }
             return;
         }
-        case 0x03: // send items
+        // 0x03 - Send confirmation
+        case 0x03:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isSendBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_SEND_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2483,6 +2527,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                     send_items++;
                 }
             }
+
             if (!PChar->UContainer->IsSlotEmpty(slotID))
             {
                 CItem* PItem = PChar->UContainer->GetItem(slotID);
@@ -2523,6 +2568,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                                 }
                             }
                         }
+
                         if (!commit || !sql->TransactionCommit())
                         {
                             sql->TransactionRollback();
@@ -2535,11 +2581,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x04: // cancel send
+        // 0x04 - Cancel sending item
+        case 0x04:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isSendBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_SEND_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2614,12 +2661,13 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
+        // 0x05 - Send client new item count
         case 0x05:
         {
             // Send the player the new items count not seen
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (boxtype < 1 || boxtype > 2 || !charutils::isAnyDeliveryBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in an invalid state (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2649,16 +2697,18 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             {
                 received_items = (uint8)sql->NumRows();
             }
+
             PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, 0xFF, 0x02));
             PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, received_items, 0x01));
 
             return;
         }
-        case 0x06: // Move item to received
+        // 0x06 - Send new items
+        case 0x06:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isRecvBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_RECV_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2724,9 +2774,10 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                             }
                         }
                     }
+
                     if (!commit || !sql->TransactionCommit())
                     {
-                        delete PItem;
+                        destroy(PItem);
 
                         sql->TransactionRollback();
                         ShowError("Could not find new item to add to delivery box. PlayerID: %d Box :%d Slot: %d", PChar->id, boxtype, slotID);
@@ -2737,11 +2788,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x07: // remove received items from send box
+        // 0x07 - Removes a delivered item from sending box
+        case 0x07:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isSendBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_SEND_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2767,7 +2819,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                                 PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, 0, 0x02));
                                 PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, PItem, deliverySlotID, received_items, 0x01));
                                 PChar->UContainer->SetItem(deliverySlotID, nullptr);
-                                delete PItem;
+                                destroy(PItem);
                             }
                         }
                     }
@@ -2775,11 +2827,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
+        // 0x08 - Update delivery cell before removing
         case 0x08:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isAnyDeliveryBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in an invalid state (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2790,13 +2843,15 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
 
             return;
         }
-        case 0x09: // Option: Return
+        // 0x09 - Return to sender
+        case 0x09:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isRecvBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_RECV_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
+
             if (!PChar->UContainer->IsSlotEmpty(slotID))
             {
                 bool isAutoCommitOn = sql->GetAutoCommit();
@@ -2839,7 +2894,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                                 {
                                     PChar->UContainer->SetItem(slotID, nullptr);
                                     PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, PItem, slotID, PChar->UContainer->GetItemsCount(), 1));
-                                    delete PItem;
+                                    destroy(PItem);
                                     commit = true;
                                 }
                             }
@@ -2859,11 +2914,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x0A: // Option: Take
+        // 0x0a - Take item from cell
+        case 0x0A:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (boxtype < 1 || boxtype > 2 || !charutils::isAnyDeliveryBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in an invalid state (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2923,7 +2979,7 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                         PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, PItem, slotID, PChar->UContainer->GetItemsCount(), 1));
                         PChar->pushPacket(new CInventoryFinishPacket());
                         PChar->UContainer->SetItem(slotID, nullptr);
-                        delete PItem;
+                        destroy(PItem);
                     }
                 }
 
@@ -2931,11 +2987,12 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x0B: // Option: Drop
+        // 0x0b - Remove item from cell
+        case 0x0B:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isRecvBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_RECV_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2949,16 +3006,17 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
                     PChar->UContainer->SetItem(slotID, nullptr);
 
                     PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, PItem, slotID, PChar->UContainer->GetItemsCount(), 1));
-                    delete PItem;
+                    destroy(PItem);
                 }
             }
             return;
         }
-        case 0x0C: // Confirm name (send box)
+        // 0x0c - Confirm name before sending
+        case 0x0C:
         {
-            if (PChar->UContainer->GetType() != UCONTAINER_DELIVERYBOX)
+            if (!charutils::isSendBoxOpen(PChar))
             {
-                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_DELIVERYBOX (%s)", action, PChar->GetName());
+                ShowWarning("Delivery Box packet handler received action %u while UContainer is in a state other than UCONTAINER_SEND_DELIVERYBOX (%s)", action, PChar->GetName());
                 return;
             }
 
@@ -2986,17 +3044,22 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             return;
         }
-        case 0x0D: // open send box
-        case 0x0E: // open delivery box
+        // 0x0d - Opening to send mail
+        case 0x0D:
         {
-            PChar->UContainer->Clean();
-            PChar->UContainer->SetType(UCONTAINER_DELIVERYBOX);
-            PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, 0, 1));
+            charutils::OpenSendBox(PChar, action, boxtype);
             return;
         }
+        // 0x0e - Opening to receive mail
+        case 0x0E:
+        {
+            charutils::OpenRecvBox(PChar, action, boxtype);
+            return;
+        }
+        // 0x0f - Closing mail window
         case 0x0F:
         {
-            if (PChar->UContainer->GetType() == UCONTAINER_DELIVERYBOX)
+            if (charutils::isAnyDeliveryBoxOpen(PChar))
             {
                 PChar->UContainer->Clean();
             }
@@ -3005,7 +3068,6 @@ void SmallPacket0x04D(map_session_data_t* const PSession, CCharEntity* const PCh
     }
 
     // Open mail, close mail
-
     PChar->pushPacket(new CDeliveryBoxPacket(action, boxtype, 0, 1));
 }
 
@@ -3056,7 +3118,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
             {
                 if (PItem->isSubType(ITEM_CHARGED) && ((CItemUsable*)PItem)->getCurrentCharges() < ((CItemUsable*)PItem)->getMaxCharges())
                 {
-                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0));
+                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0));
                     return;
                 }
                 PChar->pushPacket(new CAuctionHousePacket(action, PItem, quantity, price));
@@ -3094,7 +3156,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
             }
             else
             {
-                PChar->pushPacket(new CAuctionHousePacket(action, 246, 0, 0)); // try again in a little while msg
+                PChar->pushPacket(new CAuctionHousePacket(action, 246, 0, 0, 0, 0)); // try again in a little while msg
                 break;
             }
         }
@@ -3117,7 +3179,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
             {
                 if (PItem->isSubType(ITEM_CHARGED) && ((CItemUsable*)PItem)->getCurrentCharges() < ((CItemUsable*)PItem)->getMaxCharges())
                 {
-                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0));
+                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0));
                     return;
                 }
                 uint32 auctionFee = 0;
@@ -3126,7 +3188,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                     if (PItem->getStackSize() == 1 || PItem->getStackSize() != PItem->getQuantity())
                     {
                         ShowError("SmallPacket0x04E::AuctionHouse: Incorrect quantity of item %s", PItem->getName());
-                        PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0)); // Failed to place up
+                        PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0)); // Failed to place up
                         return;
                     }
                     auctionFee = (uint32)(settings::get<uint32>("map.AH_BASE_FEE_STACKS") + (price * settings::get<float>("map.AH_TAX_RATE_STACKS") / 100));
@@ -3140,7 +3202,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
 
                 if (PChar->getStorage(LOC_INVENTORY)->GetItem(0)->getQuantity() < auctionFee)
                 {
-                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0)); // Not enough gil to pay fee
+                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0)); // Not enough gil to pay fee
                     return;
                 }
 
@@ -3158,7 +3220,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
 
                 if (settings::get<uint8>("map.AH_LIST_LIMIT") && ah_listings >= settings::get<uint8>("map.AH_LIST_LIMIT"))
                 {
-                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0)); // Failed to place up
+                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0)); // Failed to place up
                     return;
                 }
 
@@ -3167,13 +3229,13 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                 if (sql->Query(fmtQuery, PItem->getID(), quantity == 0, PChar->id, PChar->GetName(), (uint32)time(nullptr), price) == SQL_ERROR)
                 {
                     ShowError("SmallPacket0x04E::AuctionHouse: Cannot insert item %s to database", PItem->getName());
-                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0)); // failed to place up
+                    PChar->pushPacket(new CAuctionHousePacket(action, 197, 0, 0, 0, 0)); // failed to place up
                     return;
                 }
                 charutils::UpdateItem(PChar, LOC_INVENTORY, slot, -(int32)(quantity != 0 ? 1 : PItem->getStackSize()));
                 charutils::UpdateItem(PChar, LOC_INVENTORY, 0, -(int32)auctionFee); // Deduct AH fee
 
-                PChar->pushPacket(new CAuctionHousePacket(action, 1, 0, 0));                 // Merchandise put up on auction msg
+                PChar->pushPacket(new CAuctionHousePacket(action, 1, 0, 0, 0, 0));           // Merchandise put up on auction msg
                 PChar->pushPacket(new CAuctionHousePacket(0x0C, (uint8)ah_listings, PChar)); // Inform history of slot
             }
         }
@@ -3184,7 +3246,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
 
             if (PChar->getStorage(LOC_INVENTORY)->GetFreeSlotsCount() == 0)
             {
-                PChar->pushPacket(new CAuctionHousePacket(action, 0xE5, 0, 0));
+                PChar->pushPacket(new CAuctionHousePacket(action, 0xE5, 0, 0, 0, 0));
             }
             else
             {
@@ -3198,7 +3260,7 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                         {
                             if (PChar->getStorage(LocID)->SearchItem(itemid) != ERROR_SLOTID)
                             {
-                                PChar->pushPacket(new CAuctionHousePacket(action, 0xE5, 0, 0));
+                                PChar->pushPacket(new CAuctionHousePacket(action, 0xE5, 0, 0, 0, 0));
                                 return;
                             }
                         }
@@ -3219,14 +3281,22 @@ void SmallPacket0x04E(map_session_data_t* const PSession, CCharEntity* const PCh
                             {
                                 charutils::UpdateItem(PChar, LOC_INVENTORY, 0, -(int32)(price));
 
-                                PChar->pushPacket(new CAuctionHousePacket(action, 0x01, itemid, price));
+                                PChar->pushPacket(new CAuctionHousePacket(action, 0x01, itemid, price, quantity, PItem->getStackSize()));
                                 PChar->pushPacket(new CInventoryFinishPacket());
                             }
                             return;
                         }
                     }
                 }
-                PChar->pushPacket(new CAuctionHousePacket(action, 0xC5, itemid, price));
+                // You were unable to buy the {qty} {item}
+                if (PItem)
+                {
+                    PChar->pushPacket(new CAuctionHousePacket(action, 0xC5, itemid, price, quantity, PItem->getStackSize()));
+                }
+                else
+                {
+                    PChar->pushPacket(new CAuctionHousePacket(action, 0xC5, itemid, price, quantity, 0));
+                }
             }
         }
         break;
@@ -5534,7 +5604,7 @@ void SmallPacket0x0C4(map_session_data_t* const PSession, CCharEntity* const PCh
             LinkshellID = linkshell::RegisterNewLinkshell(DecodedName, LinkshellColor);
             if (LinkshellID != 0)
             {
-                delete PItemLinkshell;
+                destroy(PItemLinkshell);
                 PItemLinkshell = (CItemLinkshell*)itemutils::GetItem(513);
                 if (PItemLinkshell == nullptr)
                 {

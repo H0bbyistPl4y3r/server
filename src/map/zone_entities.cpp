@@ -617,6 +617,12 @@ void CZoneEntities::SpawnNPCs(CCharEntity* PChar)
                     PChar->updateEntityPacket(PCurrentNpc, ENTITY_DESPAWN, UPDATE_NONE);
                 }
             }
+            // NPC not visible, remove it from spawn list if it's in there
+            else if (NPC != PChar->SpawnNPCList.end())
+            {
+                PChar->SpawnNPCList.erase(NPC);
+                PChar->updateEntityPacket(PCurrentNpc, ENTITY_DESPAWN, UPDATE_NONE);
+            }
         }
     }
 }
@@ -1312,7 +1318,7 @@ void CZoneEntities::WideScan(CCharEntity* PChar, uint16 radius)
     PChar->pushPacket(new CWideScanPacket(WIDESCAN_END));
 }
 
-void CZoneEntities::ZoneServer(time_point tick, bool check_trigger_areas)
+void CZoneEntities::ZoneServer(time_point tick)
 {
     TracyZoneScoped;
     TracyZoneString(m_zone->GetName());
@@ -1530,10 +1536,6 @@ void CZoneEntities::ZoneServer(time_point tick, bool check_trigger_areas)
             }
             PChar->PAI->Tick(tick);
             PChar->PTreasurePool->CheckItems(tick);
-            if (check_trigger_areas)
-            {
-                m_zone->CheckTriggerAreas(PChar);
-            }
         }
     }
 

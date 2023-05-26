@@ -3,6 +3,7 @@
 -----------------------------------
 require("scripts/globals/spell_data")
 require("scripts/globals/keyitems")
+require("scripts/globals/npc_util")
 require("scripts/globals/quests")
 require("scripts/globals/status")
 require("scripts/globals/utils")
@@ -509,7 +510,7 @@ local blueWeakness =
         xi.weaponskill.BLAST_SHOT,
         xi.weaponskill.HEAVY_SHOT,
         xi.weaponskill.DETONATOR,
-        xi.weaponskill.SHADOWSTICH,
+        xi.weaponskill.SHADOWSTITCH,
         xi.weaponskill.DANCING_EDGE,
         xi.weaponskill.SHARK_BITE,
         xi.weaponskill.EVISCERATION,
@@ -677,7 +678,7 @@ end
 xi.abyssea.spendTravStones = function(player, spentstones)
     local numRemoved = 0
 
-    for keyItem = xi.ki.TRAVERSER_STONE6, xi.ki.TRAVERSER_STONE1 do
+    for keyItem = xi.ki.TRAVERSER_STONE6, xi.ki.TRAVERSER_STONE1, -1 do
         if numRemoved == spentstones then
             break
         elseif player:hasKeyItem(keyItem) then
@@ -719,26 +720,23 @@ xi.abyssea.giveNMDrops = function(mob, player, ID)
     local normalDrops = xi.abyssea.mob[mob:getName()]['Normal']
     local playerClaimed = GetPlayerByID(mob:getLocalVar("[ClaimedBy]"))
 
-    for k, v in pairs(normalDrops) do
+    for _, keyItemId in pairs(normalDrops) do
         if xi.abyssea.canGiveNMKI(mob, 20) then
-            playerClaimed:addKeyItem(v)
-            playerClaimed:messageSpecial(ID.text.KEYITEM_OBTAINED, v)
+            npcUtil.giveKeyItem(playerClaimed, keyItemId, ID.text.PLAYER_KEYITEM_OBTAINED)
         end
     end
 
-    for k, v in pairs(atmaDrops) do
+    for _, keyItemId in pairs(atmaDrops) do
         local ally = playerClaimed:getAlliance()
 
         for _, member in ipairs(ally) do
-            if not member:hasKeyItem(v) and xi.abyssea.canGiveNMKI(mob, 10) then
-                member:addKeyItem(v)
-                member:messageSpecial(ID.text.KEYITEM_OBTAINED, v)
+            if not member:hasKeyItem(keyItemId) and xi.abyssea.canGiveNMKI(mob, 10) then
+                npcUtil.giveKeyItem(member, keyItemId, ID.text.PLAYER_KEYITEM_OBTAINED)
             end
         end
 
-        if not playerClaimed:hasKeyItem(v) then
-            playerClaimed:addKeyItem(v)
-            playerClaimed:messageSpecial(ID.text.KEYITEM_OBTAINED, v)
+        if not playerClaimed:hasKeyItem(keyItemId) then
+            npcUtil.giveKeyItem(playerClaimed, keyItemId, ID.text.PLAYER_KEYITEM_OBTAINED)
         end
     end
 
@@ -1095,6 +1093,13 @@ xi.abyssea.onZoneIn = function(player)
     -- status.  TODO: nameFlags enum
     if player:getGMLevel() > 0 and player:checkNameFlags(0x04000000) then
         player:addStatusEffectEx(xi.effect.VISITANT, xi.effect.VISITANT, 0, 0, 0)
+    end
+end
+
+xi.abyssea.onEventFinish = function(player, csid, option)
+    if csid == 2180 then
+        local zoneID = player:getZoneID()
+        player:setPos(unpack(xi.abyssea.exitPositions[zoneID]))
     end
 end
 

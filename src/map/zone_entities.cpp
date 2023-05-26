@@ -215,8 +215,17 @@ void CZoneEntities::DeleteTRUST(CBaseEntity* PTrust)
 void CZoneEntities::FindPartyForMob(CBaseEntity* PEntity)
 {
     TracyZoneScoped;
-    XI_DEBUG_BREAK_IF(PEntity == nullptr);
-    XI_DEBUG_BREAK_IF(PEntity->objtype != TYPE_MOB);
+    if (PEntity == nullptr)
+    {
+        ShowWarning("PEntity was null.");
+        return;
+    }
+
+    if (PEntity->objtype != TYPE_MOB)
+    {
+        ShowWarning("Non-MOB was passed into function (%s).", PEntity->GetName());
+        return;
+    }
 
     CMobEntity* PMob = (CMobEntity*)PEntity;
 
@@ -350,8 +359,18 @@ void CZoneEntities::MusicChange(uint8 BlockID, uint8 MusicTrackID)
 
 void CZoneEntities::DecreaseZoneCounter(CCharEntity* PChar)
 {
-    XI_DEBUG_BREAK_IF(PChar == nullptr);
-    XI_DEBUG_BREAK_IF(PChar->loc.zone != m_zone);
+    if (PChar == nullptr)
+    {
+        ShowWarning("PChar is null.");
+        return;
+    }
+
+    if (PChar->loc.zone != m_zone)
+    {
+        ShowWarning("Zone mismatch for %s.", PChar->GetName());
+        return;
+    }
+
     TracyZoneScoped;
 
     battleutils::RelinquishClaim(PChar);
@@ -570,7 +589,7 @@ void CZoneEntities::SpawnPETs(CCharEntity* PChar)
         SpawnIDList_t::iterator PET         = PChar->SpawnPETList.find(PCurrentPet->id);
 
         // Is this pet "visible" to the player?
-        if ((PCurrentPet->status == STATUS_TYPE::NORMAL || PCurrentPet->status == STATUS_TYPE::MOB) && distance(PChar->loc.p, PCurrentPet->loc.p) <= 50)
+        if ((PCurrentPet->status == STATUS_TYPE::NORMAL || PCurrentPet->status == STATUS_TYPE::UPDATE) && distance(PChar->loc.p, PCurrentPet->loc.p) <= 50)
         {
             // pet not in update list for player, add it in
             if (PET == PChar->SpawnPETList.end())
@@ -598,7 +617,7 @@ void CZoneEntities::SpawnNPCs(CCharEntity* PChar)
             CNpcEntity*             PCurrentNpc = (CNpcEntity*)it->second;
             SpawnIDList_t::iterator NPC         = PChar->SpawnNPCList.find(PCurrentNpc->id);
 
-            if (PCurrentNpc->status == STATUS_TYPE::NORMAL || PCurrentNpc->status == STATUS_TYPE::MOB)
+            if (PCurrentNpc->status == STATUS_TYPE::NORMAL || PCurrentNpc->status == STATUS_TYPE::UPDATE)
             {
                 // Is this npc "visible" to the player?
                 if (distance(PChar->loc.p, PCurrentNpc->loc.p) <= 50)

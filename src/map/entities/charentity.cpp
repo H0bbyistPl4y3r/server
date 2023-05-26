@@ -217,6 +217,8 @@ CCharEntity::CCharEntity()
     PRecastContainer       = std::make_unique<CCharRecastContainer>(this);
     PLatentEffectContainer = new CLatentEffectContainer(this);
 
+    retriggerLatentsAfterPacketParsing = false;
+
     resetPetZoningInfo();
     petZoningInfo.petID = 0;
 
@@ -546,7 +548,7 @@ CItemContainer* CCharEntity::getStorage(uint8 LocationID)
             return m_RecycleBin.get();
     }
 
-    XI_DEBUG_BREAK_IF(LocationID >= CONTAINER_ID::MAX_CONTAINER_ID); // Unresolved storage ID
+    ShowWarning("Unhandled or Invalid Location ID (%d) passed to function.", LocationID);
     return nullptr;
 }
 
@@ -579,12 +581,9 @@ void CCharEntity::SetName(const std::string& name)
 
 int16 CCharEntity::addTP(int16 tp)
 {
-    // int16 oldtp = health.tp;
     tp = CBattleEntity::addTP(tp);
-    //  if ((oldtp < 1000 && health.tp >= 1000 ) || (oldtp >= 1000 && health.tp < 1000))
-    //  {
     PLatentEffectContainer->CheckLatentsTP();
-    //  }
+
     return abs(tp);
 }
 
@@ -2587,23 +2586,29 @@ void CCharEntity::changeMoghancement(uint16 moghancementID, bool isAdding)
             break;
 
         // NOTE: Exact values for resistances is unknown
+        case MOGLIFICATION_RESIST_DEATH:
+            addModifier(Mod::DEATHRES, 10 * multiplier);
+            break;
+        case MOGLIFICATION_RESIST_SLEEP:
+            addModifier(Mod::SLEEPRES, 10 * multiplier);
+            break;
         case MOGLIFICATION_RESIST_POISON:
-            addModifier(Mod::POISONRES, 20 * multiplier);
+            addModifier(Mod::POISONRES, 10 * multiplier);
             break;
         case MOGLIFICATION_RESIST_PARALYSIS:
-            addModifier(Mod::SILENCERES, 20 * multiplier);
+            addModifier(Mod::PARALYZERES, 10 * multiplier);
             break;
         case MOGLIFICATION_RESIST_SILENCE:
-            addModifier(Mod::SILENCERES, 20 * multiplier);
+            addModifier(Mod::SILENCERES, 10 * multiplier);
             break;
         case MOGLIFICATION_RESIST_PETRIFICATION:
-            addModifier(Mod::PETRIFYRES, 20 * multiplier);
+            addModifier(Mod::PETRIFYRES, 10 * multiplier);
             break;
         case MOGLIFICATION_RESIST_VIRUS:
-            addModifier(Mod::VIRUSRES, 20 * multiplier);
+            addModifier(Mod::VIRUSRES, 10 * multiplier);
             break;
         case MOGLIFICATION_RESIST_CURSE:
-            addModifier(Mod::CURSERES, 20 * multiplier);
+            addModifier(Mod::CURSERES, 10 * multiplier);
             break;
         default:
             break;

@@ -53,11 +53,11 @@ xi.settings.map =
 
     -- Misc EXP related settings
     EXP_RATE                = 1.0,
-    EXP_LOSS_RATE           = 1.0,
+    EXP_LOSS_RATE           = 0.1,
     EXP_PARTY_GAP_PENALTIES = true,
 
     -- Capacity Point Settings
-    CAPACITY_RATE = 1.0,
+    CAPACITY_RATE = 2.0,
 
     -- Determines Vana'diel time epoch (886/1/1 Firesday)
     -- current timestamp - vanadiel_time_epoch = vana'diel time
@@ -136,24 +136,28 @@ xi.settings.map =
     -- Enable/disable skill-ups from bloodpacts
     SKILLUP_BLOODPACT = true,
 
-    -- Adjust rate of TP gain for mobs, and players. Acts as a multiplier, so default is 1.
-    MOB_TP_MULTIPLIER    = 0.5,
+    -- Adjust rate of TP gain for mobs, pets (includes charmed pets), fellows, trusts and players.
+    -- Acts as a multiplier, so default is 1.
+    MOB_TP_MULTIPLIER    = 0.9,
+    PET_TP_MULTIPLIER    = 0.5,
     PLAYER_TP_MULTIPLIER = 1.0,
+    TRUST_TP_MULTIPLIER  = 1.0,
+    FELLOW_TP_MULTIPLIER = 1.0,
 
     -- Adjust max HP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
     NM_HP_MULTIPLIER        = 0.9,
     MOB_HP_MULTIPLIER       = 0.5,
     PLAYER_HP_MULTIPLIER    = 1.0,
-    ALTER_EGO_HP_MULTIPLIER = 1.5,
+    ALTER_EGO_HP_MULTIPLIER = 1.0,
 
     -- Adjust max MP pool for NMs, regular mobs, players, and trusts/fellows. Acts as a multiplier, so default is 1.
     NM_MP_MULTIPLIER        = 0.9,
     MOB_MP_MULTIPLIER       = 0.5,
     PLAYER_MP_MULTIPLIER    = 1.0,
-    ALTER_EGO_MP_MULTIPLIER = 1.5,
+    ALTER_EGO_MP_MULTIPLIER = 1.0,
 
     -- Sets the fraction of MP a subjob provides to the main job. Retail is half and this acts as a divisor so default is 2
-    SJ_MP_DIVISOR = 0.2,
+    SJ_MP_DIVISOR = 0.5,
 
     -- Modify ratio of subjob-to-mainjob
     -- 0            = no subjobs
@@ -169,7 +173,7 @@ xi.settings.map =
     NM_STAT_MULTIPLIER        = 0.9,
     MOB_STAT_MULTIPLIER       = 0.5,
     PLAYER_STAT_MULTIPLIER    = 1.0,
-    ALTER_EGO_STAT_MULTIPLIER = 1.5,
+    ALTER_EGO_STAT_MULTIPLIER = 1.0,
 
     -- Adjust skill caps for trusts/fellows. Acts as a multiplier, so default is 1.
     ALTER_EGO_SKILL_MULTIPLIER = 1.0,

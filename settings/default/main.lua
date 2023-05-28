@@ -152,7 +152,7 @@ xi.settings.main =
     MINING_RATE             = 85, -- % chance to recieve an item from mining.  Set between 0 and 100.
     DIGGING_RATE            = 85, -- % chance to receive an item from chocbo digging during favorable weather.  Set between 0 and 100.
 
-    HEALING_TP_CHANGE       = -50, -- Change in TP for each healing tick. Default is -100
+    HEALING_TP_CHANGE       = -100, -- Change in TP for each healing tick. Default is -100
 
     -- SE implemented coffer/chest illusion time in order to prevent coffer farming. No-one in the same area can open a chest or coffer for loot (gil, gems & items)
     -- till a random time between MIN_ILLSION_TIME and MAX_ILLUSION_TIME. During this time players can loot keyitem and item related to quests (AF, maps... etc.)

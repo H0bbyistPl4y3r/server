@@ -4,7 +4,6 @@
 require('scripts/globals/jobpoints')
 require('scripts/globals/magic')
 require('scripts/globals/msg')
-require('scripts/globals/status')
 require('scripts/globals/weaponskills')
 -----------------------------------
 xi = xi or {}
@@ -427,7 +426,7 @@ xi.job_utils.dancer.useWildFlourishAbility = function(player, target, ability, a
         not target:hasStatusEffect(xi.effect.CHAINBOUND, 0) and
         not target:hasStatusEffect(xi.effect.SKILLCHAIN, 0)
     then
-        target:addStatusEffectEx(xi.effect.CHAINBOUND, 0, 1, 0, 5, 0, 1)
+        target:addStatusEffectEx(xi.effect.CHAINBOUND, 0, 1, 0, 10, 0, 1)
     else
         ability:setMsg(xi.msg.basic.JA_NO_EFFECT)
     end

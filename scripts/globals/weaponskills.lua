@@ -14,7 +14,6 @@ require("scripts/globals/magicburst")
 require("scripts/globals/magiantrials")
 require("scripts/globals/ability")
 require("scripts/globals/items")
-require("scripts/globals/status")
 require("scripts/globals/magic")
 require("scripts/globals/utils")
 require("scripts/globals/msg")
@@ -350,10 +349,10 @@ local function getRangedHitRate(attacker, target, capHitRate, bonus)
         if hitrate > 0.95 then
             hitrate = 0.95
         end
+    end
 
-        if hitrate < 0.2 then
-            hitrate = 0.2
-        end
+    if hitrate < 0.2 then
+        hitrate = 0.2
     end
 
     return hitrate
@@ -369,9 +368,7 @@ local function getSingleHitDamage(attacker, target, dmg, wsParams, calcParams)
 
     if
         (missChance <= calcParams.hitRate or -- See if we hit the target
-        calcParams.guaranteedHit or
-        calcParams.melee and
-        math.random() < attacker:getMod(xi.mod.ZANSHIN) / 100) and
+        calcParams.guaranteedHit) and
         not calcParams.mustMiss
     then
         if not shadowAbsorb(target) then
@@ -1094,10 +1091,10 @@ function getHitRate(attacker, target, capHitRate, bonus)
         if hitrate > 0.95 then
             hitrate = 0.95
         end
+    end
 
-        if hitrate < 0.2 then
-            hitrate = 0.2
-        end
+    if hitrate < 0.2 then
+        hitrate = 0.2
     end
 
     return hitrate

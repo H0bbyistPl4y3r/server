@@ -22,8 +22,8 @@
 #ifndef _STATUSEFFECT_H
 #define _STATUSEFFECT_H
 
-#include "../common/cbasetypes.h"
-#include "../common/mmo.h"
+#include "common/cbasetypes.h"
+#include "common/mmo.h"
 
 #include <vector>
 
@@ -47,7 +47,7 @@ enum EFFECTFLAG
     EFFECTFLAG_ATTACK          = 0x00000004, // disappears upon attacking
     EFFECTFLAG_EMPATHY         = 0X00000008, // effect can be copied to wyvern by use of merited Spirit Link
     EFFECTFLAG_DAMAGE          = 0x00000010, // disappears upon being attacked
-    EFFECTFLAG_DEATH           = 0x00000020, // disappears upon death/ko
+    EFFECTFLAG_DEATH           = 0x00000020, // disappears upon death/KO
     EFFECTFLAG_MAGIC_BEGIN     = 0x00000040, // disappears upon spellcasting start
     EFFECTFLAG_MAGIC_END       = 0x00000080, // disappears upon spellcasting complete
     EFFECTFLAG_ON_ZONE         = 0x00000100,
@@ -55,7 +55,7 @@ enum EFFECTFLAG
     EFFECTFLAG_INVISIBLE       = 0x00000400, // invisible effect
     EFFECTFLAG_DETECTABLE      = 0x00000800, // invisible, sneak, deo
     EFFECTFLAG_NO_REST         = 0x00001000, // prevents resting, curse II, plague, disease
-    EFFECTFLAG_PREVENT_ACTION  = 0x00002000, // sleep, lullaby, stun, petro. Not implemented
+    EFFECTFLAG_PREVENT_ACTION  = 0x00002000, // sleep, lullaby, stun, petrify
     EFFECTFLAG_WALTZABLE       = 0x00004000, // for healing waltzable spells
     EFFECTFLAG_FOOD            = 0x00008000,
     EFFECTFLAG_SONG            = 0x00010000, // bard songs
@@ -755,10 +755,10 @@ enum EFFECT
 
 /************************************************************************
  *                                                                       *
- *  Нерешенные задачи:                                                   *
+ *  Unsolved problems:                                                   *
  *                                                                       *
- *  - сохранение ID сущности, добавившей эффект                          *
- *  - обновление эффекта (например перезапись protect 1 на protect 2)    *
+ *  - saving the ID of the entity that added the effect                  *
+ *  - updating the effect (e.g., rewriting Protect I to Protect II)      *
  *                                                                       *
  ************************************************************************/
 
@@ -773,9 +773,9 @@ public:
     uint16 GetPower() const;
     uint16 GetSubPower() const;
     uint16 GetTier() const;
-    uint32 GetFlag() const;
-    uint16 GetType() const;
-    uint8  GetSlot() const;
+    uint32 GetEffectFlags() const;
+    uint16 GetEffectType() const;
+    uint8  GetEffectSlot() const;
 
     uint32         GetTickTime() const;
     uint32         GetDuration() const;
@@ -783,10 +783,12 @@ public:
     time_point     GetStartTime();
     CBattleEntity* GetOwner();
 
-    void SetFlag(uint32 Flag);
-    void UnsetFlag(uint32 Flag);
-    void SetType(uint16 Type);
-    void SetSlot(uint8 Slot);
+    void SetEffectFlags(uint32 Flags);
+    void AddEffectFlag(uint32 Flag);
+    void DelEffectFlag(uint32 Flag);
+    bool HasEffectFlag(uint32 Flag);
+    void SetEffectType(uint16 Type);
+    void SetEffectSlot(uint8 Slot);
     void SetIcon(uint16 Icon);
     void SetPower(uint16 Power);
     void SetSubPower(uint16 subPower);
@@ -800,11 +802,11 @@ public:
 
     void addMod(Mod modType, int16 amount);
 
-    void SetName(std::string name);
+    void SetEffectName(std::string name);
 
     const std::string& GetName();
 
-    std::vector<CModifier> modList; // список модификаторов
+    std::vector<CModifier> modList; // List of modifiers
     bool                   deleted{ false };
 
     CStatusEffect(EFFECT id, uint16 icon, uint16 power, uint32 tick, uint32 duration, uint32 subid = 0, uint16 subPower = 0, uint16 tier = 0, uint32 flags = 0);
@@ -812,24 +814,24 @@ public:
     ~CStatusEffect();
 
 private:
-    CBattleEntity* m_POwner{ nullptr }; // владелец
+    CBattleEntity* m_POwner{ nullptr };
 
-    EFFECT m_StatusID{ EFFECT_NONE }; // основной тип эффекта
-    uint32 m_SubID{ 0 };              // дополнительный тип эффекта
-    uint16 m_Icon{ 0 };               // иконка эффекта
-    uint16 m_Power{ 0 };              // сила эффекта
+    EFFECT m_StatusID{ EFFECT_NONE }; // Main effect type
+    uint32 m_SubID{ 0 };              // Additional effect type
+    uint16 m_Icon{ 0 };               // Effect icon
+    uint16 m_Power{ 0 };              // Strength of effect
     uint16 m_SubPower{ 0 };           // Secondary power of the effect
     uint16 m_Tier{ 0 };               // Tier of the effect
-    uint32 m_Flag{ 0 };               // флаг эффекта (условия его исчезновения)
-    uint16 m_Type{ 0 };               // used to enforce only one
-    uint8  m_Slot{ 0 };               // used to determine slot order for songs/rolls
+    uint32 m_Flags{ 0 };              // Effect flags (conditions for its disappearance)
+    uint16 m_Type{ 0 };               // Used to enforce only one
+    uint8  m_Slot{ 0 };               // Used to determine slot order for songs/rolls
 
-    uint32     m_TickTime{ 0 };  // время повторения эффекта (млс)
-    uint32     m_Duration{ 0 };  // продолжительность эффекта (млс)
-    time_point m_StartTime;      // время получения эффекта (млс)
-    int        m_tickCount{ 0 }; // премя последнего выполнения эффекта (млс)
+    uint32     m_TickTime{ 0 };  // Effect repetition time (ms)
+    uint32     m_Duration{ 0 };  // Duration of effect (ms)
+    time_point m_StartTime;      // Time to obtain effect (ms)
+    int        m_tickCount{ 0 }; // Time of last effect execution (ms)
 
-    std::string m_Name; // имя эффекта для скриптов
+    std::string m_Name; // Effect name for scripts
 };
 
 #endif

@@ -88,7 +88,7 @@ std::array<std::array<uint16, MAX_SKILLCHAIN_COUNT + 1>, MAX_SKILLCHAIN_LEVEL + 
 
 std::array<CWeaponSkill*, MAX_WEAPONSKILL_ID> g_PWeaponSkillList; // Holds all Weapon skills
 std::array<CMobSkill*, MAX_MOBSKILL_ID>       g_PMobSkillList;    // List of mob skills
-std::unordered_map<uint8, CPetSkill*>         g_PPetSkillList;    // List of pet skills
+std::unordered_map<uint32, CPetSkill*>        g_PPetSkillList;    // List of pet skills
 
 std::array<std::list<CWeaponSkill*>, MAX_SKILLTYPE> g_PWeaponSkillsList;
 std::unordered_map<uint16, std::vector<uint16>>     g_PMobSkillLists; // List of mob skills defined from mob_skill_lists.sql
@@ -396,7 +396,8 @@ namespace battleutils
     {
         return ((PSkill->getSkillLevel() > 0 && PChar->GetSkill(PSkill->getType()) >= PSkill->getSkillLevel() &&
                  (PSkill->getUnlockId() == 0 || charutils::hasLearnedWeaponskill(PChar, PSkill->getUnlockId()))) ||
-                (PSkill->getSkillLevel() == 0 && (PSkill->getUnlockId() == 0 || charutils::hasLearnedWeaponskill(PChar, PSkill->getUnlockId())))) &&
+                (PSkill->getSkillLevel() == 0 && (PSkill->getUnlockId() == 0 ||
+                                                  (charutils::hasLearnedWeaponskill(PChar, PSkill->getUnlockId()) && PChar->GetMLevel() >= 75)))) &&
                (PSkill->getJob(PChar->GetMJob()) > 0 || (PSkill->getJob(PChar->GetSJob()) > 0 && !PSkill->mainOnly()));
     }
 
@@ -814,7 +815,6 @@ namespace battleutils
                 uint16 bonus       = dmg * (PDefender->getMod(Mod::RETALIATION) / 100);
                 dmg                = dmg + bonus;
 
-                // FINISH HIM! dun dun dun
                 // TP and stoneskin are handled inside TakePhysicalDamage
                 Action->spikesMessage = 536;
                 Action->spikesParam =
@@ -886,6 +886,7 @@ namespace battleutils
                                         PEffect->SetSubPower(remainingDrain - abs(damage));
                                     }
                                 }
+
                                 if (spikesDamage > 0) // do not add HP if spikes damage was absorbed.
                                 {
                                     Action->spikesMessage = MSGBASIC_SPIKES_EFFECT_HP_DRAIN;
@@ -901,7 +902,6 @@ namespace battleutils
                         {
                             PAttacker->takeDamage(spikesDamage, PDefender, ATTACK_TYPE::MAGICAL, DAMAGE_TYPE::LIGHT);
                         }
-
                         else
                         {
                             // only works on shield blocks
@@ -1013,12 +1013,19 @@ namespace battleutils
 
         if (xirand::GetRandomNumber(100) < chance + lvlDiff)
         {
-            // spikes landed
             if (spikesType == SUBEFFECT_CURSE_SPIKES)
             {
-                Action->spikesMessage = 0; // log says nothing? // TODO: find "Additional Effect: Curse" message
+                Action->spikesMessage = MSGBASIC_STATUS_SPIKES;
                 Action->spikesParam   = EFFECT_CURSE;
             }
+            /* Todo: wire this up fully.
+            else if (spikesType == SUBEFFECT_DEATH_SPIKES)
+            {
+                Action->spikesMessage = MSGBASIC_STATUS_SPIKES;
+                Action->spikesParam   = EFFECT_KO;
+                PDefender->setHP(0);
+            }
+            */
             else
             {
                 auto ratio = std::clamp<uint8>(damage / 4, 1, 255);
@@ -1031,8 +1038,7 @@ namespace battleutils
                     spikesDamage = HandleOneForAll(PAttacker, spikesDamage);
                     spikesDamage = HandleStoneskin(PAttacker, spikesDamage);
                 }
-
-                if (spikesDamage < 0) // fit healed spikes into uint16
+                else if (spikesDamage < 0) // fit healed spikes into uint16
                 {
                     Action->spikesParam = static_cast<uint16>(std::clamp(spikesDamage * -1, 0, PAttacker->GetMaxHP() - PAttacker->health.hp));
                 }
@@ -1048,6 +1054,14 @@ namespace battleutils
             HandleSpikesStatusEffect(PAttacker, PDefender, Action);
 
             return true;
+        }
+        else
+        {
+            // Technically, these should be the default values and then conditional branches change them
+            // However, it wasn't worth the effort when the whole thing is going to be eventually burned down to make way for fully scripted spikes
+            Action->spikesEffect  = SUBEFFECT_NONE;
+            Action->spikesParam   = 0;
+            Action->spikesMessage = 0;
         }
 
         return false;
@@ -5684,7 +5698,7 @@ namespace battleutils
         {
             if (PCaster->StatusEffectContainer->HasStatusEffect(EFFECT_ACCESSION) ||
                 (PCaster->objtype == TYPE_PC && charutils::hasTrait((CCharEntity*)PCaster, TRAIT_DIVINE_VEIL) && PSpell->isNa() &&
-                 (PCaster->StatusEffectContainer->HasStatusEffect(EFFECT_DIVINE_SEAL) || PCaster->getMod(Mod::AOE_NA) == 1)))
+                 (PCaster->StatusEffectContainer->HasStatusEffect(EFFECT_DIVINE_SEAL) || xirand::GetRandomNumber(100) < PCaster->getMod(Mod::AOE_NA))))
             {
                 return SPELLAOE_RADIAL;
             }
@@ -6316,7 +6330,7 @@ namespace battleutils
 
         if (PEntity->StatusEffectContainer->HasStatusEffect({ EFFECT_HASSO, EFFECT_SEIGAN }))
         {
-            cast = (uint32)(cast * 2.0f);
+            cast = (uint32)(cast * 1.5f);
         }
 
         if (PSpell->getSpellGroup() == SPELLGROUP_BLACK)
@@ -6769,7 +6783,7 @@ namespace battleutils
                 uint8 slot = PChar->equip[SLOT_AMMO];
                 uint8 loc  = PChar->equipLoc[SLOT_AMMO];
                 charutils::UnequipItem(PChar, SLOT_AMMO);
-                charutils::SaveCharEquip(PChar);
+                PChar->RequestPersist(CHAR_PERSIST::EQUIP);
                 charutils::UpdateItem(PChar, loc, slot, -quantity);
                 PChar->pushPacket(new CInventoryFinishPacket());
                 return true;

@@ -27,7 +27,7 @@ CREATE TABLE `item_basic` (
   `NoSale` tinyint(1) unsigned NOT NULL DEFAULT 0,
   `BaseSell` int(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`itemid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 AVG_ROW_LENGTH=34 PACK_KEYS=1 CHECKSUM=1;
+) ENGINE=Aria TRANSACTIONAL=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AVG_ROW_LENGTH=34 PACK_KEYS=1 CHECKSUM=1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -3420,6 +3420,8 @@ INSERT INTO `item_basic` VALUES (3532,0,'veiled_trophy','veiled_trophy',1,45124,
 INSERT INTO `item_basic` VALUES (3533,0,'mog_kupon_a-sap','kupon_a-sap',99,28736,0,1,0);
 INSERT INTO `item_basic` VALUES (3534,0,'mog_kupon_a-jad','kupon_a-jad',99,28736,0,1,0);
 INSERT INTO `item_basic` VALUES (3537,0,'mog_kupon_a-rub','kupon_a-rub',99,28736,0,1,0);
+INSERT INTO `item_basic` VALUES (3538,0,'mog_kupon_w-eth','kupon_w-eth',99,28736,0,1,0);
+INSERT INTO `item_basic` VALUES (3539,0,'mog_kupon_i-aby','kupon_i-aby',99,28736,0,1,0);
 INSERT INTO `item_basic` VALUES (3541,0,'seasoning_stone','seasoning_stone',12,28740,0,1,0);
 INSERT INTO `item_basic` VALUES (3542,0,'fossilized_bone','fossilized_bone',12,12356,0,1,0);
 INSERT INTO `item_basic` VALUES (3543,0,'fossilized_fang','fossilized_fang',12,12356,0,1,0);

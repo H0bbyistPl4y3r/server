@@ -80,7 +80,7 @@ xi.survivalGuide.onTrigger = function(player)
             player:startEvent(8500, 0, param, player:getGil(), g1, g2, g3, g4, expansions)
         end
     else
-        player:PrintToPlayer('Survival guides are not enabled!')
+        player:printToPlayer('Survival guides are not enabled!')
     end
 end
 
@@ -132,7 +132,7 @@ xi.survivalGuide.onEventUpdate = function(player, csid, option, npc)
     end
 end
 
-xi.survivalGuide.onEventFinish = function(player, eventId, option)
+xi.survivalGuide.onEventFinish = function(player, eventId, option, npc)
     if
         eventId == 8500 and
         bit.band(option, 0xFF) == optionMap.TELEPORT

@@ -24,7 +24,7 @@ CREATE TABLE `mob_droplist` (
   `itemId` smallint(5) unsigned NOT NULL DEFAULT '0',
   `itemRate` smallint(4) unsigned NOT NULL DEFAULT '0',
   KEY `dropId` (`dropId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 AVG_ROW_LENGTH=9;
+) ENGINE=Aria TRANSACTIONAL=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AVG_ROW_LENGTH=9;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- Variables
@@ -11763,21 +11763,7 @@ INSERT INTO `mob_droplist` VALUES (1441,2,0,1000,1455,0);       -- One Byne Bill
 -- ZoneID: 135 - Kindred Warrior
 -- ZoneID: 135 - Kindred Monk
 -- ZoneID: 135 - Kindred Thief
--- ZoneID: 135 - Kindred Warrior
--- ZoneID: 135 - Kindred White Mage
--- ZoneID: 135 - Kindred Red Mage
--- ZoneID: 135 - Kindred Monk
--- ZoneID: 135 - Kindred Black Mage
--- ZoneID: 135 - Kindred Thief
--- ZoneID: 135 - Kindred Paladin
--- ZoneID: 135 - Kindred Dark Knight
--- ZoneID: 135 - Kindred Beastmaster
--- ZoneID: 135 - Kindred Bard
--- ZoneID: 135 - Kindred Ranger
--- ZoneID: 135 - Kindred Samurai
--- ZoneID: 135 - Kindred Ninja
--- ZoneID: 135 - Kindred Dragoon
--- ZoneID: 135 - Kindred Summoner
+INSERT INTO `mob_droplist` VALUES (1442,0,0,1000,3494,@RARE);   -- Forgotten Hope (Rare, 5%)
 INSERT INTO `mob_droplist` VALUES (1442,0,0,1000,11305,@VRARE); -- Etoile Casaque (Very Rare, 1%)
 INSERT INTO `mob_droplist` VALUES (1442,0,0,1000,11465,@VRARE); -- Mirage Keffiyeh (Very Rare, 1%)
 INSERT INTO `mob_droplist` VALUES (1442,0,0,1000,11468,@VRARE); -- Commodore Tricorne (Very Rare, 1%)
@@ -23637,7 +23623,7 @@ INSERT INTO `mob_droplist` VALUES (2866,0,0,1000,4877,20);       -- Scroll Of Ab
 INSERT INTO `mob_droplist` VALUES (2866,0,0,1000,4878,20);       -- Scroll Of Absorb-Int (2.0%)
 INSERT INTO `mob_droplist` VALUES (2866,2,0,1000,880,0);         -- Bone Chip (Steal)
 
--- ZoneID: Unknown - Unknown
+-- ZoneID: 192 - Magicked Bones
 INSERT INTO `mob_droplist` VALUES (2867,0,0,1000,880,280);  -- Bone Chip (28.0%)
 INSERT INTO `mob_droplist` VALUES (2867,0,0,1000,16753,40); -- Ceremonial Dagger (4.0%)
 INSERT INTO `mob_droplist` VALUES (2867,2,0,1000,880,0);    -- Bone Chip (Steal)

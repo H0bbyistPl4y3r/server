@@ -29,7 +29,7 @@ CREATE TABLE `item_equipment` (
   `rslot` smallint(5) unsigned NOT NULL DEFAULT 0,
   `su_level` tinyint(3) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`itemId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 AVG_ROW_LENGTH=37 PACK_KEYS=1 CHECKSUM=1;
+) ENGINE=Aria TRANSACTIONAL=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AVG_ROW_LENGTH=37 PACK_KEYS=1 CHECKSUM=1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -11206,6 +11206,7 @@ INSERT INTO `item_equipment` VALUES (23081,'horos_tiara_+2',99,119,262144,304,0,
 INSERT INTO `item_equipment` VALUES (23082,'peda._m.board_+2',99,119,524288,215,0,0,16,0,0);
 INSERT INTO `item_equipment` VALUES (23083,'bagua_galero_+2',99,119,1048576,310,0,0,16,0,0);
 INSERT INTO `item_equipment` VALUES (23084,'fu._bandeau_+2',99,119,2097152,339,0,0,16,0,0);
+INSERT INTO `item_equipment` VALUES (23087,'ebers_cap_+2',99,119,4,284,0,0,16,0,0);
 INSERT INTO `item_equipment` VALUES (23107,'pumm._lorica_+2',99,119,1,64,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (23108,'anch._cyclas_+2',99,119,2,66,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (23109,'theo._briault_+2',99,119,4,68,0,0,32,0,0);

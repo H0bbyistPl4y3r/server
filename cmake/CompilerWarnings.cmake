@@ -18,10 +18,14 @@ function(set_project_warnings project_name)
       /wd4457 # declaration of 'var' hides function parameter
       /wd4458 # declaration of 'var' hides class member
       /wd4459 # declaration of 'var' hides global declaration
+      /wd5272 # throwing an object of non-copyable type 'type' is non-standard -> CStateInitException
 
       # TODO: concurrentqueue triggers this. Remove once MSVC fixes it.
       # https://developercommunity2.visualstudio.com/t/C4554-triggers-when-both-lhs-and-rhs-is/10034931
       /wd4554 # 'operator' : check operator precedence for possible error; use parentheses to clarify precedence
+
+      # TODO: mariadb-connector-cpp triggers this. Remove once they fix it.
+      /wd4263 # 'function': member function does not override any base class member functions
 
       # /w1 Promote to level 1
       /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data

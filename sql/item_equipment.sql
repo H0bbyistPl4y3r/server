@@ -590,8 +590,8 @@ INSERT INTO `item_equipment` VALUES (10807,'mandraguard',1,0,4194303,62,1,0,2,0,
 INSERT INTO `item_equipment` VALUES (10808,'janus_guard',1,0,4194303,63,1,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (10809,'moogle_guard',1,0,4194303,642,1,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (10810,'moogle_guard_+1',1,0,4194303,642,1,0,2,0,0);
-INSERT INTO `item_equipment` VALUES (10811,'chocobo_shield',1,0,4194303,653,1,0,2,0,0);
-INSERT INTO `item_equipment` VALUES (10812,'choco._shield_+1',1,0,4194303,653,1,0,2,0,0);
+INSERT INTO `item_equipment` VALUES (10811,'chocobo_shield',1,0,4194303,643,1,0,2,0,0);
+INSERT INTO `item_equipment` VALUES (10812,'choco._shield_+1',1,0,4194303,643,1,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (10814,'corvax_sash',92,0,3851870,0,0,0,1024,0,0);
 INSERT INTO `item_equipment` VALUES (10815,'phasmida_belt',95,0,2473969,0,0,0,1024,0,0);
 INSERT INTO `item_equipment` VALUES (10816,'glassblowers_belt',92,0,2473969,0,0,0,1024,0,0);
@@ -11141,7 +11141,7 @@ INSERT INTO `item_equipment` VALUES (22278,'staunch_tathlum',99,0,4194303,0,0,0,
 INSERT INTO `item_equipment` VALUES (22279,'staunch_tathlum_+1',99,0,4194303,0,0,0,8,0,0);
 INSERT INTO `item_equipment` VALUES (22280,'yamarang',99,0,2363424,0,0,0,8,0,0);
 INSERT INTO `item_equipment` VALUES (22281,'knobkierrie',99,0,2107523,0,0,0,8,0,0);
-INSERT INTO `item_equipment` VALUES (22282,'grudge',1,0,4194303,28,0,0,4,8,0); -- TODO: capture model from retail (using Rogetsurin model)
+INSERT INTO `item_equipment` VALUES (22282,'grudge',1,0,4194303,137,0,0,4,8,0);
 INSERT INTO `item_equipment` VALUES (22283,'marvelous_cheer',1,0,4194303,136,0,0,4,0,0);
 INSERT INTO `item_equipment` VALUES (22284,'abdhaljs_tome',99,0,4194303,0,0,0,8,0,0);
 INSERT INTO `item_equipment` VALUES (22285,'beryllium_bolt',99,119,1185,0,0,0,8,0,2);
@@ -11696,6 +11696,13 @@ INSERT INTO `item_equipment` VALUES (23793,'ziamet_peti',1,0,4194303,172,0,0,32,
 INSERT INTO `item_equipment` VALUES (23794,'ziamet_bazubands',1,0,4194303,172,0,0,64,0,0);
 INSERT INTO `item_equipment` VALUES (23795,'ziamet_salvars',1,0,4194303,172,0,0,128,0,0);
 INSERT INTO `item_equipment` VALUES (23796,'ziamet_nails',1,0,4194303,172,0,0,256,0,0);
+INSERT INTO `item_equipment` VALUES (23800,'cancrine_apron',1,0,4194303,475,0,0,32,0,0);
+INSERT INTO `item_equipment` VALUES (23803,'poroggo_cassock',1,0,4194303,477,0,0,32,16,0);
+INSERT INTO `item_equipment` VALUES (23804,'poroggo_cass._+1',1,0,4194303,477,0,0,32,16,0);
+INSERT INTO `item_equipment` VALUES (23805,'morbol_apron',1,0,4194303,478,0,0,32,0,0);
+INSERT INTO `item_equipment` VALUES (23807,'esthetes_masque',1,0,4194303,480,0,0,16,0,0);
+INSERT INTO `item_equipment` VALUES (23808,'esthetes_coat',1,0,4194303,480,0,0,32,64,0);
+INSERT INTO `item_equipment` VALUES (23809,'esthetes_hose',1,0,4194303,480,0,0,128,256,0);
 INSERT INTO `item_equipment` VALUES (25414,'elite_royal_collar',99,0,4194303,0,0,0,512,0,0);
 INSERT INTO `item_equipment` VALUES (25415,'rep._plat._medal',99,0,4194303,0,0,0,512,0,0);
 INSERT INTO `item_equipment` VALUES (25416,'Sibyl_scarf',99,0,4194303,0,0,0,512,0,0);
@@ -12037,6 +12044,8 @@ INSERT INTO `item_equipment` VALUES (25767,'sacro_breastplate',99,119,10689,457,
 INSERT INTO `item_equipment` VALUES (25774,'fancy_gilet',1,0,4194303,447,0,0,32,64,0);
 INSERT INTO `item_equipment` VALUES (25775,'fancy_top',1,0,4194303,448,0,0,32,64,0);
 INSERT INTO `item_equipment` VALUES (25776,'bl._chocobo_suit',1,0,4194303,449,0,0,32,448,0);
+INSERT INTO `item_equipment` VALUES (25777,'iratsugo_happi',1,0,4194303,451,0,0,32,0,0);
+INSERT INTO `item_equipment` VALUES (25778,'iratsume_happi',1,0,4194303,452,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (25779,'flamma_korazin',99,119,10433,195,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (25780,'flamma_korazin_+1',99,119,10433,195,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (25781,'mummu_jacket',99,119,332834,196,0,0,32,0,0);
@@ -12158,7 +12167,9 @@ INSERT INTO `item_equipment` VALUES (25905,'baayami_slops',99,119,16384,115,0,0,
 INSERT INTO `item_equipment` VALUES (25906,'baayami_slops_+1',99,119,16384,115,0,0,128,0,3);
 INSERT INTO `item_equipment` VALUES (25907,'turms_subligar',99,119,2359328,148,0,0,128,0,3);
 INSERT INTO `item_equipment` VALUES (25908,'turms_subligar_+1',99,119,2359328,148,0,0,128,0,3);
+INSERT INTO `item_equipment` VALUES (25909,'morbol_subligar',1,0,4194303,461,0,0,128,0,0);
 INSERT INTO `item_equipment` VALUES (25910,'cait_sith_subligar',1,0,4194303,463,0,0,128,0,0);
+INSERT INTO `item_equipment` VALUES (25911,'denim_pants',1,0,4194303,479,0,0,128,0,0);
 INSERT INTO `item_equipment` VALUES (25920,'ahosi_leggings',99,119,2593826,110,0,0,256,0,0);
 INSERT INTO `item_equipment` VALUES (25921,'skaoi_boots',99,119,3850780,168,0,0,256,0,0);
 INSERT INTO `item_equipment` VALUES (25922,'navon_crackows',99,119,1589788,186,0,0,256,0,0);
@@ -12547,6 +12558,8 @@ INSERT INTO `item_equipment` VALUES (26483,'brewers_shield_-1',1,0,4194303,25,3,
 INSERT INTO `item_equipment` VALUES (26484,'chefs_ecu_-1',1,0,4194303,46,2,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (26485,'chefs_scutum_-1',1,0,4194303,33,4,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (26486,'chefs_shield_-1',1,0,4194303,25,3,0,2,0,0);
+INSERT INTO `item_equipment` VALUES (26490,'ark_shield',1,0,4194303,674,4,0,2,0,0);
+INSERT INTO `item_equipment` VALUES (26496,'ageist',1,0,4194303,677,3,0,2,0,0);
 INSERT INTO `item_equipment` VALUES (26517,'shadow_lord_shirt',1,0,4194303,588,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (26518,'jody_shirt',1,0,4194303,587,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (26520,'akitu_shirt',1,0,4194303,582,0,0,32,0,0);
@@ -12572,6 +12585,7 @@ INSERT INTO `item_equipment` VALUES (26541,'baayami_robe',99,119,16384,115,0,0,3
 INSERT INTO `item_equipment` VALUES (26542,'baayami_robe_+1',99,119,16384,115,0,0,32,0,3);
 INSERT INTO `item_equipment` VALUES (26543,'turms_harness',99,119,2359328,148,0,0,32,0,3);
 INSERT INTO `item_equipment` VALUES (26544,'tu._harness_+1',99,119,2359328,148,0,0,32,0,0);
+INSERT INTO `item_equipment` VALUES (26545,'mithkabob_shirt',1,0,4194303,8782,0,0,32,0,0);
 INSERT INTO `item_equipment` VALUES (26624,'agoge_mask',99,109,1,65,0,0,16,0,0);
 INSERT INTO `item_equipment` VALUES (26625,'agoge_mask_+1',99,119,1,65,0,0,16,0,0);
 INSERT INTO `item_equipment` VALUES (26626,'hes._crown',99,109,2,67,0,0,16,0,0);

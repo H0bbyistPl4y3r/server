@@ -4255,9 +4255,9 @@ INSERT INTO `mob_spell_lists` VALUES ('TRUST_Ygnas',411,143,32,255); -- erase (3
 INSERT INTO `mob_spell_lists` VALUES ('TRUST_Lion_II',418,338,12,255); -- utsusemi_ichi (12~255)
 INSERT INTO `mob_spell_lists` VALUES ('TRUST_Lion_II',418,339,37,255); -- utsusemi_ni (37~255)
 
--- TRUST_Zied_II (419)
-INSERT INTO `mob_spell_lists` VALUES ('TRUST_Zied_II',419,243,91,255); -- absorb-attri (91~255)
-INSERT INTO `mob_spell_lists` VALUES ('TRUST_Zied_II',419,252,37,255); -- stun (37~255)
+-- TRUST_Zeid_II (419)
+INSERT INTO `mob_spell_lists` VALUES ('TRUST_Zeid_II',419,243,91,255); -- absorb-attri (91~255)
+INSERT INTO `mob_spell_lists` VALUES ('TRUST_Zeid_II',419,252,37,255); -- stun (37~255)
 
 -- TRUST_Prishe_II (420)
 INSERT INTO `mob_spell_lists` VALUES ('TRUST_Prishe_II',420,7,16,255);  -- curaga (16~255)
@@ -5000,7 +5000,15 @@ INSERT INTO `mob_spell_lists` VALUES ('Silverhook',492,252,1,255); -- stun (1~25
 INSERT INTO `mob_spell_lists` VALUES ('Silverhook',492,253,1,255); -- sleep (1~255)
 INSERT INTO `mob_spell_lists` VALUES ('Silverhook',492,274,1,255); -- sleepga ii (1~255)
 
--- IDs 493-496 free for use
+-- Bastet (493)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,165,1,255); -- Thunder II (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,195,1,255); -- Thundaga II (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,212,1,255); -- Burst (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,239,1,255); -- Shock (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,251,1,255); -- Shock Spikes (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Bastet',493,252,1,255); -- Stun (1~255)
+
+-- IDs 494-496 free for use
 
 -- Cemetery Cherry
 INSERT INTO `mob_spell_lists` VALUES ('Cemetery_Cherry',497,274,1,255); -- Sleepga II
@@ -5020,7 +5028,14 @@ INSERT INTO `mob_spell_lists` VALUES ('Slendlix_Spindlethumb',499,33,1,255); -- 
 -- Toxic Tamlyn (500)
 INSERT INTO `mob_spell_lists` VALUES ('Toxic_Tamlyn',500,231,1,255);  -- bio_ii (1~255)
 
--- Next Available: 501
+-- Zirnitra
+INSERT INTO `mob_spell_lists` VALUES ('Zirnitra',501,359,75,255);  -- silencega (75~255)
+
+-- Pyuu the Spatemaker
+INSERT INTO `mob_spell_lists` VALUES ('Pyuu_the_Spatemaker',502,171,1,255); -- water_iii (1~255)
+INSERT INTO `mob_spell_lists` VALUES ('Pyuu_the_Spatemaker',502,201,1,255); -- waterga_iii (1~255)
+
+-- Next Available: 503
 
 /*!40000 ALTER TABLE `mob_spell_lists` ENABLE KEYS */;
 UNLOCK TABLES;

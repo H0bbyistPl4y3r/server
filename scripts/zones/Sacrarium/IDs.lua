@@ -46,14 +46,15 @@ zones[xi.zone.SACRARIUM] =
             { 16892074, { [xi.race.GALKA]    = true } },                            -- Indich (galka)
         },
         OLD_PROFESSOR_MARISELLE = 16891970,
+        ELEL                    = GetFirstID('Elel'),
     },
     npc =
     {
         STALE_DRAFT_OFFSET  = 16892097,
-        LABYRINTH_OFFSET    = 16892110,
-        SMALL_KEYHOLE       = 16892142,
-        QM_MARISELLE_OFFSET = 16892155, -- qm_professor_mariselle in npc_list.sql
-        TREASURE_CHEST      = 16892183,
+        LABYRINTH_OFFSET    = 16892111,
+        SMALL_KEYHOLE       = 16892143,
+        QM_MARISELLE_OFFSET = 16892156, -- qm_professor_mariselle in npc_list.sql
+        TREASURE_CHEST      = GetFirstID('Treasure_Chest'),
     },
 }
 

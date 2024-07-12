@@ -121,6 +121,7 @@ namespace charutils
     void   EquipItem(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 containerID);
     void   UnequipItem(CCharEntity* PChar, uint8 equipSlotID,
                        bool update = true); // call with update == false to prevent calls to UpdateHealth() - used for correct handling of stats on armor swaps
+    bool   hasSlotEquipped(CCharEntity* PChar, uint8 equipSlotID);
     void   RemoveSub(CCharEntity* PChar);
     bool   EquipArmor(CCharEntity* PChar, uint8 slotID, uint8 equipSlotID, uint8 containerID);
     void   CheckUnarmedWeapon(CCharEntity* PChar);
@@ -188,10 +189,10 @@ namespace charutils
     void SaveLearnedAbilities(CCharEntity* PChar);             // save learned abilities (e.g., corsair rolls)
     void SaveTitles(CCharEntity* PChar);                       // save character's titles
     void SaveCharStats(CCharEntity* PChar);                    // save flags, current values of character stats (jobs/HP/MP/etc.)
-    void SaveCharGMLevel(CCharEntity* PChar);                  // save the character's gm level and nameflags
+    void SaveCharGMLevel(CCharEntity* PChar);                  // save the character's gm level
     void SaveMentorFlag(CCharEntity* PChar);                   // save the character's mentor flag
     void SaveJobMasterDisplay(CCharEntity* PChar);             // Save the character's job master display status
-    void SaveMenuConfigFlags(CCharEntity* PChar);              // save the character's unnamed flags
+    void SavePlayerSettings(CCharEntity* PChar);               // save the character's settings
     void SaveChatFilterFlags(CCharEntity* PChar);              // save the character's chat filters
     void SaveLanguages(CCharEntity* PChar);                    // save the character's language preference
     void SaveCharNation(CCharEntity* PChar);                   // save the character's nation of allegiance

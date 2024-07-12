@@ -48,6 +48,15 @@ namespace
 
         return year;
     }
+
+    constexpr bool isBcryptHash(const std::string& passHash)
+    {
+        return std::size(passHash) == 60 &&
+               passHash[0] == '$' &&
+               passHash[1] == '2' &&
+               (passHash[2] == 'a' || passHash[2] == 'b' || passHash[2] == 'y' || passHash[2] == 'x') && // bcrypt hash versions
+               passHash[3] == '$';
+    }
 } // namespace
 
 void auth_session::start()
@@ -125,7 +134,11 @@ void auth_session::read_func()
     std::string username(usernameBuffer, 16);
     std::string password(passwordBuffer, 32);
 
-    if (strncmp(version.c_str(), SUPPORTED_XILOADER_VERSION, 5) != 0)
+    // Only match on the first 3 characters of the version string
+    // ie. 1.1.1 -> 1.1.x
+    // Major.Minor.Patch
+    // Major and minor version changes should be breaking, patch should not.
+    if (strncmp(version.c_str(), SUPPORTED_XILOADER_VERSION, 3) != 0)
     {
         ref<uint8>(data_, 0) = LOGIN_ERROR_VERSION_UNSUPPORTED;
 
@@ -181,8 +194,7 @@ void auth_session::read_func()
             // OLD PASSWORD HASH MIGRATION
             static_assert(currentYear() <= 2024, "Migration period for old password hashes has expired. Please simplify this code after 2024-12-31 or open an issue upstream to do so.");
 
-            // Is passHash a BCrypt hash?
-            if (passHash.length() == 60 && passHash[0] == '$' && passHash[1] == '2' && passHash[2] == 'a' && passHash[3] == '$')
+            if (isBcryptHash(passHash))
             {
                 // It's a BCrypt hash, so we can validate it.
                 if (!BCrypt::validatePassword(password, passHash))
@@ -407,8 +419,7 @@ void auth_session::read_func()
             // OLD PASSWORD HASH MIGRATION
             static_assert(currentYear() <= 2024, "Migration period for old password hashes has expired. Please simplify this code after 2024-12-31 or open an issue upstream to do so.");
 
-            // Is passHash a BCrypt hash?
-            if (passHash.length() == 60 && passHash[0] == '$' && passHash[1] == '2' && passHash[2] == 'a' && passHash[3] == '$')
+            if (isBcryptHash(passHash))
             {
                 // It's a BCrypt hash, so we can validate it.
                 if (!BCrypt::validatePassword(password, passHash))

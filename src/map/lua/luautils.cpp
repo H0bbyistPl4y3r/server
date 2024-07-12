@@ -214,6 +214,7 @@ namespace luautils
         lua.set_function("GetMobRespawnTime", &luautils::GetMobRespawnTime);
         lua.set_function("DisallowRespawn", &luautils::DisallowRespawn);
         lua.set_function("UpdateNMSpawnPoint", &luautils::UpdateNMSpawnPoint);
+        lua.set_function("GetRecentFishers", &luautils::GetRecentFishers);
         lua.set_function("NearLocation", &luautils::NearLocation);
         lua.set_function("GetFurthestValidPosition", &luautils::GetFurthestValidPosition);
         lua.set_function("Terminate", &luautils::Terminate);
@@ -224,6 +225,7 @@ namespace luautils
         lua.set_function("GetContainerFilenamesList", &luautils::GetContainerFilenamesList);
         lua.set_function("GetCachedInstanceScript", &luautils::GetCachedInstanceScript);
         lua.set_function("GetItemIDByName", &luautils::GetItemIDByName);
+        lua.set_function("SendItemToDeliveryBox", &luautils::SendItemToDeliveryBox);
         lua.set_function("SendLuaFuncStringToZone", &luautils::SendLuaFuncStringToZone);
         lua.set_function("RoeParseRecords", &roeutils::ParseRecords);
         lua.set_function("RoeParseTimed", &roeutils::ParseTimedSchedule);
@@ -807,6 +809,28 @@ namespace luautils
         std::string filename;
         if (PEntity->objtype == TYPE_NPC)
         {
+            // clang-format off
+            auto isNamePrintable = [](const std::string& name)
+            {
+                // Match non-printable ASCII
+                for (const char& c : name)
+                {
+                    if ((c >= 0 && c <= 0x20) || c >= 0x7F)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            // clang-format on
+
+            // Don't bother even trying to load the script if the NPC name is non printable,
+            // and therefore impossible for a filesystem to load.
+            // TODO: Change name to "0x%X" instead so non-printables could get a script?
+            if (!isNamePrintable(PEntity->getName()))
+            {
+                return;
+            }
             std::string zone_name = PEntity->loc.zone->getName();
             std::string npc_name  = PEntity->getName();
             filename              = fmt::format("./scripts/zones/{}/npcs/{}.lua", zone_name, npc_name);
@@ -849,7 +873,7 @@ namespace luautils
         // Mobs
         {
             auto query = fmt::sprintf("SELECT mobname, mobid FROM mob_spawn_points "
-                                      "WHERE ((mobid >> 12) & 0xFFF) = %i",
+                                      "WHERE ((mobid >> 12) & 0xFFF) = %i ORDER BY mobid ASC",
                                       zoneId);
             auto ret   = _sql->Query(query.c_str());
             while (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
@@ -864,7 +888,7 @@ namespace luautils
         // NPCs
         {
             auto query = fmt::sprintf("SELECT name, npcid FROM npc_list "
-                                      "WHERE ((npcid >> 12) & 0xFFF) = %i",
+                                      "WHERE ((npcid >> 12) & 0xFFF) = %i ORDER BY npcid ASC",
                                       zoneId);
             auto ret   = _sql->Query(query.c_str());
             while (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
@@ -878,9 +902,18 @@ namespace luautils
 
         // Update GetFirstID to use this new lookup
         // clang-format off
-        lua.set_function("GetFirstID", [&](std::string const& name) -> uint32
+        lua.set_function("GetFirstID", [&](std::string const& name) -> std::optional<uint32>
         {
-            return lookup[name].front();
+            if (lookup.find(name) != lookup.end())
+            {
+                return lookup[name].front();
+            }
+            else
+            {
+                ShowError(fmt::format("GetFirstID({}) in zone {}: Returning nil", name, zoneName));
+
+                return std::nullopt;
+            }
         });
 
         std::unordered_map<std::string, sol::table> idLuaTables;
@@ -903,7 +936,7 @@ namespace luautils
                 // If we have no entries, bail out and return nil
                 if (lookup.find(name) == lookup.end())
                 {
-                    ShowWarning(fmt::format("GetTableOfIDs({}): Returning nil", name));
+                    ShowError(fmt::format("GetTableOfIDs({}) in zone {}: Returning nil", name, zoneName));
                     return sol::lua_nil;
                 }
 
@@ -911,7 +944,7 @@ namespace luautils
 
                 if (entriesVec.empty())
                 {
-                    ShowWarning(fmt::format("GetTableOfIDs({}): Returning empty table", name));
+                    ShowError(fmt::format("GetTableOfIDs({}) in zone {}: Returning empty table", name, zoneName));
                     return table;
                 }
 
@@ -941,7 +974,7 @@ namespace luautils
 
             if (table.empty())
             {
-                ShowWarning(fmt::format("Tried to look do ID lookup for {}, but found nothing.", name));
+                ShowError(fmt::format("GetTableOfIDs({}) in zone {}: Tried to look do ID lookup, but found nothing.", name, zoneName));
             }
 
             // Add to cache
@@ -1887,6 +1920,12 @@ namespace luautils
     {
         TracyZoneScoped;
 
+        // Do not enter trigger areas while loading in. Set in xi.player.onGameIn
+        if (PChar->GetLocalVar("ZoningIn") > 0)
+        {
+            return 0;
+        }
+
         std::string                 filename;
         std::optional<CLuaInstance> optInstance = std::nullopt;
         if (PChar->PInstance)
@@ -2029,41 +2068,6 @@ namespace luautils
         }
 
         return result.get_type() == sol::type::number ? result.get<int32>() : 0;
-    }
-
-    int32 OnEventUpdate(CCharEntity* PChar, uint16 eventID, uint32 result, uint16 extras)
-    {
-        TracyZoneScoped;
-
-        EventPrep* previousPrep = PChar->eventPreparation;
-        PChar->eventPreparation = PChar->currentEvent;
-
-        auto onEventUpdate = LoadEventScript(PChar, "onEventUpdate");
-        if (!onEventUpdate.valid())
-        {
-            ShowError("luautils::onEventUpdate: undefined procedure onEventUpdate");
-            return -1;
-        }
-
-        std::optional<CLuaBaseEntity> optTarget = std::nullopt;
-        if (PChar->currentEvent->targetEntity)
-        {
-            optTarget = CLuaBaseEntity(PChar->currentEvent->targetEntity);
-        }
-
-        auto func_result = onEventUpdate(CLuaBaseEntity(PChar), eventID, result, extras, optTarget);
-
-        PChar->eventPreparation = previousPrep;
-
-        if (!func_result.valid())
-        {
-            sol::error err = func_result;
-            ShowError("luautils::onEventUpdate: %s", err.what());
-            ReportErrorToPlayer(PChar, err.what());
-            return -1;
-        }
-
-        return func_result.get_type() == sol::type::number ? func_result.get<int32>() : 1;
     }
 
     int32 OnEventUpdate(CCharEntity* PChar, uint16 eventID, uint32 result)
@@ -2551,7 +2555,7 @@ namespace luautils
             caster = CLuaBaseEntity(PCaster);
         }
 
-        auto result = onItemCheck(CLuaBaseEntity(PTarget), caster, static_cast<uint32>(param));
+        auto result = onItemCheck(CLuaBaseEntity(PTarget), CLuaItem(PItem), static_cast<uint32>(param), caster);
         if (!result.valid())
         {
             sol::error err = result;
@@ -3107,28 +3111,7 @@ namespace luautils
             return -1;
         }
 
-        auto zone = PBattlefield->GetZone()->getName();
-        auto name = PBattlefield->GetName();
-
-        // TODO: This will happen more often than needed, but not so often that it's a performance concern
-        auto filename = fmt::format("./scripts/zones/{}/bcnms/{}.lua", zone, name);
-        CacheLuaObjectFromFile(filename);
-
-        auto onBattlefieldInitialise = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldInitialise"];
-        if (!onBattlefieldInitialise.valid())
-        {
-            return invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldInitialise", CLuaBattlefield(PBattlefield));
-        }
-
-        auto result = onBattlefieldInitialise(CLuaBattlefield(PBattlefield));
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldInitialise: %s", err.what());
-            return -1;
-        }
-
-        return 0;
+        return invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldInitialise", CLuaBattlefield(PBattlefield));
     }
 
     int32 OnBattlefieldTick(CBattlefield* PBattlefield)
@@ -3140,31 +3123,16 @@ namespace luautils
             return -1;
         }
 
-        auto zone    = PBattlefield->GetZone()->getName();
         auto name    = PBattlefield->GetName();
         auto seconds = std::chrono::duration_cast<std::chrono::seconds>(PBattlefield->GetTimeInside()).count();
 
-        auto onBattlefieldTick = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldTick"];
-        if (!onBattlefieldTick.valid())
+        if (invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldTick", CLuaBattlefield(PBattlefield), seconds) == 0)
         {
-            if (invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldTick", CLuaBattlefield(PBattlefield), seconds) == 0)
-            {
-                return 0;
-            }
-
-            ShowError("luautils::onBattlefieldTick: Unable to find onBattlefieldTick function for %s", name);
-            return -1;
+            return 0;
         }
 
-        auto result = onBattlefieldTick(CLuaBattlefield(PBattlefield), seconds);
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldTick: %s", err.what());
-            return -1;
-        }
-
-        return 0;
+        ShowError("luautils::onBattlefieldTick: Unable to find onBattlefieldTick function for %s", name);
+        return -1;
     }
 
     int32 OnBattlefieldStatusChange(CBattlefield* PBattlefield)
@@ -3176,24 +3144,7 @@ namespace luautils
             return -1;
         }
 
-        auto zone = PBattlefield->GetZone()->getName();
-        auto name = PBattlefield->GetName();
-
-        auto onBattlefieldStatusChange = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldStatusChange"];
-        if (!onBattlefieldStatusChange.valid())
-        {
-            return invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldStatusChange", CLuaBattlefield(PBattlefield), PBattlefield->GetStatus());
-        }
-
-        auto result = onBattlefieldStatusChange(CLuaBattlefield(PBattlefield), PBattlefield->GetStatus());
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldStatusChange: %s", err.what());
-            return -1;
-        }
-
-        return 0;
+        return invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldStatusChange", CLuaBattlefield(PBattlefield), PBattlefield->GetStatus());
     }
 
     int32 OnMobEngage(CBaseEntity* PMob, CBaseEntity* PTarget)
@@ -3260,6 +3211,56 @@ namespace luautils
         {
             sol::error err = result;
             ShowError("luautils::onMobDisengage: %s", err.what());
+            return -1;
+        }
+
+        return 0;
+    }
+
+    int32 OnMobFollow(CBaseEntity* PMob, CBaseEntity* PTarget)
+    {
+        TracyZoneScoped;
+        if (PTarget == nullptr || PMob == nullptr)
+        {
+            return -1;
+        }
+
+        sol::function onMobFollow = getEntityCachedFunction(PMob, "onMobFollow");
+        if (!onMobFollow.valid())
+        {
+            return -1;
+        }
+
+        auto result = onMobFollow(CLuaBaseEntity(PMob), CLuaBaseEntity(PTarget));
+        if (!result.valid())
+        {
+            sol::error err = result;
+            ShowError("luautils::onMobFollow: %s", err.what());
+            return -1;
+        }
+
+        return 0;
+    }
+
+    int32 OnMobUnfollow(CBaseEntity* PMob, CBaseEntity* PTarget)
+    {
+        TracyZoneScoped;
+        if (PTarget == nullptr || PMob == nullptr)
+        {
+            return -1;
+        }
+
+        sol::function onMobUnfollow = getEntityCachedFunction(PMob, "onMobUnfollow");
+        if (!onMobUnfollow.valid())
+        {
+            return -1;
+        }
+
+        auto result = onMobUnfollow(CLuaBaseEntity(PMob), CLuaBaseEntity(PTarget));
+        if (!result.valid())
+        {
+            sol::error err = result;
+            ShowError("luautils::onMobUnfollow: %s", err.what());
             return -1;
         }
 
@@ -4816,33 +4817,7 @@ namespace luautils
     {
         TracyZoneScoped;
 
-        CZone* PZone = PChar->loc.zone == nullptr ? zoneutils::GetZone(PChar->loc.destination) : PChar->loc.zone;
-
-        if (PZone == nullptr)
-        {
-            // Show log for the ID passed from GetZone, since the only way PZone can be null here is if
-            // loc.zone was null in the previous check.
-
-            ShowWarning("PZone was null for ZoneID %d.", PChar->loc.destination);
-            return;
-        }
-
-        auto zone = PZone->getName();
-        auto name = PBattlefield->GetName();
-
-        auto onBattlefieldEnter = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldEnter"];
-        if (!onBattlefieldEnter.valid())
-        {
-            invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldEnter", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
-            return;
-        }
-
-        auto result = onBattlefieldEnter(CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldEnter: %s", err.what());
-        }
+        invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldEnter", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
     }
 
     /************************************************************************
@@ -4861,38 +4836,7 @@ namespace luautils
     {
         TracyZoneScoped;
 
-        CZone* PZone = PChar->loc.zone == nullptr ? zoneutils::GetZone(PChar->loc.destination) : PChar->loc.zone;
-
-        if (PZone == nullptr)
-        {
-            // Show log for the ID passed from GetZone, since the only way PZone can be null here is if
-            // loc.zone was null in the previous check.
-
-            ShowWarning("PZone was null for ZoneID %d.", PChar->loc.destination);
-            return;
-        }
-
-        auto filename = fmt::format("./scripts/zones/{}/bcnms/{}.lua", PZone->getName(), PBattlefield->GetName());
-
-        auto zone = PZone->getName();
-        auto name = PBattlefield->GetName();
-
-        auto onBattlefieldLeave = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldLeave"];
-        if (!onBattlefieldLeave.valid())
-        {
-            invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldLeave", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield), LeaveCode);
-            return;
-        }
-
-        PChar->eventPreparation->targetEntity = PChar;
-        PChar->eventPreparation->scriptFile   = filename;
-
-        auto result = onBattlefieldLeave(CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield), LeaveCode);
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldLeave: %s", err.what());
-        }
+        invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldLeave", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield), LeaveCode);
     }
 
     void OnBattlefieldKick(CCharEntity* PChar)
@@ -4921,33 +4865,7 @@ namespace luautils
     {
         TracyZoneScoped;
 
-        CZone* PZone = PChar->loc.zone == nullptr ? zoneutils::GetZone(PChar->loc.destination) : PChar->loc.zone;
-
-        if (PZone == nullptr)
-        {
-            // Show log for the ID passed from GetZone, since the only way PZone can be null here is if
-            // loc.zone was null in the previous check.
-
-            ShowWarning("PZone was null for ZoneID %d.", PChar->loc.destination);
-            return;
-        }
-
-        auto zone = PZone->getName();
-        auto name = PBattlefield->GetName();
-
-        auto onBattlefieldRegister = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldRegister"];
-        if (!onBattlefieldRegister.valid())
-        {
-            invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldRegister", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
-            return;
-        }
-
-        auto result = onBattlefieldRegister(CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldRegister: %s", err.what());
-        }
+        invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldRegister", CLuaBaseEntity(PChar), CLuaBattlefield(PBattlefield));
     }
 
     /************************************************************************
@@ -4959,22 +4877,7 @@ namespace luautils
     {
         TracyZoneScoped;
 
-        auto zone = PBattlefield->GetZone()->getName();
-        auto name = PBattlefield->GetName();
-
-        auto onBattlefieldDestroy = lua["xi"]["zones"][zone]["bcnms"][name]["onBattlefieldDestroy"];
-        if (!onBattlefieldDestroy.valid())
-        {
-            invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldDestroy", CLuaBattlefield(PBattlefield));
-            return;
-        }
-
-        auto result = onBattlefieldDestroy(CLuaBattlefield(PBattlefield));
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::onBattlefieldDestroy: %s", err.what());
-        }
+        invokeBattlefieldEvent(PBattlefield->GetID(), "onBattlefieldDestroy", CLuaBattlefield(PBattlefield));
     }
 
     void DisallowRespawn(uint32 mobid, bool allowRespawn)
@@ -5051,6 +4954,45 @@ namespace luautils
 
         ShowError("luautils::GetMobAction: mob <%u> was not found", mobid);
         return 0;
+    }
+
+    /************************************************************************
+     *   Gets a list of players that have fished in the last specified mins *
+     *   where the specified param is between 1 and 60 mins                 *
+     ************************************************************************/
+
+    sol::table GetRecentFishers(uint16 minutes)
+    {
+        // limit the lookback time to prevent huge queries
+        uint16 lookbackTime = std::clamp<uint32>(minutes, 1, 60);
+
+        sol::table  fishers = lua.create_table();
+        const char* Query   = "SELECT cv.charid, c.charname, stats.mlvl, z.name, COALESCE(cs.value, 0) / 10 as skill "
+                              "FROM char_vars cv "
+                              "LEFT JOIN chars c ON c.charid  = cv.charid "
+                              "LEFT JOIN char_skills cs ON cs.charid = cv.charid AND cs.skillid = 48 "
+                              "INNER JOIN char_stats stats ON stats.charid = c.charid "
+                              "INNER JOIN zone_settings z ON z.zoneid = c.pos_zone "
+                              "WHERE "
+                              "varname = '[Fish]LastCastTime' AND "
+                              "FROM_UNIXTIME(cv.value) > NOW() - INTERVAL %u MINUTE "
+                              "ORDER BY z.name, z.name, stats.mlvl, skill";
+
+        if (_sql->Query(Query, lookbackTime) != SQL_ERROR && _sql->NumRows() != 0)
+        {
+            while (_sql->NextRow() == SQL_SUCCESS)
+            {
+                auto fisher          = lua.create_table();
+                auto charId          = _sql->GetUIntData(0);
+                fisher["playerName"] = _sql->GetStringData(1);
+                fisher["jobLevel"]   = _sql->GetUIntData(2);
+                fisher["zoneName"]   = _sql->GetStringData(3);
+                fisher["skill"]      = _sql->GetUIntData(4);
+                fishers[charId]      = fisher;
+            }
+        }
+
+        return fishers;
     }
 
     std::string GetServerMessage(uint8 language)
@@ -5335,17 +5277,6 @@ namespace luautils
             }
         }
 
-        if (PChar->PBattlefield)
-        {
-            auto battlefield_filename = fmt::format("./scripts/zones/{}/bcnms/{}", PChar->loc.zone->getName(), PChar->PBattlefield->GetName());
-
-            auto funcFromBattlefield = GetCacheEntryFromFilename(battlefield_filename)[functionName];
-            if (funcFromBattlefield.valid())
-            {
-                return funcFromBattlefield;
-            }
-        }
-
         auto zone_filename = fmt::format("./scripts/zones/{}/Zone.lua", PChar->loc.zone->getName());
         auto funcFromZone  = GetCacheEntryFromFilename(zone_filename)[functionName];
         if (funcFromZone.valid())
@@ -5592,23 +5523,102 @@ namespace luautils
         customMenuContext.erase(PChar->id);
     }
 
-    uint16 GetItemIDByName(std::string const& name)
+    SendToDBoxReturnCode SendItemToDeliveryBox(std::string const& playerName, uint16 itemId, uint32 quantity, std::string senderText)
     {
-        uint16      id    = 0;
-        const char* Query = "SELECT itemid FROM item_basic WHERE name LIKE '%s' OR sortname LIKE '%s'";
-        int32       ret   = _sql->Query(Query, name, name);
+        const char* getPlayerIDQuery = "SELECT charid FROM chars WHERE charname = '%s'";
+        int32       queryRet         = _sql->Query(getPlayerIDQuery, playerName);
+        uint32      playerID         = 0;
 
-        if (ret != SQL_ERROR && _sql->NumRows() == 1) // Found a single result
+        if (queryRet != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
         {
-            while (_sql->NextRow() == SQL_SUCCESS)
+            playerID = _sql->GetIntData(0);
+        }
+        else
+        {
+            return SendToDBoxReturnCode::PLAYER_NOT_FOUND;
+        }
+
+        auto isGil = itemId == 65535;
+
+        // Check to confirm that the item legitimately exists
+        // exclude gil as gil does not have an item pointer
+        auto* PItem = itemutils::GetItemPointer(itemId);
+        if (PItem == nullptr && !isGil)
+        {
+            return SendToDBoxReturnCode::ITEM_NOT_FOUND;
+        }
+
+        // default stack size of gil
+        uint32 stackSize = 999999999;
+        // if not gil then get the actual stack size
+        if (!isGil)
+        {
+            stackSize = PItem->getStackSize();
+        }
+
+        bool quantityMoreThanStackSize = quantity > stackSize;
+
+        // limit the quantity to the stack size of the item
+        quantity = std::clamp<uint32>(quantity, 1, stackSize);
+
+        bool isAutoCommitOn = _sql->GetAutoCommit();
+
+        if (_sql->SetAutoCommit(false) && _sql->TransactionStart())
+        {
+            const char* Query = "INSERT INTO delivery_box (charid, box, itemid, quantity, senderid, sender) VALUES ("
+                                "%u, "     // Player ID
+                                "1, "      // Box ID == 1
+                                "%u, "     // Item ID
+                                "%u, "     // Quantity
+                                "%u, "     // Sender ID ( =Player ID )
+                                "'%s'); "; // Sender Text
+            int32 ret = _sql->Query(Query, playerID, itemId, quantity, playerID, senderText);
+
+            if (ret == SQL_ERROR)
             {
-                id = _sql->GetIntData(0);
+                _sql->TransactionRollback();
+                _sql->SetAutoCommit(isAutoCommitOn);
+                return SendToDBoxReturnCode::QUERY_ERROR;
+            }
+            else
+            {
+                _sql->TransactionCommit();
+                _sql->SetAutoCommit(isAutoCommitOn);
+            }
+
+            if (quantityMoreThanStackSize)
+            {
+                return SendToDBoxReturnCode::SUCCESS_LIMITED_TO_STACK_SIZE;
+            }
+            else
+            {
+                return SendToDBoxReturnCode::SUCCESS;
             }
         }
-        else if (ret != SQL_ERROR && _sql->NumRows() > 1)
+        else
+        {
+            return SendToDBoxReturnCode::QUERY_ERROR;
+        }
+    }
+
+    uint16 GetItemIDByName(std::string const& name)
+    {
+        uint16 id   = 0;
+        auto   rset = db::preparedStmt("SELECT itemid FROM item_basic WHERE name LIKE ? OR sortname LIKE ?", name, name);
+
+        const uint16 rowCount = (rset && rset->rowsCount()) ? static_cast<uint16>(rset->rowsCount()) : 0U;
+
+        if (rset && rowCount == 1) // Found a single result
+        {
+            while (rset->next())
+            {
+                id = rset->getUInt("itemid");
+            }
+        }
+        else if (rset && rowCount > 1)
         {
             // 0xFFFF is gil, so we will always return a value less than that as a warning
-            id = 0xFFFF - _sql->NumRows() + 1;
+            id = 0xFFFF - rowCount + 1;
         }
 
         return id;

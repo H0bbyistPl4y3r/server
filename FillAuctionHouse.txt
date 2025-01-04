@@ -1,0 +1,56 @@
+BEGIN
+		SET @counter = 0;
+		SET @useNPCPrice = 0;
+		SET @staticPriceValue = 50;
+		SET @loopCount = 5;
+		
+		IF (@useNPCPrice = 1) THEN
+			/* Use the NPC price, this repeat is to fill non-stacking items.*/
+			REPEAT
+				INSERT INTO auction_house (itemid, stack, seller, seller_name, date, price, buyer_name, sale, sell_date)
+					SELECT itemid, 0, 0, 'Bahamut', 1577836800, BaseSell, NULL, 0, 0
+					FROM item_basic
+					WHERE ah != 0
+					AND StackSize = 1;
+				SET @counter = @counter + 1; 
+			UNTIL @counter > @loopCount 
+			END REPEAT;
+			
+			SET @counter = 0;
+			
+			/* Use the NPC price, this repeat is to fill stacking items.*/
+			REPEAT
+				INSERT INTO auction_house (itemid, stack, seller, seller_name, date, price, buyer_name, sale, sell_date)
+					SELECT itemid, 1, 0, 'Bahamut', 1577836800, BaseSell, NULL, 0, 0
+					FROM item_basic
+					WHERE ah != 0
+					AND StackSize > 1;
+				SET @counter = @counter + 1; 
+			UNTIL @counter > @loopCount 
+			END REPEAT;
+		ELSE
+			/* Use the static price, this repeat is to fill non-stacking items.*/
+			REPEAT
+				INSERT INTO auction_house (itemid, stack, seller, seller_name, date, price, buyer_name, sale, sell_date)
+					SELECT itemid, 0, 0, 'Bahamut', 1577836800, @staticPriceValue, NULL, 0, 0
+					FROM item_basic
+					WHERE ah != 0
+					AND StackSize = 1;
+				SET @counter = @counter + 1; 
+			UNTIL @counter > @loopCount 
+			END REPEAT;
+			
+			SET @counter = 0;
+			
+			/* Use the static price, this repeat is to fill stacking items.*/
+			REPEAT
+				INSERT INTO auction_house (itemid, stack, seller, seller_name, date, price, buyer_name, sale, sell_date)
+					SELECT itemid, 1, 0, 'Bahamut', 1577836800, @staticPriceValue, NULL, 0, 0
+					FROM item_basic
+					WHERE ah != 0
+					AND StackSize > 1;
+				SET @counter = @counter + 1; 
+			UNTIL @counter > @loopCount 
+			END REPEAT;	
+		END IF;
+	END

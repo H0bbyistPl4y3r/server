@@ -1,0 +1,7 @@
+@echo off
+cd "C:\Users\Wiktor\Desktop\MMO\FFXI Server\server"
+start xi_connect.exe
+start xi_map.exe
+start xi_world.exe
+start xi_search.exe
+exit

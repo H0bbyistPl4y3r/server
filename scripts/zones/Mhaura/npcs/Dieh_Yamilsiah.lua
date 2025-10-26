@@ -35,14 +35,11 @@ entity.onSpawn = function(npc)
 end
 
 entity.onTimeTrigger = function(npc, triggerID)
-    xi.transport.dockMessage(npc, triggerID, messages, 'mhaura')
-end
-
-entity.onTrade = function(player, npc, trade)
+    xi.transport.dockMessage(npc, triggerID, messages, xi.zone.MHAURA)
 end
 
 entity.onTrigger = function(player, npc)
-    xi.transport.onDockTimekeeperTrigger(player, xi.transport.routes.SELBINA_MHAURA_OPEN_SEA, 231)
+    xi.transport.onDockTimekeeperTrigger(player, npc)
 
     --[[Other cutscenes:
     233 "This ship is headed for Selbina."
@@ -50,12 +47,6 @@ entity.onTrigger = function(player, npc)
 
     Can't find a way to toggle the destination on 233 or 234, so they are not used.
     Users knowing which ferry is which > using all CSs.]]
-end
-
-entity.onEventUpdate = function(player, csid, option, npc)
-end
-
-entity.onEventFinish = function(player, csid, option, npc)
 end
 
 return entity

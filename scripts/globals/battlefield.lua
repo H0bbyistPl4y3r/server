@@ -120,7 +120,7 @@ xi.battlefield.id =
     EYE_OF_THE_TIGER                           = 13,  -- Converted
     SHOTS_IN_THE_DARK                          = 14,  -- Experimental
     DOUBLE_DRAGONIAN                           = 15,  -- Converted
-    TODAYS_HOROSCOPE                           = 16,
+    TODAYS_HOROSCOPE                           = 16,  -- Experimental
     CONTAMINATED_COLOSSEUM                     = 17,  -- Converted
     KINDERGARTEN_CAP                           = 18,
     LAST_ORC_SHUNNED_HERO                      = 19,
@@ -170,7 +170,7 @@ xi.battlefield.id =
     ROYAL_SUCCESSION                           = 108, -- Converted
     RAPID_RAPTORS                              = 109, -- Converted
     WILD_WILD_WHISKERS                         = 110, -- Converted
-    SEASONS_GREETINGS                          = 111,
+    SEASONS_GREETINGS                          = 111, -- Experimental
     ROYALE_RAMBLE                              = 112,
     MOA_CONSTRICTORS                           = 113,
     V_FORMATION                                = 114,
@@ -183,7 +183,7 @@ xi.battlefield.id =
     WHOM_WILT_THOU_CALL                        = 132,
     SHADOW_LORD_BATTLE                         = 160,
     WHERE_TWO_PATHS_CONVERGE                   = 161,
-    KINDRED_SPIRITS                            = 162,
+    KINDRED_SPIRITS                            = 162, -- Experimental
     SURVIVAL_OF_THE_WISEST                     = 163,
     SMASH_A_MALEVOLENT_MENACE                  = 164, -- Experimental
     THROUGH_THE_QUICKSAND_CAVES                = 192, -- Converted
@@ -278,7 +278,7 @@ xi.battlefield.id =
     SHEEP_IN_ANTLIONS_CLOTHING                 = 674, -- Converted
     SHELL_WE_DANCE                             = 675, -- Experimental
     TOTENTANZ                                  = 676,
-    TANGO_WITH_A_TRACKER                       = 677,
+    TANGO_WITH_A_TRACKER                       = 677, -- Experimental
     REQUIEM_OF_A_SIN                           = 678,
     ANTAGONISTIC_AMBUSCADE                     = 679,
     DARKNESS_NAMED                             = 704, -- Converted
@@ -291,13 +291,13 @@ xi.battlefield.id =
     AUTOMATON_ASSAULT                          = 740,
     MOBLINE_COMEDY                             = 741,
     ANCIENT_FLAMES_BECKON_SPIRE_OF_HOLLA       = 768, -- Converted
-    SIMULANT                                   = 769,
+    SIMULANT                                   = 769, -- Experimental
     EMPTY_HOPES                                = 770,
     ANCIENT_FLAMES_BECKON_SPIRE_OF_DEM         = 800, -- Converted
-    YOU_ARE_WHAT_YOU_EAT                       = 801,
+    YOU_ARE_WHAT_YOU_EAT                       = 801, -- Experimental
     EMPTY_DREAMS                               = 802,
     ANCIENT_FLAMES_BECKON_SPIRE_OF_MEA         = 832, -- Converted
-    PLAYING_HOST                               = 833,
+    PLAYING_HOST                               = 833, -- Experimental
     EMPTY_DESIRES                              = 834,
     DESIRES_OF_EMPTINESS                       = 864, -- Converted
     PULLING_THE_PLUG                           = 865,
@@ -307,11 +307,11 @@ xi.battlefield.id =
     OURYU_COMETH                               = 928,
     ANCIENT_VOWS                               = 960, -- Converted
     SAVAGE                                     = 961,
-    FIRE_IN_THE_SKY                            = 962,
+    FIRE_IN_THE_SKY                            = 962, -- Experimental
     BAD_SEED                                   = 963,
     BUGARD_IN_THE_CLOUDS                       = 964,
     BELOVED_OF_THE_ATLANTES                    = 965,
-    UNINVITED_GUESTS                           = 966,
+    UNINVITED_GUESTS                           = 966,  -- Experimental
     NEST_OF_NIGHTMARES                         = 967,
     ONE_TO_BE_FEARED                           = 992,  -- Converted
     WARRIORS_PATH                              = 993,  -- Converted
@@ -866,6 +866,7 @@ function Battlefield:onEntryEventUpdate(player, csid, option, npc)
         for _, member in pairs(alliance) do
             if
                 member:getZoneID() == zone and
+                member:getStatus() ~= xi.status.DISAPPEAR and
                 not member:hasStatusEffect(xi.effect.BATTLEFIELD) and
                 not member:getBattlefield()
             then
@@ -962,7 +963,10 @@ function Battlefield:onBattlefieldInitialize(battlefield)
     end
 
     for mobId, path in pairs(self.paths) do
-        GetMobByID(mobId):pathThrough(path, xi.path.flag.PATROL)
+        local mEntity = GetMobByID(mobId)
+        if mEntity then
+            mEntity:pathThrough(path, xi.path.flag.PATROL)
+        end
     end
 
     self:setupBattlefield(battlefield)
@@ -1100,6 +1104,24 @@ function Battlefield:onBattlefieldEnter(player, battlefield)
             player:messageSpecial(self.requiredItems.wearMessage, itemId, remaining + 1, remaining)
         else
             player:messageSpecial(self.requiredItems.wearMessage, 0, 0, 0, itemId)
+        end
+    end
+
+    -- Handle mob initial spell casts (blaze spikes, protect, etc)
+    if player:getID() == initiatorId then
+        local mobs = battlefield:getMobs(true, true)
+        for _, mob in pairs(mobs) do
+            if mob:isSpawned() then
+                -- wait until initiator is out of cutscene
+                mob:addListener('ROAM_TICK', 'FIRST_CAST', function(mobArg)
+                    local firstPlayer = GetPlayerByID(initiatorId)
+                    if firstPlayer and not firstPlayer:isInEvent() then
+                        mobArg:castSpell()
+
+                        mobArg:removeListener('FIRST_CAST')
+                    end
+                end)
+            end
         end
     end
 
@@ -1243,50 +1265,17 @@ end
 
 function Battlefield:handleLootRolls(battlefield, lootTable, npc)
     local players = battlefield:getPlayers()
+    local firstPlayer = players[1]
 
-    for i = 1, #lootTable, 1 do
-        local lootGroup = lootTable[i]
+    local selectedLoot = utils.selectFromLootGroups(firstPlayer, lootTable)
+    for _, entry in ipairs(selectedLoot) do
+        if entry.itemId ~= xi.item.GIL then
+            firstPlayer:addTreasure(entry.itemId, npc)
+        else
+            local gilPerPlayer = entry.amount / #players
 
-        if lootGroup then
-            local max = 0
-
-            for _, entry in pairs(lootGroup) do
-                if type(entry) == 'table' then
-                    max = max + entry.weight
-                end
-            end
-
-            local quantity = lootGroup.quantity or 1
-
-            for j = 1, quantity do
-                local roll    = math.random(max)
-                local current = 0
-
-                for _, entry in pairs(lootGroup) do
-                    if type(entry) == 'table' then
-                        current = current + entry.weight
-
-                        if current >= roll then
-                            if entry.item == 0 then
-                                break
-                            end
-
-                            if entry.item == 65535 then
-                                local gil = entry.amount / #players
-
-                                for k = 1, #players, 1 do
-                                    npcUtil.giveCurrency(players[k], 'gil', gil)
-                                end
-
-                                break
-                            end
-
-                            players[1]:addTreasure(entry.item, npc)
-
-                            break
-                        end
-                    end
-                end
+            for _, player in ipairs(players) do
+                npcUtil.giveCurrency(player, 'gil', gilPerPlayer)
             end
         end
     end
@@ -1438,8 +1427,8 @@ function BattlefieldMission:onEventFinishWin(player, csid, option, npc)
     end
 
     -- Only grant mission XP once per JP midnight
-    if self.grantXP and self:getVar(player, 'XP') <= os.time() then
-        self:setVar(player, 'XP', getMidnight())
+    if self.grantXP and self:getVar(player, 'XP') <= GetSystemTime() then
+        self:setVar(player, 'XP', JstMidnight())
         player:addExp(self.grantXP)
     end
 end
@@ -1464,9 +1453,11 @@ function BattlefieldQuest:new(data)
     local obj = Battlefield:new(data)
     setmetatable(obj, self)
 
-    obj.questArea  = data.questArea
-    obj.quest      = data.quest
-    obj.canLoseExp = data.canLoseExp or false
+    obj.questArea     = data.questArea
+    obj.quest         = data.quest
+    obj.canLoseExp    = data.canLoseExp or false
+    obj.requiredVar   = data.requiredVar
+    obj.requiredValue = data.requiredValue
 
     return obj
 end

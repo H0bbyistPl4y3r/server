@@ -21,16 +21,24 @@
 
 #pragma once
 
-#include "message_handler.h"
+#include "world_engine.h"
 
-class ColonizationSystem : public IMessageHandler
+class ColonizationSystem
 {
 public:
-    ColonizationSystem()  = default;
+    ColonizationSystem(WorldEngine& worldServer)
+    : worldServer_(worldServer)
+    {
+        std::ignore = worldServer_;
+    }
+
     ~ColonizationSystem() = default;
 
-    bool handleMessage(HandleableMessage&& message) override
+    bool handleMessage(uint8 messageType, IPPMessage&& message)
     {
         return false;
     }
+
+private:
+    WorldEngine& worldServer_;
 };

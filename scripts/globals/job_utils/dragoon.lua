@@ -231,6 +231,8 @@ xi.job_utils.dragoon.useAncientCircle = function(player, target, ability)
         power = 15 + jpValue
     end
 
+    power = power + player:getMod(xi.mod.ANCIENT_CIRCLE_POTENCY)
+
     target:addStatusEffect(xi.effect.ANCIENT_CIRCLE, power, 0, duration)
 end
 
@@ -506,7 +508,7 @@ xi.job_utils.dragoon.useAngon = function(player, target, ability)
     end
 
     target:updateClaim(player)
-    player:removeAmmo()
+    player:removeAmmo(1)
 
     return xi.effect.DEFENSE_DOWN
 end
@@ -692,7 +694,7 @@ xi.job_utils.dragoon.useDamageBreath = function(wyvern, target, skill, action, d
     local _, skillchainCount = xi.magicburst.formMagicBurst(element, target)
 
     -- 'Breath accuracy is directly affected by a wyvern's current HP', but no data exists.
-    local resist              = xi.combat.magicHitRate.calculateResistRate(wyvern, target, 0, 0, element, 0, 0, bonusMacc)
+    local resist              = xi.combat.magicHitRate.calculateResistRate(wyvern, target, 0, 0, 0, element, 0, 0, bonusMacc)
     local sdt                 = xi.spells.damage.calculateSDT(target, element)
     local nukeAbsorbOrNullify = xi.spells.damage.calculateNukeAbsorbOrNullify(target, element)
     local magicBurst          = 1

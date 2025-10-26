@@ -2,21 +2,19 @@
 -- Zone: Valkurm_Dunes (103)
 -----------------------------------
 local ID = zones[xi.zone.VALKURM_DUNES]
-require('scripts/quests/i_can_hear_a_rainbow')
 require('scripts/missions/amk/helpers')
 -----------------------------------
 ---@type TZone
 local zoneObject = {}
 
 zoneObject.onInitialize = function(zone)
-    xi.conq.setRegionalConquestOverseers(zone:getRegionID())
+    xi.conquest.setRegionalConquestOverseers(zone:getRegionID())
     xi.mogTablet.onZoneInitialize(zone)
 
-    local results = zone:queryEntitiesByName('qm2')
-    if results ~= nil and results[1] ~= nil then
-        local qm2 = results[1]
-
-        if VanadielHour() < 5 or VanadielHour() >= 18 then
+    local qm2 = GetNPCByID(ID.npc.WHM_AF1_QM)
+    if qm2 then
+        local time = VanadielHour()
+        if time < 5 or time >= 18 then
             qm2:setStatus(xi.status.NORMAL)
         else
             qm2:setStatus(xi.status.DISAPPEAR)
@@ -39,10 +37,6 @@ zoneObject.onZoneIn = function(player, prevZone)
         player:setPos(60.989, -4.898, -151.001, 198)
     end
 
-    if quests.rainbow.onZoneIn(player) then
-        cs = 3
-    end
-
     -- AMK06/AMK07
     if xi.settings.main.ENABLE_AMK == 1 then
         xi.amk.helpers.tryRandomlyPlaceDiggingLocation(player)
@@ -51,26 +45,27 @@ zoneObject.onZoneIn = function(player, prevZone)
     return cs
 end
 
+zoneObject.afterZoneIn = function(player)
+    xi.chocoboGame.handleMessage(player)
+end
+
 zoneObject.onConquestUpdate = function(zone, updatetype, influence, owner, ranking, isConquestAlliance)
-    xi.conq.onConquestUpdate(zone, updatetype, influence, owner, ranking, isConquestAlliance)
+    xi.conquest.onConquestUpdate(zone, updatetype, influence, owner, ranking, isConquestAlliance)
 end
 
 zoneObject.onTriggerAreaEnter = function(player, triggerArea)
 end
 
 zoneObject.onEventUpdate = function(player, csid, option, npc)
-    if csid == 3 then
-        quests.rainbow.onEventUpdate(player)
-    end
 end
 
 zoneObject.onEventFinish = function(player, csid, option, npc)
 end
 
 zoneObject.onGameHour = function(zone)
-    local results = zone:queryEntitiesByName('qm2')
-    if results ~= nil and results[1] ~= nil then
-        local qm2 = results[1]
+    local qm2 = GetNPCByID(ID.npc.WHM_AF1_QM)
+
+    if qm2 then
         if VanadielHour() == 5 then
             qm2:setStatus(xi.status.DISAPPEAR)
         end

@@ -3,6 +3,7 @@
 --  Mob: Aw'euvhi
 -----------------------------------
 local ID = zones[xi.zone.ALTAIEU]
+mixins = { require('scripts/mixins/families/euvhi') }
 -----------------------------------
 ---@type TMobEntity
 local entity = {}
@@ -20,8 +21,7 @@ entity.onMobDeath = function(mob, player, optParams)
         mobID == ID.mob.EUVHIS_OFFSET + 4
     then
         if not player:hasKeyItem(xi.ki.WHITE_CARD) then
-            player:addKeyItem(xi.ki.WHITE_CARD)
-            player:messageSpecial(ID.text.KEYITEM_OBTAINED, xi.ki.WHITE_CARD)
+            npcUtil.giveKeyItem(player, xi.ki.WHITE_CARD)
         end
 
     elseif
@@ -30,8 +30,7 @@ entity.onMobDeath = function(mob, player, optParams)
         mobID == ID.mob.EUVHIS_OFFSET + 10
     then
         if not player:hasKeyItem(xi.ki.RED_CARD) then
-            player:addKeyItem(xi.ki.RED_CARD)
-            player:messageSpecial(ID.text.KEYITEM_OBTAINED, xi.ki.RED_CARD)
+            npcUtil.giveKeyItem(player, xi.ki.RED_CARD)
         end
 
     elseif
@@ -40,8 +39,7 @@ entity.onMobDeath = function(mob, player, optParams)
         mobID == ID.mob.EUVHIS_OFFSET + 16
     then
         if not player:hasKeyItem(xi.ki.BLACK_CARD) then
-            player:addKeyItem(xi.ki.BLACK_CARD)
-            player:messageSpecial(ID.text.KEYITEM_OBTAINED, xi.ki.BLACK_CARD)
+            npcUtil.giveKeyItem(player, xi.ki.BLACK_CARD)
         end
     end
 end

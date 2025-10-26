@@ -34,9 +34,10 @@
 #include "enmity_container.h"
 #include "mob_spell_container.h"
 #include "mob_spell_list.h"
-#include "packets/char_health.h"
 #include "packets/entity_set_name.h"
 #include "packets/entity_update.h"
+#include "packets/s2c/0x029_battle_message.h"
+#include "packets/s2c/0x0df_group_attr.h"
 #include "recast_container.h"
 #include "status_effect_container.h"
 #include "utils/battleutils.h"
@@ -50,7 +51,6 @@ CTrustEntity::CTrustEntity(CCharEntity* PChar)
     allegiance                  = ALLEGIANCE_TYPE::PLAYER;
     m_MobSkillList              = 0;
     PMaster                     = PChar;
-    m_IsClaimable               = false;
     m_bReleaseTargIDOnDisappear = true;
     spawnAnimation              = SPAWN_ANIMATION::SPECIAL; // Initial spawn has the special spawn-in animation
 
@@ -70,7 +70,7 @@ void CTrustEntity::PostTick()
     // NOTE: This is purposefully calling CBattleEntity's impl.
     // TODO: Calling a grand-parent's impl. of an overridden function is bad
     CBattleEntity::PostTick();
-    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    timer::time_point now = timer::now();
     if (loc.zone && updatemask && status != STATUS_TYPE::DISAPPEAR && now > m_nextUpdateTimer)
     {
         m_nextUpdateTimer = now + 250ms;
@@ -81,7 +81,7 @@ void CTrustEntity::PostTick()
             // clang-format off
             PMaster->ForParty([this](auto PMember)
             {
-                static_cast<CCharEntity*>(PMember)->pushPacket<CCharHealthPacket>(this);
+                static_cast<CCharEntity*>(PMember)->pushPacket<GP_SERV_COMMAND_GROUP_ATTR>(this);
             });
             // clang-format on
         }
@@ -414,7 +414,7 @@ void CTrustEntity::OnRangedAttack(CRangeState& state, action_t& action)
         // shadows took damage
         actionTarget.messageID = 0;
         actionTarget.reaction  = REACTION::EVADE;
-        PTarget->loc.zone->PushPacket(PTarget, CHAR_INRANGE_SELF, new CMessageBasicPacket(PTarget, PTarget, 0, shadowsTaken, MSGBASIC_SHADOW_ABSORB));
+        PTarget->loc.zone->PushPacket(PTarget, CHAR_INRANGE_SELF, std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(PTarget, PTarget, 0, shadowsTaken, MSGBASIC_SHADOW_ABSORB));
     }
 
     if (actionTarget.speceffect == SPECEFFECT::HIT && actionTarget.param > 0)
@@ -443,7 +443,10 @@ bool CTrustEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 
     if ((targetFlags & TARGET_PLAYER_PARTY_PIANISSIMO) && PInitiator->allegiance == allegiance && PMaster && PInitiator != this)
     {
-        return true;
+        if (PInitiator->StatusEffectContainer->HasStatusEffect(EFFECT_PIANISSIMO))
+        {
+            return true;
+        }
     }
 
     if ((targetFlags & TARGET_PLAYER_PARTY_ENTRUST) && PInitiator->allegiance == allegiance && PMaster && PInitiator != this)
@@ -472,7 +475,7 @@ void CTrustEntity::OnDespawn(CDespawnState& /*unused*/)
         luautils::OnMobDespawn(this);
     }
     FadeOut();
-    PAI->EventHandler.triggerListener("DESPAWN", CLuaBaseEntity(this));
+    PAI->EventHandler.triggerListener("DESPAWN", this);
 }
 
 void CTrustEntity::OnCastFinished(CMagicState& state, action_t& action)
@@ -573,25 +576,28 @@ void CTrustEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& act
 
             if (primary)
             {
-                if (PWeaponSkill->getPrimarySkillchain() != 0)
+                if ((actionTarget.reaction & REACTION::MISS) == REACTION::NONE)
                 {
-                    // NOTE: GetSkillChainEffect is INSIDE this if statement because it
-                    //  ALTERS the state of the resonance, which misses and non-elemental skills should NOT do.
-                    SUBEFFECT effect = battleutils::GetSkillChainEffect(PBattleTarget, PWeaponSkill->getPrimarySkillchain(),
-                                                                        PWeaponSkill->getSecondarySkillchain(), PWeaponSkill->getTertiarySkillchain());
-                    if (effect != SUBEFFECT_NONE)
+                    if (PBattleTarget->health.hp > 0 && PWeaponSkill->getPrimarySkillchain() != 0)
                     {
-                        actionTarget.addEffectParam = battleutils::TakeSkillchainDamage(this, PBattleTarget, damage, taChar);
-                        if (actionTarget.addEffectParam < 0)
+                        // NOTE: GetSkillChainEffect is INSIDE this if statement because it
+                        //  ALTERS the state of the resonance, which misses and non-elemental skills should NOT do.
+                        SUBEFFECT effect = battleutils::GetSkillChainEffect(PBattleTarget, PWeaponSkill->getPrimarySkillchain(),
+                                                                            PWeaponSkill->getSecondarySkillchain(), PWeaponSkill->getTertiarySkillchain());
+                        if (effect != SUBEFFECT_NONE)
                         {
-                            actionTarget.addEffectParam   = -actionTarget.addEffectParam;
-                            actionTarget.addEffectMessage = 384 + effect;
+                            actionTarget.addEffectParam = battleutils::TakeSkillchainDamage(this, PBattleTarget, damage, taChar);
+                            if (actionTarget.addEffectParam < 0)
+                            {
+                                actionTarget.addEffectParam   = -actionTarget.addEffectParam;
+                                actionTarget.addEffectMessage = 384 + effect;
+                            }
+                            else
+                            {
+                                actionTarget.addEffectMessage = 287 + effect;
+                            }
+                            actionTarget.additionalEffect = effect;
                         }
-                        else
-                        {
-                            actionTarget.addEffectMessage = 287 + effect;
-                        }
-                        actionTarget.additionalEffect = effect;
                     }
                 }
             }

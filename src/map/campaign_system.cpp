@@ -22,9 +22,9 @@
 #include <tuple>
 
 #include "campaign_system.h"
-#include "map.h"
+#include "common/database.h"
 #include "map/utils/zoneutils.h"
-#include "packets/campaign_map.h"
+#include "packets/s2c/0x071_influence_campaign.h"
 #include "utils/charutils.h"
 
 CampaignState CState;
@@ -33,16 +33,15 @@ namespace campaign
 {
     void LoadNations()
     {
-        std::string query = "SELECT id, reconnaissance, morale, prosperity FROM campaign_nation ORDER BY id ASC";
-        int         ret   = _sql->Query(query.c_str());
-        if (ret != SQL_ERROR && _sql->NumRows() != 0)
+        const auto rset = db::preparedStmt("SELECT id, reconnaissance, morale, prosperity FROM campaign_nation ORDER BY id ASC");
+        if (rset && rset->rowsCount())
         {
-            while (_sql->NextRow() == SQL_SUCCESS)
+            while (rset->next())
             {
                 CampaignNation nation;
-                nation.reconnaissance = (uint8)_sql->GetUIntData(1);
-                nation.morale         = (uint8)_sql->GetUIntData(2);
-                nation.prosperity     = (uint8)_sql->GetUIntData(3);
+                nation.reconnaissance = rset->get<uint8>("reconnaissance");
+                nation.morale         = rset->get<uint8>("morale");
+                nation.prosperity     = rset->get<uint8>("prosperity");
                 CState.nations.emplace_back(nation);
             }
         }
@@ -143,13 +142,12 @@ namespace campaign
 
     void SetReconnaissance(CampaignArmy army, int8 amount)
     {
-        auto current = std::min(std::max((int32)amount, 0), 10);
+        const auto current = std::min(std::max((int32)amount, 0), 10);
 
-        std::string query = "UPDATE `campaign_nation` SET `reconnaissance` = %d WHERE `id` = %d";
-        int         ret   = _sql->Query(query.c_str(), current, (int32)army);
-        if (ret == SQL_ERROR)
+        const auto rset = db::preparedStmt("UPDATE `campaign_nation` SET `reconnaissance` = ? WHERE `id` = ?", current, (int32)army);
+        if (!rset)
         {
-            ShowError("Unable to update nation reconnaissance.\n");
+            ShowError("Unable to update nation reconnaissance.");
             return;
         }
         CState.nations[army].reconnaissance = current;
@@ -157,13 +155,12 @@ namespace campaign
 
     void SetMorale(CampaignArmy army, int8 amount)
     {
-        auto current = std::min(std::max((int32)amount, 0), 100);
+        const auto current = std::min(std::max((int32)amount, 0), 100);
 
-        std::string query = "UPDATE `campaign_nation` SET `morale` = %d WHERE `id` = %d";
-        int         ret   = _sql->Query(query.c_str(), current, (int32)army);
-        if (ret == SQL_ERROR)
+        const auto rset = db::preparedStmt("UPDATE `campaign_nation` SET `morale` = ? WHERE `id` = ?", current, (int32)army);
+        if (!rset)
         {
-            ShowError("Unable to update nation morale.\n");
+            ShowError("Unable to update nation morale.");
             return;
         }
         CState.nations[army].morale = current;
@@ -171,13 +168,12 @@ namespace campaign
 
     void SetProsperity(CampaignArmy army, int8 amount)
     {
-        auto current = std::min(std::max((int32)amount, 0), 100);
+        const auto current = std::min(std::max((int32)amount, 0), 100);
 
-        std::string query = "UPDATE `campaign_nation` SET `prosperity` = %d WHERE `id` = %d";
-        int         ret   = _sql->Query(query.c_str(), current, (int32)army);
-        if (ret == SQL_ERROR)
+        const auto rset = db::preparedStmt("UPDATE `campaign_nation` SET `prosperity` = ? WHERE `id` = ?", current, (int32)army);
+        if (!rset)
         {
-            ShowError("Unable to update nation prosperity.\n");
+            ShowError("Unable to update nation prosperity.");
             return;
         }
         CState.nations[army].prosperity = current;
@@ -190,7 +186,7 @@ namespace campaign
 
     void SendUpdate(CCharEntity* PChar)
     {
-        PChar->pushPacket<CCampaignPacket>(PChar, CState, 0);
-        PChar->pushPacket<CCampaignPacket>(PChar, CState, 1);
+        PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, CState, 0);
+        PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, CState, 1);
     }
 }; // namespace campaign

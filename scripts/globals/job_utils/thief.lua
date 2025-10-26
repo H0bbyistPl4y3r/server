@@ -2,7 +2,6 @@
 -- Thief Job Utilities
 -----------------------------------
 require('scripts/globals/quests')
-require('scripts/globals/utils')
 -----------------------------------
 xi = xi or {}
 xi.job_utils = xi.job_utils or {}
@@ -213,24 +212,24 @@ xi.job_utils.thief.useDespoil = function(player, target, ability, action)
         player:addTP(tpSteal)
     end
 
-    local stolen = target:getDespoilItem()
+    local despoiled = target:getDespoilItem()
 
     if
         target:isMob() and
         math.random(1, 100) <= despoilChance and
-        stolen ~= 0
+        despoiled ~= 0
     then
         if player:getObjType() == xi.objType.TRUST then
-            player:getMaster():addItem(stolen)
+            player:getMaster():addItem(despoiled)
         else
-            player:addItem(stolen)
+            player:addItem(despoiled)
         end
 
-        target:itemStolen()
+        target:itemDespoiled()
 
         -- Attempt to grab the debuff from the DB
         -- If there isn't a debuff assigned to the item stolen, select one at random
-        local debuff = player:getDespoilDebuff(stolen)
+        local debuff = player:getDespoilDebuff(despoiled)
 
         if not debuff then
             debuff = despoilDebuffs[math.random(#despoilDebuffs)]
@@ -244,13 +243,14 @@ xi.job_utils.thief.useDespoil = function(player, target, ability, action)
         ability:setMsg(xi.msg.basic.STEAL_FAIL) -- Failed
     end
 
-    return stolen
+    return despoiled
 end
 
 xi.job_utils.thief.useFeint = function(player, target, ability)
     local bonus = player:getMod(xi.mod.AUGMENTS_FEINT) * player:getMerit(xi.merit.FEINT) / 25 -- Divide by the merit value (feint is 25) to get the number of merit points
 
-    player:addStatusEffect(xi.effect.FEINT, 150 + bonus, 0, 60) -- -150 Evasion base
+    -- Subpower is the proc rate bonus for TH procs
+    player:addStatusEffect(xi.effect.FEINT, 150 + bonus, 0, 60, 0, player:getMerit(xi.merit.FEINT) - 25) -- -150 Evasion base, 0% base TREASURE_HUNTER_PROC, every merit past 1 gives 25%
 end
 
 xi.job_utils.thief.useFlee = function(player, target, ability)
@@ -292,7 +292,7 @@ xi.job_utils.thief.useLarceny = function(player, target, ability, action)
         local newStatus = player:getStatusEffect(effectID)
 
         if newStatus then
-            newStatus:setDuration((newStatus:getDuration() + jpValue) * 1000)
+            newStatus:setDuration(newStatus:getDuration() + jpValue * 1000)
         end
     -- Copy an SP Ability if found
     else
@@ -416,9 +416,9 @@ xi.job_utils.thief.useSteal = function(player, target, ability, action)
     -- Attempt Aura steal
     -- local effect = xi.effect.NONE
     if player:hasTrait(xi.trait.AURA_STEAL) then
-        local resist = applyResistanceAbility(player, target, xi.element.NONE, 0, 0)
+        local resist = xi.combat.magicHitRate.calculateResistRate(player, target, 0, 0, 0, xi.element.NONE, xi.mod.INT, 0, 0)
         -- local effectStealSuccess = false
-        if resist > 0.0625 then
+        if resist >= 0.25 then
             local auraStealChance = math.min(player:getMerit(xi.merit.AURA_STEAL), 95)
             if math.random(1, 100) <= auraStealChance then
                 local targetShadows = target:getMod(xi.mod.UTSUSEMI)

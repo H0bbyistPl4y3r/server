@@ -1,8 +1,7 @@
-require('scripts/globals/utils')
-
 xi = xi or {}
 xi.mission = xi.mission or {}
 
+---@enum xi.mission.log_id
 xi.mission.log_id =
 {
     SANDORIA    =  0,
@@ -565,7 +564,7 @@ xi.mission.id =
     {
         RHAPSODIES_OF_VANADIEL          = 0,   -- ±
         -- CREATION_AND_REBIRTH         =  -- Category
-        RESONACE                        = 2,   -- ±
+        RESONANCE                       = 2,   -- ±
         EMISSARY_FROM_THE_SEAS          = 3,   -- ±
         SET_FREE                        = 4,   -- ±
         THE_BEGINNING                   = 6,   -- ±
@@ -803,6 +802,8 @@ end
 local function getVarPrefix(areaId, missionId)
     return string.format('Mission[%d][%d]', areaId, missionId)
 end
+
+xi.mission.getVarPrefix = getVarPrefix
 
 xi.mission.incrementVar = function(player, areaId, missionId, name, value)
     return player:incrementCharVar(getVarPrefix(areaId, missionId) .. name, value)

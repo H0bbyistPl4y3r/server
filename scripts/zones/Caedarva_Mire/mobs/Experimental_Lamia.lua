@@ -26,6 +26,10 @@ local function spawnMinions(mob, target)
     end
 end
 
+entity.onMobInitialize = function(mob)
+    mob:setMobMod(xi.mobMod.IDLE_DESPAWN, 300)
+end
+
 entity.onMobFight = function(mob, target)
     if mob:getHPP() < 75 and mob:getLocalVar('spawnedMinions') == 0 then
         spawnMinions(mob, target)
@@ -36,7 +40,7 @@ entity.onMobFight = function(mob, target)
         local minion = GetMobByID(i)
         if
             minion and
-            minion:getCurrentAction() == xi.act.ROAMING
+            minion:getCurrentAction() == xi.action.ROAMING
         then
             minion:updateEnmity(target)
         end

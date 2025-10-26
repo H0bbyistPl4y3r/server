@@ -19,14 +19,11 @@
 ===========================================================================
 */
 
-#ifndef _MOBUTILS_H
-#define _MOBUTILS_H
+#pragma once
 
 #include <unordered_map>
 
 #include "common/cbasetypes.h"
-#include "common/mmo.h"
-
 #include "entities/mobentity.h"
 #include "modifier.h"
 
@@ -62,9 +59,10 @@ namespace mobutils
     void SetupDungeonMob(CMobEntity* PMob);
     void SetupEventMob(CMobEntity* PMob);
     void SetupNMMob(CMobEntity* PMob);
+    void SetupDungeonInstanceMob(CMobEntity* PMob);
     void SetupPetSkills(CMobEntity* PMob);
 
-    uint8 JobSkillRankToBaseEvaRank(JOBTYPE job);
+    uint8 JobSkillRankToBaseEvaRank(JOBTYPE mjob, JOBTYPE sjob);
 
     uint16 GetWeaponDamage(CMobEntity* PMob, uint16 slot);
     uint16 GetMagicEvasion(CMobEntity* PMob);
@@ -84,10 +82,8 @@ namespace mobutils
 
     void AddSqlModifiers(CMobEntity* PMob);
 
-    void        SetSpellList(CMobEntity*, uint16);
-    CMobEntity* InstantiateAlly(uint32 groupid, uint16 zoneID, CInstance* = nullptr);
-    CMobEntity* InstantiateDynamicMob(uint32 groupid, uint16 groupZoneId, uint16 targetZoneId);
-    void        WeaknessTrigger(CBaseEntity* PTarget, WeaknessType level);
+    void SetSpellList(CMobEntity*, uint16);
+    auto InstantiateAlly(uint32 groupid, uint16 zoneID, CInstance* = nullptr) -> CMobEntity*;
+    auto InstantiateDynamicMob(uint32 groupid, uint16 groupZoneId, uint16 targetZoneId) -> CMobEntity*;
+    void WeaknessTrigger(CBaseEntity* PTarget, WeaknessType level);
 }; // namespace mobutils
-
-#endif

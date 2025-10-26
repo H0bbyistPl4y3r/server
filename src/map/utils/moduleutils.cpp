@@ -25,6 +25,7 @@
 #include "common/cbasetypes.h"
 #include "common/utils.h"
 #include "lua/luautils.h"
+#include "map_networking.h"
 
 #include <filesystem>
 #include <fstream>
@@ -32,8 +33,6 @@
 #include <regex>
 #include <string>
 #include <vector>
-
-extern uint16 map_port;
 
 namespace
 {
@@ -98,13 +97,28 @@ namespace moduleutils
         }
     }
 
-    void OnPushPacket(CCharEntity* PChar, CBasicPacket* packet)
+    void OnPushPacket(CCharEntity* PChar, const std::unique_ptr<CBasicPacket>& packet)
     {
         TracyZoneScoped;
         for (auto* module : cppModules())
         {
             module->OnPushPacket(PChar, packet);
         }
+    }
+
+    auto OnIncomingPacket(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packet) -> bool
+    {
+        TracyZoneScoped;
+
+        for (auto* module : cppModules())
+        {
+            if (module->OnIncomingPacket(PSession, PChar, packet))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     struct Override
@@ -123,25 +137,10 @@ namespace moduleutils
 
     std::vector<Override> overrides;
 
-    void LoadLuaModules()
+    void LoadLuaModules(IPP mapIPP)
     {
         // Load the helper file
         lua.safe_script_file("./modules/module_utils.lua");
-
-        lua.safe_script(R""(
-            function applyOverride(base_table, name, func, fullname, filename)
-                local old = base_table[name]
-
-                local thisenv = getfenv(old)
-
-                local env = { super = old }
-                setmetatable(env, { __index = thisenv })
-
-                setfenv(func, env)
-
-                base_table[name] = func
-            end
-        )"");
 
         // Read lines from init.txt
         std::vector<std::string> list;
@@ -172,6 +171,7 @@ namespace moduleutils
 
         // Load zone_settings information
         std::unordered_map<std::string, uint16> zoneSettingsPorts;
+
         auto rset = db::preparedStmt("SELECT name, zoneport FROM zone_settings");
         while (rset && rset->next())
         {
@@ -241,7 +241,7 @@ namespace moduleutils
                         if (parts.size() >= 3 && parts[0] == "xi" && parts[1] == "zones")
                         {
                             const auto zoneName    = parts[2];
-                            const auto currentPort = map_port == 0 ? settings::get<uint16>("network.MAP_PORT") : map_port;
+                            const auto currentPort = mapIPP.getPort() == 0 ? settings::get<uint16>("network.MAP_PORT") : mapIPP.getPort();
 
                             if (zoneSettingsPorts.find(zoneName) != zoneSettingsPorts.end() && zoneSettingsPorts[zoneName] != currentPort)
                             {
@@ -285,34 +285,30 @@ namespace moduleutils
         {
             if (!override.applied)
             {
-                auto firstElem = override.nameParts.front();
-                auto lastTable = override.nameParts.size() < 2 ? firstElem : *(override.nameParts.end() - 2);
-                auto lastElem  = override.nameParts.back();
-
                 sol::table table = lua["_G"];
                 for (auto& part : override.nameParts)
                 {
-                    table = table[part].get_or<sol::table>(sol::lua_nil);
-                    if (table == sol::lua_nil)
-                    {
-                        break;
-                    }
-
-                    if (part == lastTable)
+                    if (part == override.nameParts.back())
                     {
                         DebugModules(fmt::format("Applying override: {}", override.overrideName));
 
-                        if (table[lastElem] == sol::lua_nil)
+                        if (table[override.nameParts.back()] == sol::lua_nil)
                         {
                             DebugModules("Inserting empty function to override for: %s (%s)", override.overrideName, override.filename);
-                            table[lastElem] = []() {};
+                            table[override.nameParts.back()] = []() {};
                         }
 
                         // Function defined in LoadLuaModules()
-                        lua["applyOverride"](table, lastElem, override.func, override.overrideName, override.filename);
+                        lua["applyOverride"](table, override.nameParts.back(), override.func, override.overrideName, override.filename);
 
                         override.applied = true;
 
+                        break;
+                    }
+
+                    table = table[part].get_or<sol::table>(sol::lua_nil);
+                    if (table == sol::lua_nil)
+                    {
                         break;
                     }
                 }

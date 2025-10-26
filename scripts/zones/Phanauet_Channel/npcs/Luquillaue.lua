@@ -4,14 +4,13 @@
 -- Type: Adventurer's Assistant
 -- !pos 4.066 -4.5 -10.450 1
 -----------------------------------
----@type TNpcEntity
 local entity = {}
 
 entity.onTrade = function(player, npc, trade)
 end
 
 entity.onTrigger = function(player, npc)
-    player:startEvent(3)
+    xi.barge.timekeeperOnTrigger(player, xi.barge.location.PHANAUET_CHANNEL, 4)
 end
 
 entity.onEventUpdate = function(player, csid, option, npc)

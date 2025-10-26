@@ -28,9 +28,6 @@ local trustMemory = function(player)
     return memories
 end
 
-entity.onTrade = function(player, npc, trade)
-end
-
 entity.onTrigger = function(player, npc)
     local trustSandoria = player:getQuestStatus(xi.questLog.SANDORIA, xi.quest.id.sandoria.TRUST_SANDORIA)
     local trustBastok = player:getQuestStatus(xi.questLog.BASTOK, xi.quest.id.bastok.TRUST_BASTOK)
@@ -73,13 +70,10 @@ entity.onTrigger = function(player, npc)
     end
 end
 
-entity.onEventUpdate = function(player, csid, option, npc)
-end
-
 entity.onEventFinish = function(player, csid, option, npc)
     -- TRUST
     if csid == 893 then
-        player:addSpell(xi.magic.spell.EXCENMILLE, true, true)
+        player:addSpell(xi.magic.spell.EXCENMILLE, { silentLog = true })
         player:messageSpecial(ID.text.YOU_LEARNED_TRUST, 0, xi.magic.spell.EXCENMILLE)
         player:setCharVar('SandoriaFirstTrust', 1)
     elseif csid == 895 then
@@ -92,7 +86,7 @@ entity.onEventFinish = function(player, csid, option, npc)
         })
         player:messageSpecial(ID.text.CALL_MULTIPLE_ALTER_EGO)
     elseif csid == 897 then
-        player:addSpell(xi.magic.spell.EXCENMILLE, true, true)
+        player:addSpell(xi.magic.spell.EXCENMILLE, { silentLog = true })
         player:messageSpecial(ID.text.YOU_LEARNED_TRUST, 0, xi.magic.spell.EXCENMILLE)
         player:delKeyItem(xi.ki.RED_INSTITUTE_CARD)
         player:messageSpecial(ID.text.KEYITEM_LOST, xi.ki.RED_INSTITUTE_CARD)

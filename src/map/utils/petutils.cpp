@@ -22,8 +22,6 @@
 #include "common/timer.h"
 #include "common/utils.h"
 
-#include <cmath>
-#include <cstring>
 #include <vector>
 
 #include "ability.h"
@@ -36,14 +34,14 @@
 #include "items/item_weapon.h"
 #include "job_points.h"
 #include "latent_effect_container.h"
-#include "map.h"
 #include "mob_spell_list.h"
 #include "notoriety_container.h"
 #include "petutils.h"
+
+#include "map_engine.h"
 #include "puppetutils.h"
 #include "status_effect_container.h"
 #include "zone_instance.h"
-#include "zoneutils.h"
 
 #include "ai/ai_container.h"
 #include "ai/controllers/automaton_controller.h"
@@ -52,12 +50,10 @@
 #include "ai/states/ability_state.h"
 
 #include "mob_modifier.h"
-#include "packets/char_abilities.h"
-#include "packets/char_sync.h"
-#include "packets/char_update.h"
+#include "packets/char_status.h"
 #include "packets/entity_update.h"
-#include "packets/message_standard.h"
 #include "packets/pet_sync.h"
+#include "packets/s2c/0x0ac_command_data.h"
 
 std::vector<Pet_t*> g_PPetList;
 
@@ -68,119 +64,123 @@ namespace petutils
     {
         FreePetList();
 
-        const char* Query = "SELECT\
-                pet_list.petid,\
-                pet_list.name,\
-                modelid,\
-                minLevel,\
-                maxLevel,\
-                time,\
-                mobradius,\
-                ecosystemID,\
-                mob_pools.familyid,\
-                mob_pools.mJob,\
-                mob_pools.sJob,\
-                pet_list.element,\
-                (mob_family_system.HP / 100),\
-                (mob_family_system.MP / 100),\
-                mob_family_system.speed,\
-                mob_family_system.STR,\
-                mob_family_system.DEX,\
-                mob_family_system.VIT,\
-                mob_family_system.AGI,\
-                mob_family_system.INT,\
-                mob_family_system.MND,\
-                mob_family_system.CHR,\
-                mob_family_system.DEF,\
-                mob_family_system.ATT,\
-                mob_family_system.ACC, \
-                mob_family_system.EVA, \
-                hasSpellScript, spellList, \
-                slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, \
-                magical_sdt, fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
-                fire_res_rank, ice_res_rank, wind_res_rank, earth_res_rank, lightning_res_rank, water_res_rank, light_res_rank, dark_res_rank, \
-                cmbDelay, name_prefix, mob_pools.skill_list_id, damageType \
-                FROM pet_list, mob_pools, mob_resistances, mob_family_system \
-                WHERE pet_list.poolid = mob_pools.poolid AND mob_resistances.resist_id = mob_pools.resist_id AND mob_pools.familyid = mob_family_system.familyID";
+        const auto query = "SELECT "
+                           "pet_list.petid, "
+                           "pet_list.name, "
+                           "modelid, "
+                           "minLevel, "
+                           "maxLevel, "
+                           "time, "
+                           "mobradius, "
+                           "ecosystemID, "
+                           "mob_pools.familyid, "
+                           "mob_pools.mJob, "
+                           "mob_pools.sJob, "
+                           "pet_list.element, "
+                           "(mob_family_system.HP / 100) AS hp_scale, "
+                           "(mob_family_system.MP / 100) AS mp_scale, "
+                           "mob_family_system.speed, "
+                           "mob_family_system.STR, "
+                           "mob_family_system.DEX, "
+                           "mob_family_system.VIT, "
+                           "mob_family_system.AGI, "
+                           "mob_family_system.INT, "
+                           "mob_family_system.MND, "
+                           "mob_family_system.CHR, "
+                           "mob_family_system.DEF, "
+                           "mob_family_system.ATT, "
+                           "mob_family_system.ACC, "
+                           "mob_family_system.EVA, "
+                           "hasSpellScript, spellList, "
+                           "slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, "
+                           "magical_sdt, fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, "
+                           "fire_res_rank, ice_res_rank, wind_res_rank, earth_res_rank, lightning_res_rank, water_res_rank, light_res_rank, dark_res_rank, "
+                           "paralyze_res_rank, bind_res_rank, silence_res_rank, slow_res_rank, poison_res_rank, light_sleep_res_rank, dark_sleep_res_rank, blind_res_rank, "
+                           "cmbDelay, name_prefix, mob_pools.skill_list_id, damageType "
+                           "FROM pet_list, mob_pools, mob_resistances, mob_family_system "
+                           "WHERE pet_list.poolid = mob_pools.poolid AND mob_resistances.resist_id = mob_pools.resist_id AND mob_pools.familyid = mob_family_system.familyID";
 
-        if (_sql->Query(Query) != SQL_ERROR && _sql->NumRows() != 0)
+        const auto rset = db::preparedStmt(query);
+        FOR_DB_MULTIPLE_RESULTS(rset)
         {
-            while (_sql->NextRow() == SQL_SUCCESS)
-            {
-                Pet_t* Pet = new Pet_t();
+            auto* Pet = new Pet_t();
 
-                Pet->PetID = (uint16)_sql->GetIntData(0);
-                Pet->name.insert(0, (const char*)_sql->GetData(1));
+            Pet->PetID = rset->get<uint16>("petid");
+            Pet->name.insert(0, rset->get<std::string>("name"));
+            db::extractFromBlob(rset, "modelid", Pet->look);
 
-                uint16 sqlModelID[10];
-                memcpy(&sqlModelID, _sql->GetData(2), 20);
-                Pet->look = look_t(sqlModelID);
+            Pet->minLevel  = rset->get<uint8>("minLevel");
+            Pet->maxLevel  = rset->get<uint8>("maxLevel");
+            Pet->time      = std::chrono::seconds(rset->get<uint32>("time"));
+            Pet->radius    = rset->get<uint8>("mobradius");
+            Pet->EcoSystem = rset->get<ECOSYSTEM>("ecosystemID");
+            Pet->m_Family  = rset->get<uint16>("familyid");
+            Pet->mJob      = rset->get<uint8>("mJob");
+            Pet->sJob      = rset->get<uint8>("sJob");
+            Pet->m_Element = rset->get<uint8>("element");
 
-                Pet->minLevel  = (uint8)_sql->GetIntData(3);
-                Pet->maxLevel  = (uint8)_sql->GetIntData(4);
-                Pet->time      = _sql->GetUIntData(5);
-                Pet->radius    = _sql->GetUIntData(6);
-                Pet->EcoSystem = (ECOSYSTEM)_sql->GetIntData(7);
-                Pet->m_Family  = (uint16)_sql->GetIntData(8);
-                Pet->mJob      = (uint8)_sql->GetIntData(9);
-                Pet->sJob      = (uint8)_sql->GetIntData(10);
-                Pet->m_Element = (uint8)_sql->GetIntData(11);
+            Pet->HPscale = rset->get<float>("hp_scale");
+            Pet->MPscale = rset->get<float>("mp_scale");
 
-                Pet->HPscale = _sql->GetFloatData(12);
-                Pet->MPscale = _sql->GetFloatData(13);
+            Pet->speed = rset->get<uint8>("speed");
 
-                Pet->speed = (uint8)_sql->GetIntData(14);
+            Pet->strRank = rset->get<uint8>("STR");
+            Pet->dexRank = rset->get<uint8>("DEX");
+            Pet->vitRank = rset->get<uint8>("VIT");
+            Pet->agiRank = rset->get<uint8>("AGI");
+            Pet->intRank = rset->get<uint8>("INT");
+            Pet->mndRank = rset->get<uint8>("MND");
+            Pet->chrRank = rset->get<uint8>("CHR");
+            Pet->defRank = rset->get<uint8>("DEF");
+            Pet->attRank = rset->get<uint8>("ATT");
+            Pet->accRank = rset->get<uint8>("ACC");
+            Pet->evaRank = rset->get<uint8>("EVA");
 
-                Pet->strRank = (uint8)_sql->GetIntData(15);
-                Pet->dexRank = (uint8)_sql->GetIntData(16);
-                Pet->vitRank = (uint8)_sql->GetIntData(17);
-                Pet->agiRank = (uint8)_sql->GetIntData(18);
-                Pet->intRank = (uint8)_sql->GetIntData(19);
-                Pet->mndRank = (uint8)_sql->GetIntData(20);
-                Pet->chrRank = (uint8)_sql->GetIntData(21);
-                Pet->defRank = (uint8)_sql->GetIntData(22);
-                Pet->attRank = (uint8)_sql->GetIntData(23);
-                Pet->accRank = (uint8)_sql->GetIntData(24);
-                Pet->evaRank = (uint8)_sql->GetIntData(25);
+            Pet->hasSpellScript = rset->get<bool>("hasSpellScript");
+            Pet->spellList      = rset->get<uint8>("spellList");
 
-                Pet->hasSpellScript = (bool)_sql->GetIntData(26);
+            // Specific Dmage Taken, as a %
+            Pet->slash_sdt  = rset->get<int16>("slash_sdt");
+            Pet->pierce_sdt = rset->get<int16>("pierce_sdt");
+            Pet->hth_sdt    = rset->get<int16>("h2h_sdt");
+            Pet->impact_sdt = rset->get<int16>("impact_sdt");
 
-                Pet->spellList = (uint8)_sql->GetIntData(27);
+            Pet->magical_sdt = rset->get<int16>("magical_sdt"); // Modifier 389, base 10000 stored as signed integer. Positives signify less damage.
 
-                // Specific Dmage Taken, as a %
-                Pet->slash_sdt  = (uint16)(_sql->GetFloatData(28) * 1000);
-                Pet->pierce_sdt = (uint16)(_sql->GetFloatData(29) * 1000);
-                Pet->hth_sdt    = (uint16)(_sql->GetFloatData(30) * 1000);
-                Pet->impact_sdt = (uint16)(_sql->GetFloatData(31) * 1000);
+            Pet->fire_sdt    = rset->get<int16>("fire_sdt");      // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->ice_sdt     = rset->get<int16>("ice_sdt");       // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->wind_sdt    = rset->get<int16>("wind_sdt");      // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->earth_sdt   = rset->get<int16>("earth_sdt");     // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->thunder_sdt = rset->get<int16>("lightning_sdt"); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->water_sdt   = rset->get<int16>("water_sdt");     // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->light_sdt   = rset->get<int16>("light_sdt");     // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->dark_sdt    = rset->get<int16>("dark_sdt");      // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
 
-                Pet->magical_sdt = (int16)_sql->GetIntData(32); // Modifier 389, base 10000 stored as signed integer. Positives signify less damage.
+            // resistances
+            Pet->fire_res_rank    = rset->get<int8>("fire_res_rank");
+            Pet->ice_res_rank     = rset->get<int8>("ice_res_rank");
+            Pet->wind_res_rank    = rset->get<int8>("wind_res_rank");
+            Pet->earth_res_rank   = rset->get<int8>("earth_res_rank");
+            Pet->thunder_res_rank = rset->get<int8>("lightning_res_rank");
+            Pet->water_res_rank   = rset->get<int8>("water_res_rank");
+            Pet->light_res_rank   = rset->get<int8>("light_res_rank");
+            Pet->dark_res_rank    = rset->get<int8>("dark_res_rank");
 
-                Pet->fire_sdt    = (int16)_sql->GetIntData(33); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->ice_sdt     = (int16)_sql->GetIntData(34); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->wind_sdt    = (int16)_sql->GetIntData(35); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->earth_sdt   = (int16)_sql->GetIntData(36); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->thunder_sdt = (int16)_sql->GetIntData(37); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->water_sdt   = (int16)_sql->GetIntData(38); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->light_sdt   = (int16)_sql->GetIntData(39); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->dark_sdt    = (int16)_sql->GetIntData(40); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
+            Pet->paralyze_res_rank    = rset->get<int8>("paralyze_res_rank");
+            Pet->bind_res_rank        = rset->get<int8>("bind_res_rank");
+            Pet->silence_res_rank     = rset->get<int8>("silence_res_rank");
+            Pet->slow_res_rank        = rset->get<int8>("slow_res_rank");
+            Pet->poison_res_rank      = rset->get<int8>("poison_res_rank");
+            Pet->light_sleep_res_rank = rset->get<int8>("light_sleep_res_rank");
+            Pet->dark_sleep_res_rank  = rset->get<int8>("dark_sleep_res_rank");
+            Pet->blind_res_rank       = rset->get<int8>("blind_res_rank");
 
-                // resistances
-                Pet->fire_res_rank    = (int8)_sql->GetIntData(41);
-                Pet->ice_res_rank     = (int8)_sql->GetIntData(42);
-                Pet->wind_res_rank    = (int8)_sql->GetIntData(43);
-                Pet->earth_res_rank   = (int8)_sql->GetIntData(44);
-                Pet->thunder_res_rank = (int8)_sql->GetIntData(45);
-                Pet->water_res_rank   = (int8)_sql->GetIntData(46);
-                Pet->light_res_rank   = (int8)_sql->GetIntData(47);
-                Pet->dark_res_rank    = (int8)_sql->GetIntData(48);
+            Pet->cmbDelay       = rset->get<uint16>("cmbDelay");
+            Pet->name_prefix    = rset->get<uint8>("name_prefix");
+            Pet->m_MobSkillList = rset->get<uint16>("skill_list_id");
+            Pet->m_dmgType      = rset->get<DAMAGE_TYPE>("damageType");
 
-                Pet->cmbDelay       = (uint16)_sql->GetIntData(49);
-                Pet->name_prefix    = (uint8)_sql->GetUIntData(50);
-                Pet->m_MobSkillList = (uint16)_sql->GetUIntData(51);
-                Pet->m_dmgType      = (DAMAGE_TYPE)_sql->GetUIntData(52);
-
-                g_PPetList.emplace_back(Pet);
-            }
+            g_PPetList.emplace_back(Pet);
         }
     }
 
@@ -353,8 +353,8 @@ namespace petutils
         }
 
         PMob->baseSpeed      = petStats->speed;
-        PMob->speed          = petStats->speed;
         PMob->animationSpeed = petStats->speed;
+        PMob->UpdateSpeed();
 
         PMob->UpdateHealth();
         PMob->health.tp = 0;
@@ -399,33 +399,53 @@ namespace petutils
         PMob->stats.CHR = (uint16)((fCHR + mCHR) * 0.9f);
     }
 
-    void LoadAutomatonStats(CCharEntity* PMaster, CPetEntity* PPet, Pet_t* petStats)
+    void LoadAutomatonStats(CCharEntity* PMaster, CPetEntity* PPet, Pet_t* petStats, uint8 mlvl, JOBTYPE mjob, JOBTYPE sjob)
     {
-        PPet->WorkingSkills.automaton_melee  = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_MELEE), PMaster->GetSkill(SKILL_AUTOMATON_MELEE));
-        PPet->WorkingSkills.automaton_ranged = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_RANGED), PMaster->GetSkill(SKILL_AUTOMATON_RANGED));
-        PPet->WorkingSkills.automaton_magic  = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_MAGIC), PMaster->GetSkill(SKILL_AUTOMATON_MAGIC));
+        skills_t& tempSkills = PMaster->automatonInfo.automatonSkills;
+        stats_t&  tempStats  = PMaster->automatonInfo.automatonStats;
+        health_t& tempHealth = PMaster->automatonInfo.automatonHealth;
+
+        tempSkills.automaton_melee  = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_MELEE, mlvl), PMaster->GetSkill(SKILL_AUTOMATON_MELEE));
+        tempSkills.automaton_ranged = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_RANGED, mlvl), PMaster->GetSkill(SKILL_AUTOMATON_RANGED));
+        tempSkills.automaton_magic  = std::min(puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_MAGIC, mlvl), PMaster->GetSkill(SKILL_AUTOMATON_MAGIC));
 
         // Set capped flags
         for (int i = 22; i <= 24; ++i)
         {
-            if (PPet->GetSkill(i) == (puppetutils::getSkillCap(PMaster, (SKILLTYPE)i)))
+            if ((tempSkills.skill[i] & 0x7FFF) == (puppetutils::getSkillCap(PMaster, (SKILLTYPE)i, mlvl)))
             {
-                PPet->WorkingSkills.skill[i] |= 0x8000;
+                tempSkills.skill[i] |= 0x8000;
             }
         }
 
-        // Add mods/merits
-        int32 meritbonus = PMaster->PMeritPoints->GetMeritValue(MERIT_AUTOMATON_SKILLS, PMaster);
-        PPet->WorkingSkills.automaton_melee += PMaster->getMod(Mod::AUTO_MELEE_SKILL) + meritbonus;
-        PPet->WorkingSkills.automaton_ranged += PMaster->getMod(Mod::AUTO_RANGED_SKILL) + meritbonus;
         // Share its magic skills to prevent needing separate spells or checks to see which skill to use
-        uint16 amaSkill                     = PPet->WorkingSkills.automaton_magic + PMaster->getMod(Mod::AUTO_MAGIC_SKILL) + meritbonus;
-        PPet->WorkingSkills.automaton_magic = amaSkill;
-        PPet->WorkingSkills.healing         = amaSkill;
-        PPet->WorkingSkills.enhancing       = amaSkill;
-        PPet->WorkingSkills.enfeebling      = amaSkill;
-        PPet->WorkingSkills.elemental       = amaSkill;
-        PPet->WorkingSkills.dark            = amaSkill;
+        uint16 amaSkill            = tempSkills.automaton_magic + PMaster->getMod(Mod::AUTO_MAGIC_SKILL);
+        tempSkills.automaton_magic = amaSkill;
+        tempSkills.healing         = amaSkill;
+        tempSkills.enhancing       = amaSkill;
+        tempSkills.enfeebling      = amaSkill;
+        tempSkills.elemental       = amaSkill;
+        tempSkills.dark            = amaSkill;
+
+        int32 meritbonus = PMaster->PMeritPoints->GetMeritValue(MERIT_AUTOMATON_SKILLS, PMaster);
+
+        // If skill rank is 0, merit bonus needs to be added to be displayed like retail does
+        if (puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_RANGED, mlvl) == 0)
+        {
+            tempSkills.automaton_ranged = meritbonus + PMaster->getMod(Mod::AUTO_RANGED_SKILL);
+        }
+
+        if (puppetutils::getSkillCap(PMaster, SKILL_AUTOMATON_MAGIC, mlvl) == 0)
+        {
+            auto modBonus = PMaster->getMod(Mod::AUTO_MAGIC_SKILL);
+
+            tempSkills.automaton_magic = meritbonus + modBonus;
+            tempSkills.healing         = meritbonus + modBonus;
+            tempSkills.enhancing       = meritbonus + modBonus;
+            tempSkills.enfeebling      = meritbonus + modBonus;
+            tempSkills.elemental       = meritbonus + modBonus;
+            tempSkills.dark            = meritbonus + modBonus;
+        }
 
         // Declaration of variables needed for calculation.
         float raceStat          = 0; // Final HP for level based on race.
@@ -442,9 +462,6 @@ namespace petutils
 
         uint8 grade = 0;
 
-        uint8   mlvl = PPet->GetMLevel();
-        JOBTYPE mjob = PPet->GetMJob();
-        JOBTYPE sjob = PPet->GetSJob();
         // Calculate HP gain from main job
         int32 mainLevelOver30     = std::clamp(mlvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
         int32 mainLevelUpTo60     = (mlvl < 60 ? mlvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
@@ -475,9 +492,9 @@ namespace petutils
                   (grade::GetHPScale(grade, scaleOver75Column) * mainLevelOver75);
 
         // Calculate Bonus HP
-        bonusStat          = (mainLevelOver10 + mainLevelOver50andUnder60) * 2;
-        PPet->health.maxhp = (int32)((raceStat + jobStat + bonusStat + sJobStat) * petStats->HPscale);
-        PPet->health.hp    = PPet->health.maxhp;
+        bonusStat        = (mainLevelOver10 + mainLevelOver50andUnder60) * 2;
+        tempHealth.maxhp = (int32)((raceStat + jobStat + bonusStat + sJobStat) * petStats->HPscale);
+        tempHealth.hp    = tempHealth.maxhp;
 
         // Start MP calculation
         raceStat = 0;
@@ -510,88 +527,102 @@ namespace petutils
                        grade::GetMPScale(grade, scaleOver60) * mainLevelOver60;
         }
 
-        PPet->health.maxmp = (int32)((raceStat + jobStat + sJobStat) * petStats->MPscale);
-        PPet->health.mp    = PPet->health.maxmp;
+        tempHealth.maxmp = (int32)((raceStat + jobStat + sJobStat) * petStats->MPscale);
+        tempHealth.mp    = tempHealth.maxmp;
 
-        uint16 fSTR = GetBaseToRank(petStats->strRank, PPet->GetMLevel());
-        uint16 fDEX = GetBaseToRank(petStats->dexRank, PPet->GetMLevel());
-        uint16 fVIT = GetBaseToRank(petStats->vitRank, PPet->GetMLevel());
-        uint16 fAGI = GetBaseToRank(petStats->agiRank, PPet->GetMLevel());
-        uint16 fINT = GetBaseToRank(petStats->intRank, PPet->GetMLevel());
-        uint16 fMND = GetBaseToRank(petStats->mndRank, PPet->GetMLevel());
-        uint16 fCHR = GetBaseToRank(petStats->chrRank, PPet->GetMLevel());
+        uint16 slvl = std::floor<uint16>(mlvl / 2);
 
-        uint16 mSTR = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 2), PPet->GetMLevel());
-        uint16 mDEX = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 3), PPet->GetMLevel());
-        uint16 mVIT = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 4), PPet->GetMLevel());
-        uint16 mAGI = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 5), PPet->GetMLevel());
-        uint16 mINT = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 6), PPet->GetMLevel());
-        uint16 mMND = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 7), PPet->GetMLevel());
-        uint16 mCHR = GetBaseToRank(grade::GetJobGrade(PPet->GetMJob(), 8), PPet->GetMLevel());
+        uint16 fSTR = GetBaseToRank(petStats->strRank, mlvl);
+        uint16 fDEX = GetBaseToRank(petStats->dexRank, mlvl);
+        uint16 fVIT = GetBaseToRank(petStats->vitRank, mlvl);
+        uint16 fAGI = GetBaseToRank(petStats->agiRank, mlvl);
+        uint16 fINT = GetBaseToRank(petStats->intRank, mlvl);
+        uint16 fMND = GetBaseToRank(petStats->mndRank, mlvl);
+        uint16 fCHR = GetBaseToRank(petStats->chrRank, mlvl);
 
-        uint16 sSTR = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 2), PPet->GetSLevel());
-        uint16 sDEX = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 3), PPet->GetSLevel());
-        uint16 sVIT = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 4), PPet->GetSLevel());
-        uint16 sAGI = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 5), PPet->GetSLevel());
-        uint16 sINT = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 6), PPet->GetSLevel());
-        uint16 sMND = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 7), PPet->GetSLevel());
-        uint16 sCHR = GetBaseToRank(grade::GetJobGrade(PPet->GetSJob(), 8), PPet->GetSLevel());
+        uint16 mSTR = GetBaseToRank(grade::GetJobGrade(mjob, 2), mlvl);
+        uint16 mDEX = GetBaseToRank(grade::GetJobGrade(mjob, 3), mlvl);
+        uint16 mVIT = GetBaseToRank(grade::GetJobGrade(mjob, 4), mlvl);
+        uint16 mAGI = GetBaseToRank(grade::GetJobGrade(mjob, 5), mlvl);
+        uint16 mINT = GetBaseToRank(grade::GetJobGrade(mjob, 6), mlvl);
+        uint16 mMND = GetBaseToRank(grade::GetJobGrade(mjob, 7), mlvl);
+        uint16 mCHR = GetBaseToRank(grade::GetJobGrade(mjob, 8), mlvl);
 
-        PPet->stats.STR = fSTR + mSTR + sSTR;
-        PPet->stats.DEX = fDEX + mDEX + sDEX;
-        PPet->stats.VIT = fVIT + mVIT + sVIT;
-        PPet->stats.AGI = fAGI + mAGI + sAGI;
-        PPet->stats.INT = fINT + mINT + sINT;
-        PPet->stats.MND = fMND + mMND + sMND;
-        PPet->stats.CHR = fCHR + mCHR + sCHR;
+        uint16 sSTR = GetBaseToRank(grade::GetJobGrade(sjob, 2), slvl);
+        uint16 sDEX = GetBaseToRank(grade::GetJobGrade(sjob, 3), slvl);
+        uint16 sVIT = GetBaseToRank(grade::GetJobGrade(sjob, 4), slvl);
+        uint16 sAGI = GetBaseToRank(grade::GetJobGrade(sjob, 5), slvl);
+        uint16 sINT = GetBaseToRank(grade::GetJobGrade(sjob, 6), slvl);
+        uint16 sMND = GetBaseToRank(grade::GetJobGrade(sjob, 7), slvl);
+        uint16 sCHR = GetBaseToRank(grade::GetJobGrade(sjob, 8), slvl);
 
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setSkillType(SKILL_AUTOMATON_MELEE);
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDelay((uint16)(floor(1000.0f * (petStats->cmbDelay / 60.0f)))); // every pet should use this eventually
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setBaseDelay((uint16)(floor(1000.0f * (petStats->cmbDelay / 60.0f))));
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage((PPet->GetSkill(SKILL_AUTOMATON_MELEE) / 9) * 2 + 3);
+        tempStats.STR = fSTR + mSTR + sSTR;
+        tempStats.DEX = fDEX + mDEX + sDEX;
+        tempStats.VIT = fVIT + mVIT + sVIT;
+        tempStats.AGI = fAGI + mAGI + sAGI;
+        tempStats.INT = fINT + mINT + sINT;
+        tempStats.MND = fMND + mMND + sMND;
+        tempStats.CHR = fCHR + mCHR + sCHR;
 
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setSkillType(SKILL_AUTOMATON_RANGED);
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage((PPet->GetSkill(SKILL_AUTOMATON_RANGED) / 9) * 2 + 3);
-        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDmgType(DAMAGE_TYPE::PIERCING);
-
-        CAutomatonEntity* PAutomaton = static_cast<CAutomatonEntity*>(PPet);
-
-        // Automatons are hard to interrupt
-        PPet->addModifier(Mod::SPELLINTERRUPT, 85);
-
-        switch (PAutomaton->getFrame())
+        if (PPet)
         {
-            default: // case FRAME_HARLEQUIN:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(2, mlvl > 99 ? 99 : mlvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl));
-                break;
-            case FRAME_VALOREDGE:
-                PPet->setModifier(Mod::SHIELDBLOCKRATE, 45);
-                PPet->setMobMod(MOBMOD_CAN_SHIELD_BLOCK, 1);
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl));
-                break;
-            case FRAME_SHARPSHOT:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(1, mlvl > 99 ? 99 : mlvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(11, mlvl > 99 ? 99 : mlvl));
-                break;
-            case FRAME_STORMWAKER:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(12, mlvl > 99 ? 99 : mlvl));
-                break;
-        }
+            CAutomatonEntity* PAutomaton = static_cast<CAutomatonEntity*>(PPet);
 
-        // Add Job Point Stat Bonuses
-        if (PMaster->GetMJob() == JOB_PUP)
-        {
-            PPet->addModifier(Mod::ATT, PMaster->getMod(Mod::PET_ATK_DEF));
-            PPet->addModifier(Mod::DEF, PMaster->getMod(Mod::PET_ATK_DEF));
-            PPet->addModifier(Mod::ACC, PMaster->getMod(Mod::PET_ACC_EVA));
-            PPet->addModifier(Mod::EVA, PMaster->getMod(Mod::PET_ACC_EVA));
-            PPet->addModifier(Mod::MATT, PMaster->getMod(Mod::PET_MAB_MDB));
-            PPet->addModifier(Mod::MDEF, PMaster->getMod(Mod::PET_MAB_MDB));
-            PPet->addModifier(Mod::MACC, PMaster->getMod(Mod::PET_MACC_MEVA));
-            PPet->addModifier(Mod::MEVA, PMaster->getMod(Mod::PET_MACC_MEVA));
+            PPet->WorkingSkills = tempSkills;
+            PPet->stats         = tempStats;
+            PPet->health        = tempHealth;
+
+            PAutomaton->m_Equip = PMaster->automatonInfo.m_Equip;
+            PPet->look          = PMaster->automatonInfo.automatonLook;
+            PPet->name          = PMaster->automatonInfo.m_automatonName;
+            PPet->look.size     = MODEL_AUTOMATON;
+
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setSkillType(SKILL_AUTOMATON_MELEE);
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDelay((uint16)(floor(1000.0f * (petStats->cmbDelay / 60.0f)))); // every pet should use this eventually
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setBaseDelay((uint16)(floor(1000.0f * (petStats->cmbDelay / 60.0f))));
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage((PPet->GetSkill(SKILL_AUTOMATON_MELEE) / 9) * 2 + 3);
+
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setSkillType(SKILL_AUTOMATON_RANGED);
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage((PPet->GetSkill(SKILL_AUTOMATON_RANGED) / 9) * 2 + 3);
+            static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDmgType(DAMAGE_TYPE::PIERCING);
+
+            // Automatons are hard to interrupt
+            PPet->addModifier(Mod::SPELLINTERRUPT, 85);
+
+            switch (PAutomaton->getFrame())
+            {
+                default: // case FRAME_HARLEQUIN:
+                    tempSkills.evasion = battleutils::GetMaxSkill(2, mlvl > 99 ? 99 : mlvl);
+                    PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl));
+                    break;
+                case FRAME_VALOREDGE:
+                    PPet->setModifier(Mod::SHIELDBLOCKRATE, 45);
+                    PPet->setMobMod(MOBMOD_CAN_SHIELD_BLOCK, 1);
+                    tempSkills.evasion = battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl);
+                    PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl));
+                    break;
+                case FRAME_SHARPSHOT:
+                    tempSkills.evasion = battleutils::GetMaxSkill(1, mlvl > 99 ? 99 : mlvl);
+                    PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(11, mlvl > 99 ? 99 : mlvl));
+                    break;
+                case FRAME_STORMWAKER:
+                    tempSkills.evasion = battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl);
+                    PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(12, mlvl > 99 ? 99 : mlvl));
+                    break;
+            }
+
+            // Add Job Point Stat Bonuses
+            if (PMaster->GetMJob() == JOB_PUP)
+            {
+                PPet->addModifier(Mod::ATT, PMaster->getMod(Mod::PET_ATK_DEF));
+                PPet->addModifier(Mod::DEF, PMaster->getMod(Mod::PET_ATK_DEF));
+                PPet->addModifier(Mod::ACC, PMaster->getMod(Mod::PET_ACC_EVA));
+                PPet->addModifier(Mod::EVA, PMaster->getMod(Mod::PET_ACC_EVA));
+                PPet->addModifier(Mod::MATT, PMaster->getMod(Mod::PET_MAB_MDB));
+                PPet->addModifier(Mod::MDEF, PMaster->getMod(Mod::PET_MAB_MDB));
+                PPet->addModifier(Mod::MACC, PMaster->getMod(Mod::PET_MACC_MEVA));
+                PPet->addModifier(Mod::MEVA, PMaster->getMod(Mod::PET_MACC_MEVA));
+            }
         }
     }
 
@@ -763,7 +794,9 @@ namespace petutils
         }
         else if (PMaster->GetSJob() == JOB_SMN)
         {
-            PPet->SetMLevel(PMaster->GetSLevel());
+            mLvl = PMaster->GetSLevel();
+
+            PPet->SetMLevel(mLvl);
         }
         else
         { // should never happen
@@ -972,49 +1005,84 @@ namespace petutils
         FinalizePetStatistics(PMaster, PPet);
     }
 
-    void CalculateAutomatonStats(CBattleEntity* PMaster, CPetEntity* PPet)
+    void CalculateAutomatonStats(CBattleEntity* PMaster, CBattleEntity* PPet)
     {
-        CAutomatonEntity* PAutomaton = static_cast<CAutomatonEntity*>(PPet);
-        switch (PAutomaton->getFrame())
+        CAutomatonEntity* PAutomaton = dynamic_cast<CAutomatonEntity*>(PPet);
+
+        // TODO: should CBattleEntity be able to load a real automaton?
+        if (CCharEntity* PChar = dynamic_cast<CCharEntity*>(PMaster))
         {
-            default: // case FRAME_HARLEQUIN:
-                PPet->SetMJob(JOB_WAR);
-                PPet->SetSJob(JOB_RDM);
-                break;
-            case FRAME_VALOREDGE:
-                PPet->SetMJob(JOB_PLD);
-                PPet->SetSJob(JOB_WAR);
-                break;
-            case FRAME_SHARPSHOT:
-                PPet->SetMJob(JOB_RNG);
-                PPet->SetSJob(JOB_PUP);
-                break;
-            case FRAME_STORMWAKER:
-                PPet->SetMJob(JOB_RDM);
-                PPet->SetSJob(JOB_WHM);
-                break;
+            JOBTYPE mjob = JOBTYPE::JOB_NON;
+            JOBTYPE sjob = JOBTYPE::JOB_NON;
+
+            switch (PChar->getAutomatonFrame())
+            {
+                default: // case FRAME_HARLEQUIN:
+                    mjob = JOB_WAR;
+                    sjob = JOB_RDM;
+                    break;
+                case FRAME_VALOREDGE:
+                    mjob = JOB_PLD;
+                    sjob = JOB_WAR;
+                    break;
+                case FRAME_SHARPSHOT:
+                    mjob = JOB_RNG;
+                    sjob = JOB_PUP;
+                    break;
+                case FRAME_STORMWAKER:
+                    mjob = JOB_RDM;
+                    sjob = JOB_WHM;
+                    break;
+            }
+
+            uint8 mainLevel = PMaster->GetMJob() == JOB_PUP ? PMaster->GetMLevel() + PMaster->getMod(Mod::AUTOMATON_LVL_BONUS) : PMaster->GetSLevel();
+
+            uint32 petID = 0;
+            if (PAutomaton)
+            {
+                petID = PAutomaton->m_PetID;
+                // TEMP: should be MLevel when unsummoned, and PUP level when summoned
+                PPet->SetMLevel(mainLevel);
+                PPet->SetSLevel(mainLevel / 2); // Todo: SetSLevel() already reduces the level?
+            }
+            else
+            {
+                switch (PChar->getAutomatonFrame())
+                {
+                    case FRAME_VALOREDGE:
+                        petID = PETID_VALOREDGEFRAME;
+                        break;
+                    case FRAME_SHARPSHOT:
+                        petID = PETID_SHARPSHOTFRAME;
+                        break;
+                    case FRAME_STORMWAKER:
+                        petID = PETID_STORMWAKERFRAME;
+                        break;
+                    case FRAME_HARLEQUIN:
+                    default:
+                        petID = PETID_HARLEQUINFRAME;
+                        break;
+                }
+            }
+
+            LoadAutomatonStats(PChar, PAutomaton, g_PPetList.at(petID), mainLevel, mjob, sjob); // temp
+
+            if (PAutomaton)
+            {
+                if (PMaster->objtype == TYPE_PC)
+                {
+                    PPet->addModifier(Mod::ATTP, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
+                    PPet->addModifier(Mod::DEFP, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
+                    PPet->addModifier(Mod::MATT, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
+                    PPet->addModifier(Mod::ACC, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
+                    PPet->addModifier(Mod::RACC, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
+                    PPet->addModifier(Mod::EVA, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
+                    PPet->addModifier(Mod::MDEF, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
+                }
+
+                FinalizePetStatistics(PMaster, PAutomaton);
+            }
         }
-
-        // TEMP: should be MLevel when unsummoned, and PUP level when summoned
-        uint8 mainLevel = PMaster->GetMJob() == JOB_PUP ? PMaster->GetMLevel() + PMaster->getMod(Mod::AUTOMATON_LVL_BONUS) : PMaster->GetSLevel();
-        PPet->SetMLevel(mainLevel);
-        PPet->SetSLevel(mainLevel / 2); // Todo: SetSLevel() already reduces the level?
-
-        LoadAutomatonStats(static_cast<CCharEntity*>(PMaster), PPet, g_PPetList.at(PPet->m_PetID)); // temp
-
-        if (PMaster->objtype == TYPE_PC)
-        {
-            CCharEntity* PChar = static_cast<CCharEntity*>(PMaster);
-            PPet->addModifier(Mod::ATTP, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
-            PPet->addModifier(Mod::DEFP, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
-            PPet->addModifier(Mod::MATT, PChar->PMeritPoints->GetMeritValue(MERIT_OPTIMIZATION, PChar));
-            PPet->addModifier(Mod::ACC, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
-            PPet->addModifier(Mod::RACC, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
-            PPet->addModifier(Mod::EVA, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
-            PPet->addModifier(Mod::MDEF, PChar->PMeritPoints->GetMeritValue(MERIT_FINE_TUNING, PChar));
-        }
-
-        FinalizePetStatistics(PMaster, PPet);
     }
 
     void CalculateLuopanStats(CBattleEntity* PMaster, CPetEntity* PPet)
@@ -1035,15 +1103,16 @@ namespace petutils
         // TODO: make pets use entity flags
         PPet->m_flags = 0x0000008B;
         // Just sit, do nothing
-        PPet->speed = 0;
+        PPet->baseSpeed = 0;
+        PPet->UpdateSpeed();
 
         FinalizePetStatistics(PMaster, PPet);
     }
 
     void FinalizePetStatistics(CBattleEntity* PMaster, CPetEntity* PPet)
     {
-        // set C magic evasion
-        PPet->setModifier(Mod::MEVA, battleutils::GetMaxSkill(SKILL_ELEMENTAL_MAGIC, JOB_RDM, PPet->GetMLevel() > 99 ? 99 : PPet->GetMLevel()));
+        // set C magic evasion, add MEVA that may have come from other sources (Automaton, Wyvern, Avatar bonus meva in their respective CalculateXStats function)
+        PPet->setModifier(Mod::MEVA, battleutils::GetMaxSkill(7, std::min<uint8>(99, PPet->GetMLevel())) + PPet->getMod(Mod::MEVA));
         PPet->health.tp = 0;
         PMaster->applyPetModifiers(PPet);
         PPet->UpdateHealth();
@@ -1081,7 +1150,7 @@ namespace petutils
             charutils::BuildingCharAbilityTable(PMasterChar);
             charutils::BuildingCharPetAbilityTable(PMasterChar, PPet, PPet->m_PetID);
 
-            PMasterChar->pushPacket<CCharUpdatePacket>(PMasterChar);
+            PMasterChar->pushPacket<CCharStatusPacket>(PMasterChar);
             PMasterChar->pushPacket<CPetSyncPacket>(PMasterChar);
 
             // check latents affected by pets
@@ -1100,15 +1169,15 @@ namespace petutils
 
         if (PMaster->StatusEffectContainer->HasStatusEffect(EFFECT_DEBILITATION))
         {
-            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_DEBILITATION, EFFECT_DEBILITATION, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_DEBILITATION)->GetPower(), 0, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_DEBILITATION)->GetDuration()), true);
+            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_DEBILITATION, EFFECT_DEBILITATION, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_DEBILITATION)->GetPower(), 0s, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_DEBILITATION)->GetDuration()), EffectNotice::Silent);
         }
         if (PMaster->StatusEffectContainer->HasStatusEffect(EFFECT_OMERTA))
         {
-            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_OMERTA, EFFECT_OMERTA, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_OMERTA)->GetPower(), 0, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_OMERTA)->GetDuration()), true);
+            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_OMERTA, EFFECT_OMERTA, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_OMERTA)->GetPower(), 0s, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_OMERTA)->GetDuration()), EffectNotice::Silent);
         }
         if (PMaster->StatusEffectContainer->HasStatusEffect(EFFECT_IMPAIRMENT))
         {
-            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_IMPAIRMENT, EFFECT_IMPAIRMENT, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetPower(), 0, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetDuration()), true);
+            PPet->StatusEffectContainer->AddStatusEffect(new CStatusEffect(EFFECT_IMPAIRMENT, EFFECT_IMPAIRMENT, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetPower(), 0s, PMaster->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetDuration()), EffectNotice::Silent);
         }
     }
 
@@ -1120,16 +1189,7 @@ namespace petutils
             return;
         }
 
-        if (PMaster->objtype == TYPE_PC &&
-            (PetID == PETID_HARLEQUINFRAME || PetID == PETID_VALOREDGEFRAME || PetID == PETID_SHARPSHOTFRAME || PetID == PETID_STORMWAKERFRAME))
-        {
-            puppetutils::LoadAutomaton(static_cast<CCharEntity*>(PMaster));
-            PMaster->PPet = static_cast<CCharEntity*>(PMaster)->PAutomaton;
-        }
-        else
-        {
-            LoadPet(PMaster, PetID, spawningFromZone);
-        }
+        LoadPet(PMaster, PetID, spawningFromZone);
 
         CPetEntity* PPet = dynamic_cast<CPetEntity*>(PMaster->PPet);
         if (PPet)
@@ -1234,6 +1294,15 @@ namespace petutils
             PPet->setModifier(Mod::WATER_RES_RANK, petData->water_res_rank);
             PPet->setModifier(Mod::LIGHT_RES_RANK, petData->light_res_rank);
             PPet->setModifier(Mod::DARK_RES_RANK, petData->dark_res_rank);
+
+            PPet->setModifier(Mod::PARALYZE_RES_RANK, petData->paralyze_res_rank);
+            PPet->setModifier(Mod::BIND_RES_RANK, petData->bind_res_rank);
+            PPet->setModifier(Mod::SILENCE_RES_RANK, petData->silence_res_rank);
+            PPet->setModifier(Mod::SLOW_RES_RANK, petData->slow_res_rank);
+            PPet->setModifier(Mod::POISON_RES_RANK, petData->poison_res_rank);
+            PPet->setModifier(Mod::LIGHT_SLEEP_RES_RANK, petData->light_sleep_res_rank);
+            PPet->setModifier(Mod::DARK_SLEEP_RES_RANK, petData->dark_sleep_res_rank);
+            PPet->setModifier(Mod::BLIND_RES_RANK, petData->blind_res_rank);
         }
     }
 
@@ -1289,6 +1358,7 @@ namespace petutils
                 if ((state && state->GetAbility()->getID() == ABILITY_LEAVE) || PChar->loc.zoning || PChar->isDead())
                 {
                     PMob->PEnmityContainer->Clear();
+                    PMob->SetBattleTargetID(0);
                     PMob->m_OwnerID.clean();
                     PMob->updatemask |= UPDATE_STATUS;
                 }
@@ -1301,7 +1371,7 @@ namespace petutils
 
             PMob->isCharmed  = false;
             PMob->allegiance = ALLEGIANCE_TYPE::MOB;
-            PMob->charmTime  = time_point::min();
+            PMob->charmTime  = timer::time_point::min();
             PMob->PMaster    = nullptr;
 
             PMob->PAI->SetController(std::make_unique<CMobController>(PMob));
@@ -1346,22 +1416,15 @@ namespace petutils
             });
             // clang-format on
 
-            if (PPetEnt->getPetType() != PET_TYPE::AUTOMATON)
-            {
-                PPetEnt->PMaster = nullptr;
-            }
-            else
-            {
-                PPetEnt->PAI->SetController(nullptr);
-            }
+            PPetEnt->PMaster = nullptr;
             PChar->removePetModifiers(PPetEnt);
             charutils::BuildingCharPetAbilityTable(PChar, PPetEnt, 0); // blank the pet commands
         }
 
         charutils::BuildingCharAbilityTable(PChar);
         PChar->PPet = nullptr;
-        PChar->pushPacket<CCharUpdatePacket>(PChar);
-        PChar->pushPacket<CCharAbilitiesPacket>(PChar);
+        PChar->pushPacket<CCharStatusPacket>(PChar);
+        PChar->pushPacket<GP_SERV_COMMAND_COMMAND_DATA>(PChar);
         PChar->pushPacket<CPetSyncPacket>(PChar);
     }
 
@@ -1581,38 +1644,24 @@ namespace petutils
     }
 
     /*
-    Familiars a pet.
+    Extends a charmed pet's charm duration between by a random number between minSeconds and maxSeconds
     */
-    void Familiar(CBattleEntity* PPet)
+    void ExtendCharm(CBattleEntity* PPet, uint16 minSeconds, uint16 maxSeconds)
     {
-        /*
-            Boost HP by 10%
-            Increase charm duration up to 30 mins
-            boost stats by 10%
-            */
-
         // only increase time for charmed mobs
-        if (PPet->objtype == TYPE_MOB && PPet->isCharmed)
+        if (!(PPet->objtype == TYPE_MOB && PPet->isCharmed))
         {
-            // increase charm duration
-            // 30 mins - 1-5 mins
-            PPet->charmTime += 30min - std::chrono::milliseconds(xirand::GetRandomNumber(300000u));
+            return;
         }
 
-        float rate = 0.10f;
+        // Sanity check range
+        if (minSeconds > maxSeconds || maxSeconds == 0)
+        {
+            return;
+        }
+        auto charmTimeIncrease = std::chrono::seconds(xirand::GetRandomNumber(minSeconds, maxSeconds));
 
-        // boost hp by 10%
-        uint16 boost = (uint16)(PPet->health.maxhp * rate);
-
-        PPet->health.maxhp += boost;
-        PPet->health.hp += boost;
-        PPet->UpdateHealth();
-
-        // boost stats by 10%
-        PPet->addModifier(Mod::ATTP, (int16)(rate * 100.0f));
-        PPet->addModifier(Mod::ACC, (int16)(rate * 100.0f));
-        PPet->addModifier(Mod::EVA, (int16)(rate * 100.0f));
-        PPet->addModifier(Mod::DEFP, (int16)(rate * 100.0f));
+        PPet->charmTime += charmTimeIncrease;
     }
 
     void LoadPet(CBattleEntity* PMaster, uint32 PetID, bool spawningFromZone)
@@ -1665,24 +1714,21 @@ namespace petutils
         {
             petType = PET_TYPE::WYVERN;
 
-            const char* Query = "SELECT\
-                pet_name.name,\
-                char_pet.wyvernid\
-                FROM pet_name, char_pet\
-                WHERE pet_name.id = char_pet.wyvernid AND \
-                char_pet.charid = %u";
-
-            if (_sql->Query(Query, PMaster->id) != SQL_ERROR && _sql->NumRows() != 0)
+            const auto query = "SELECT "
+                               "pet_name.name, "
+                               "char_pet.wyvernid "
+                               "FROM pet_name, char_pet "
+                               "WHERE pet_name.id = char_pet.wyvernid AND "
+                               "char_pet.charid = ?";
+            const auto rset  = db::preparedStmt(query, PMaster->id);
+            FOR_DB_SINGLE_RESULT(rset)
             {
-                while (_sql->NextRow() == SQL_SUCCESS)
-                {
-                    uint16 wyvernid = (uint16)_sql->GetIntData(1);
+                const auto wyvernid = rset->get<uint16>("wyvernid");
 
-                    if (wyvernid != 0)
-                    {
-                        PPetData->name.clear();
-                        PPetData->name.insert(0, (const char*)_sql->GetData(0));
-                    }
+                if (wyvernid != 0)
+                {
+                    PPetData->name.clear();
+                    PPetData->name.insert(0, rset->get<std::string>("name"));
                 }
             }
         }
@@ -1690,38 +1736,31 @@ namespace petutils
         {
             petType = PET_TYPE::CHOCOBO;
 
-            const char* Query = "SELECT\
-                char_pet.chocoboid\
-                FROM char_pet\
-                char_pet.charid = %u";
+            const auto query = "SELECT char_pet.chocoboid "
+                               "FROM char_pet "
+                               "WHERE char_pet.charid = ?";
 
-            if (_sql->Query(Query, PMaster->id) != SQL_ERROR && _sql->NumRows() != 0)
+            const auto rset = db::preparedStmt(query, PMaster->id);
+            FOR_DB_SINGLE_RESULT(rset)
             {
-                while (_sql->NextRow() == SQL_SUCCESS)
+                auto chocoboid = rset->get<uint32>("chocoboid");
+
+                if (chocoboid != 0)
                 {
-                    uint32 chocoboid = (uint32)_sql->GetIntData(0);
+                    const uint16 chocoboname1 = chocoboid & 0x0000FFFF;
+                    const uint16 chocoboname2 = chocoboid >>= 16;
 
-                    if (chocoboid != 0)
+                    PPetData->name.clear();
+
+                    const auto subquery = "SELECT pet_name.name "
+                                          "FROM pet_name "
+                                          "WHERE pet_name.id = ? OR pet_name.id = ?";
+                    const auto subrset  = db::preparedStmt(subquery, chocoboname1, chocoboname2);
+                    FOR_DB_SINGLE_RESULT(subrset)
                     {
-                        uint16 chocoboname1 = chocoboid & 0x0000FFFF;
-                        uint16 chocoboname2 = chocoboid >>= 16;
-
-                        PPetData->name.clear();
-
-                        Query = "SELECT\
-                            pet_name.name\
-                            FROM pet_name\
-                            WHERE pet_name.id = %u OR pet_name.id = %u";
-
-                        if (_sql->Query(Query, chocoboname1, chocoboname2) != SQL_ERROR && _sql->NumRows() != 0)
+                        if (chocoboname1 != 0 && chocoboname2 != 0)
                         {
-                            while (_sql->NextRow() == SQL_SUCCESS)
-                            {
-                                if (chocoboname1 != 0 && chocoboname2 != 0)
-                                {
-                                    PPetData->name.insert(0, (const char*)_sql->GetData(0));
-                                }
-                            }
+                            PPetData->name.insert(0, rset->get<std::string>("name"));
                         }
                     }
                 }
@@ -1741,7 +1780,7 @@ namespace petutils
             // Don't spawn jugpet if min level is above master's level
             if (petType == PET_TYPE::JUG_PET && PMaster->loc.zone)
             {
-                uint8 levelRestriction = PMaster->loc.zone->getLevelRestriction();
+                const uint8 levelRestriction = PMaster->loc.zone->getLevelRestriction();
                 if (levelRestriction != 0 && (PMaster->loc.zone->getLevelRestriction() < PPetData->minLevel))
                 {
                     return;
@@ -1752,8 +1791,7 @@ namespace petutils
         CPetEntity* PPet = nullptr;
         if (petType == PET_TYPE::AUTOMATON && PMaster->objtype == TYPE_PC)
         {
-            PPet = static_cast<CCharEntity*>(PMaster)->PAutomaton;
-            PPet->PAI->SetController(std::make_unique<CAutomatonController>(static_cast<CAutomatonEntity*>(PPet)));
+            PPet = new CAutomatonEntity();
         }
         else
         {
@@ -1781,10 +1819,7 @@ namespace petutils
             PPet->look = PPetData->look;
             PPet->name = PPetData->name;
         }
-        else
-        {
-            PPet->look.size = MODEL_AUTOMATON;
-        }
+
         PPet->m_name_prefix  = PPetData->name_prefix;
         PPet->m_Family       = PPetData->m_Family;
         PPet->m_MobSkillList = PPetData->m_MobSkillList;
@@ -1809,7 +1844,13 @@ namespace petutils
         }
         else if (PPet->getPetType() == PET_TYPE::AUTOMATON && PMaster->objtype == TYPE_PC)
         {
+            puppetutils::LoadAutomaton(static_cast<CCharEntity*>(PMaster));
+
             CalculateAutomatonStats(PMaster, PPet);
+
+            puppetutils::EquipAttachments(static_cast<CAutomatonEntity*>(PPet));
+
+            PPet->PAI->SetController(std::make_unique<CAutomatonController>(static_cast<CAutomatonEntity*>(PPet)));
         }
         else if (PPet->getPetType() == PET_TYPE::LUOPAN && PMaster->objtype == TYPE_PC)
         {
@@ -1820,6 +1861,12 @@ namespace petutils
         PPet->status        = STATUS_TYPE::NORMAL;
         PPet->m_ModelRadius = PPetData->radius;
         PPet->m_EcoSystem   = PPetData->EcoSystem;
+
+        if (PPet->getPetType() == PET_TYPE::WYVERN || PPet->getPetType() == PET_TYPE::JUG_PET)
+        {
+            battleutils::addEcosystemKillerEffects(PPet);
+        }
+
         // set the damage type of the pet
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDmgType(PPetData->m_dmgType);
 
@@ -1859,6 +1906,40 @@ namespace petutils
         {
             return true;
         }
+        return false;
+    }
+
+    bool IsTandemActive(CBattleEntity* PAttacker)
+    {
+        /*  This is used for Tandem Strike (acc/m.acc+) and Tandem Blow (subtle blow II+).
+            To get the bonus, both pet and master must be engaged in combat with the same target.
+            Inspired by TiberonKalkaz's approach in ASB.
+            https://github.com/AirSkyBoat/AirSkyBoat/pull/3134/files#diff-dea0a7c8d005d1e7507dcb2370aff3a46df84ab53d87ba50beeab376c3082621
+        */
+        CBattleEntity* tandemPartner = nullptr;
+        if (PAttacker->objtype == TYPE_PC)
+        {
+            if (PAttacker->PPet == nullptr)
+                return false;
+
+            tandemPartner = PAttacker->PPet;
+        }
+        else
+        {
+            if (PAttacker->PMaster == nullptr || PAttacker->PMaster->objtype != TYPE_PC)
+                return false;
+
+            tandemPartner = PAttacker->PMaster;
+        }
+
+        if (
+            tandemPartner->PAI->IsEngaged() &&
+            tandemPartner->GetBattleTarget() != nullptr &&
+            tandemPartner->GetBattleTargetID() == PAttacker->GetBattleTargetID())
+        {
+            return true;
+        }
+
         return false;
     }
 

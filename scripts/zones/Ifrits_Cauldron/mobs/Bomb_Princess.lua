@@ -10,11 +10,16 @@ entity.onMobInitialize = function(mob)
     mob:setMobMod(xi.mobMod.GIL_BONUS, -100)
     mob:setMobMod(xi.mobMod.NO_DROPS, 1)
     mob:setMod(xi.mod.STUN_MEVA, 50)
+    mob:addImmunity(xi.immunity.STUN)
 end
 
 entity.onMobFight = function(mob, target)
-    if mob:getBattleTime() > 10 then
-        mob:useMobAbility(511)
+    if
+        mob:getLocalVar('usedDestruct') == 0 and
+        mob:getBattleTime() > 10
+    then
+        mob:setLocalVar('usedDestruct', 1)
+        mob:useMobAbility(xi.mobSkill.SELF_DESTRUCT)
     end
 end
 

@@ -16,11 +16,11 @@ mobskillObject.onMobSkillCheck = function(target, mob, skill)
 end
 
 mobskillObject.onMobWeaponSkill = function(target, mob, skill)
-    if mob:getName() == 'Cernunnos' then
+    if mob:getPool() == xi.mobPools.CERNUNNOS then
         local numhits = 3
         local accmod = 1
-        local dmgmod = 2.0
-        local info = xi.mobskills.mobPhysicalMove(mob, target, skill, numhits, accmod, dmgmod, xi.mobskills.magicalTpBonus.NO_EFFECT)
+        local ftp    = 2.0
+        local info = xi.mobskills.mobPhysicalMove(mob, target, skill, numhits, accmod, ftp, xi.mobskills.physicalTpBonus.NO_EFFECT)
         local dmg = xi.mobskills.mobFinalAdjustments(info.dmg, mob, skill, target, xi.attackType.PHYSICAL, xi.damageType.SLASHING, info.hitslanded)
 
         xi.mobskills.mobPhysicalDrainMove(mob, target, skill, xi.mobskills.drainType.HP, dmg)
@@ -28,11 +28,14 @@ mobskillObject.onMobWeaponSkill = function(target, mob, skill)
         xi.mobskills.mobPhysicalStatusEffectMove(mob, target, skill,  xi.effect.BIND, 1, 0, 30)
 
         return dmg
-    elseif mob:getPool() == 671 or mob:getPool() == 1346 then -- Cemetery Cherry and leafless Jidra
+    elseif
+        mob:getPool() == xi.mobPools.CEMETERY_CHERRY or
+        mob:getPool() == xi.mobPools.LEAFLESS_JIDRA
+    then -- Cemetery Cherry and leafless Jidra
         local numhits = 3
         local accmod = 1
-        local dmgmod = 2.0
-        local info = xi.mobskills.mobPhysicalMove(mob, target, skill, numhits, accmod, dmgmod, xi.mobskills.magicalTpBonus.NO_EFFECT)
+        local ftp    = 2.0
+        local info = xi.mobskills.mobPhysicalMove(mob, target, skill, numhits, accmod, ftp, xi.mobskills.physicalTpBonus.NO_EFFECT)
         local dmg = xi.mobskills.mobFinalAdjustments(info.dmg, mob, skill, target, xi.attackType.PHYSICAL, xi.damageType.SLASHING, info.hitslanded)
 
         mob:resetEnmity(target)

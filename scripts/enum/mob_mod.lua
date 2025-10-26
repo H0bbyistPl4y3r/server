@@ -18,9 +18,9 @@ xi.mobMod =
     GA_CHANCE              = 7,  -- % chance to use -ga spell
     HEAL_CHANCE            = 8,  -- % chance to use heal
     HP_HEAL_CHANCE         = 9,  -- can cast cures below this HP %
-    SUBLINK                = 10, -- sub link group
+    SUBLINK                = 10, -- Sub link group. Enables mobs from different families to link if they share a SUBLINK value.
     LINK_RADIUS            = 11, -- link radius
-    -- UNUSED = 12,
+    SEES_THROUGH_ILLUSION  = 12, -- Mob can see through the Illusion effect that grants effects similar to Sneak & Invisible without this mod and allows aggro (see Viscious Liquid in mamook)
     SEVERE_SPELL_CHANCE    = 13, -- % chance to use a severe spell like death or impact
     SKILL_LIST             = 14, -- uses given mob skill list
     MUG_GIL                = 15, -- amount gil carried for mugging
@@ -34,7 +34,7 @@ xi.mobMod =
     IMMUNITY               = 23, -- immune to set status effects. This only works from the db, not scripts
     GRADUAL_RAGE           = 24, -- (!) TODO: NOT YET IMPLEMENTED -- gradually rages
     BUILD_RESIST           = 25, -- (!) TODO: NOT YET IMPLEMENTED -- builds resistance to given effects
-    SUPERLINK              = 26, -- super link group. Only use this in mob_spawn_mods / scripts!
+    SUPERLINK              = 26, -- super link group. Only use this in scripts!
     SPELL_LIST             = 27, -- set spell list
     EXP_BONUS              = 28, -- bonus exp (bonus / 100) negative values reduce exp.
     ASSIST                 = 29, -- mobs will assist me
@@ -91,4 +91,12 @@ xi.mobMod =
     SKIP_ALLEGIANCE_CHECK  = 80, -- Skip the allegiance check for valid target (allows for example a mob to cast a TARGET_ENEMY spell on itself)
     ABILITY_RESPONSE       = 81, -- Mob can respond to player ability use with onPlayerAbilityUse()
     RUN_SPEED_MULT         = 82, -- Multiplier for the speed of a mob while running (generally when the target is out of range) 100 = 1.00x
+    CLAIM_TYPE             = 83, -- Changes the claim behavior of the mob. See xi.claimType enum.
+    NO_SPELL_COST          = 84, -- Mob does not use MP when casting spells
+    ASTRAL_PET_OFFSET      = 85, -- If non-zero, defines the offset from main mob's ID for astral flow (if zero, will assume offset of 2)
+    BASE_DAMAGE_MULTIPLIER = 86, -- Multiplies the mob's base damage. Example: 150 = x1.5
+    DAMAGE_OFFSET          = 87, -- Adds or subtracts the mob's base damage offset.
+    RANGED_DAMAGE_OFFSET   = 88, -- Adds or subtracts the mob's ranged base damage offset.
+    AVATAR_PETID           = 89, -- A value from xi.petId to select model/ability from when owner uses astral flow
+    AVATAR_ASTRAL_DELAY    = 90, -- Number of milliseconds to delay AF after avatar spawn
 }

@@ -25,19 +25,21 @@
 #include "entities/battleentity.h"
 #include "entities/charentity.h"
 
+#include "enums/item_lockflg.h"
 #include "item_container.h"
 #include "status_effect_container.h"
 #include "universal_container.h"
 
 #include "packets/action.h"
-#include "packets/inventory_assign.h"
-#include "packets/inventory_finish.h"
-#include "packets/inventory_item.h"
+#include "packets/s2c/0x01d_item_same.h"
+#include "packets/s2c/0x01f_item_list.h"
+#include "packets/s2c/0x020_item_attr.h"
+#include "packets/s2c/0x029_battle_message.h"
 
 #include "utils/battleutils.h"
 #include "utils/charutils.h"
 
-CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slotid)
+CItemState::CItemState(CCharEntity* PEntity, const uint16 targid, const uint8 loc, const uint8 slotid)
 : CState(PEntity, targid)
 , m_PEntity(PEntity)
 , m_PItem(nullptr)
@@ -55,7 +57,9 @@ CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slo
             bool found = false;
             for (auto equipslot = 0; equipslot < 18; ++equipslot)
             {
-                if (m_PEntity->getEquip((SLOTTYPE)equipslot) == m_PItem && m_PItem->getCurrentCharges() > 0)
+                if (m_PEntity->getEquip(static_cast<SLOTTYPE>(equipslot)) == m_PItem &&
+                    m_PItem->getCurrentCharges() > 0 &&
+                    m_PItem->getReuseTime() == 0s)
                 {
                     found = true;
                     break;
@@ -74,15 +78,22 @@ CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slo
 
     if (!m_PItem)
     {
-        throw CStateInitException(std::make_unique<CMessageBasicPacket>(m_PEntity, m_PEntity, 0, 0, 56));
+        throw CStateInitException(std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, 0, 0, MSGBASIC_UNABLE_TO_USE_ITEM));
     }
 
     UpdateTarget(PEntity->IsValidTarget(targid, m_PItem->getValidTarget(), m_errorMsg));
     auto* PTarget = GetTarget();
 
-    if (!PTarget || m_errorMsg)
+    if (!PTarget || this->HasErrorMsg())
     {
-        throw CStateInitException(std::move(m_errorMsg));
+        if (this->HasErrorMsg())
+        {
+            throw CStateInitException(m_errorMsg->copy());
+        }
+        else
+        {
+            throw CStateInitException(std::make_unique<CBasicPacket>());
+        }
     }
 
     auto [error, param, value] = luautils::OnItemCheck(PTarget, m_PItem, ITEMCHECK::NONE, m_PEntity);
@@ -98,7 +109,7 @@ CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slo
             {
                 param = m_PItem->getFlag() & ITEM_FLAG_SCROLL ? m_PItem->getSubID() : m_PItem->getID();
             }
-            throw CStateInitException(std::make_unique<CMessageBasicPacket>(m_PEntity, PTarget ? PTarget : m_PEntity, param, value, error));
+            throw CStateInitException(std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, PTarget ? PTarget : m_PEntity, param, value, static_cast<MSGBASIC_ID>(error)));
         }
     }
 
@@ -106,8 +117,8 @@ CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slo
     m_PEntity->UContainer->SetItem(0, m_PItem);
 
     m_startPos      = m_PEntity->loc.p;
-    m_castTime      = std::chrono::milliseconds(m_PItem->getActivationTime());
-    m_animationTime = std::chrono::milliseconds(m_PItem->getAnimationTime());
+    m_castTime      = m_PItem->getActivationTime();
+    m_animationTime = m_PItem->getAnimationTime();
 
     action_t action;
     action.id         = m_PEntity->id;
@@ -125,13 +136,13 @@ CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slo
     actionTarget.messageID  = 28;
     actionTarget.knockback  = 0;
 
-    m_PEntity->PAI->EventHandler.triggerListener("ITEM_START", CLuaBaseEntity(PTarget), CLuaItem(m_PItem), CLuaAction(&action));
-    m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, new CActionPacket(action));
+    m_PEntity->PAI->EventHandler.triggerListener("ITEM_START", PTarget, m_PItem, &action);
+    m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, std::make_unique<CActionPacket>(action));
 
     m_PItem->setSubType(ITEM_LOCKED);
 
-    m_PEntity->pushPacket<CInventoryAssignPacket>(m_PItem, INV_NOSELECT);
-    m_PEntity->pushPacket<CInventoryFinishPacket>();
+    m_PEntity->pushPacket<GP_SERV_COMMAND_ITEM_LIST>(m_PItem, ItemLockFlg::NoSelect);
+    m_PEntity->pushPacket<GP_SERV_COMMAND_ITEM_SAME>();
 }
 
 void CItemState::UpdateTarget(CBaseEntity* target)
@@ -142,7 +153,7 @@ void CItemState::UpdateTarget(CBaseEntity* target)
     }
 }
 
-void CItemState::UpdateTarget(uint16 targid)
+void CItemState::UpdateTarget(const uint16 targid)
 {
     CState::UpdateTarget(targid);
     CState::SetTarget(targid);
@@ -164,7 +175,7 @@ void CItemState::UpdateTarget(uint16 targid)
     }
 }
 
-bool CItemState::Update(time_point tick)
+auto CItemState::Update(const timer::time_point tick) -> bool
 {
     if (tick > GetEntryTime() + m_castTime && !IsCompleted())
     {
@@ -181,8 +192,8 @@ bool CItemState::Update(time_point tick)
         {
             FinishItem(action);
         }
-        m_PEntity->PAI->EventHandler.triggerListener("ITEM_USE", CLuaBaseEntity(m_PEntity), CLuaItem(m_PItem), CLuaAction(&action));
-        m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, new CActionPacket(action));
+        m_PEntity->PAI->EventHandler.triggerListener("ITEM_USE", m_PEntity, m_PItem, &action);
+        m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, std::make_unique<CActionPacket>(action));
         Complete();
     }
     else if (IsCompleted() && tick > GetEntryTime() + m_castTime + m_animationTime)
@@ -192,13 +203,13 @@ bool CItemState::Update(time_point tick)
             CCharEntity* PChar = m_PEntity;
             PChar->m_charHistory.itemsUsed++;
         }
-        m_PEntity->PAI->EventHandler.triggerListener("ITEM_STATE_EXIT", CLuaBaseEntity(m_PEntity), CLuaItem(m_PItem));
+        m_PEntity->PAI->EventHandler.triggerListener("ITEM_STATE_EXIT", m_PEntity, m_PItem);
         return true;
     }
     return false;
 }
 
-void CItemState::Cleanup(time_point tick)
+void CItemState::Cleanup(timer::time_point tick)
 {
     m_PEntity->UContainer->Clean();
 
@@ -211,18 +222,18 @@ void CItemState::Cleanup(time_point tick)
 
     if (PItem && PItem == m_PItem)
     {
-        m_PEntity->pushPacket<CInventoryAssignPacket>(m_PItem, INV_NORMAL);
+        m_PEntity->pushPacket<GP_SERV_COMMAND_ITEM_LIST>(m_PItem, ItemLockFlg::Normal);
     }
     else
     {
         m_PItem = nullptr;
     }
 
-    m_PEntity->pushPacket<CInventoryItemPacket>(m_PItem, m_location, m_slot);
-    m_PEntity->pushPacket<CInventoryFinishPacket>();
+    m_PEntity->pushPacket<GP_SERV_COMMAND_ITEM_ATTR>(m_PItem, static_cast<CONTAINER_ID>(m_location), m_slot);
+    m_PEntity->pushPacket<GP_SERV_COMMAND_ITEM_SAME>();
 }
 
-bool CItemState::CanChangeState()
+auto CItemState::CanChangeState() -> bool
 {
     return false;
 }
@@ -240,7 +251,7 @@ void CItemState::TryInterrupt(CBattleEntity* PTarget)
         UpdateTarget(m_PEntity->IsValidTarget(m_targid, m_PItem->getValidTarget(), m_errorMsg));
     }
 
-    uint16 msg = 445; // you cannot use items at this time
+    uint16 msg = MSGBASIC_CANNOT_USE_ITEMS;
 
     if (HasMoved() || m_PEntity->StatusEffectContainer->HasPreventActionEffect())
     {
@@ -264,11 +275,11 @@ void CItemState::TryInterrupt(CBattleEntity* PTarget)
 
     if (m_interrupted && !m_errorMsg)
     {
-        m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, m_PEntity, m_PItem->getID(), 0, msg);
+        m_errorMsg = std::make_unique<GP_SERV_COMMAND_BATTLE_MESSAGE>(m_PEntity, m_PEntity, m_PItem->getID(), 0, static_cast<MSGBASIC_ID>(msg));
     }
 }
 
-CItemUsable* CItemState::GetItem()
+auto CItemState::GetItem() const -> CItemUsable*
 {
     return m_PItem;
 }
@@ -294,7 +305,14 @@ void CItemState::InterruptItem(action_t& action)
         actionTarget.messageID  = 0;
         actionTarget.knockback  = 0;
 
-        m_PEntity->pushPacket(m_errorMsg.release());
+        if (this->HasErrorMsg())
+        {
+            m_PEntity->pushPacket(m_errorMsg->copy());
+        }
+        else
+        {
+            throw CStateInitException(std::make_unique<CBasicPacket>());
+        }
     }
 }
 
@@ -303,7 +321,7 @@ void CItemState::FinishItem(action_t& action)
     m_PEntity->OnItemFinish(*this, action);
 }
 
-bool CItemState::HasMoved()
+auto CItemState::HasMoved() const -> bool
 {
     return floorf(m_startPos.x * 10 + 0.5f) / 10 != floorf(m_PEntity->loc.p.x * 10 + 0.5f) / 10 ||
            floorf(m_startPos.z * 10 + 0.5f) / 10 != floorf(m_PEntity->loc.p.z * 10 + 0.5f) / 10;

@@ -7,15 +7,8 @@
 ---@type TMobEntity
 local entity = {}
 
-entity.onMobDeath = function(mob, player, optParams)
-    if
-        player:getCharVar('BorghertzSparkKilled') == 0 and
-        player:hasKeyItem(xi.ki.OLD_GAUNTLETS) and
-        not player:hasKeyItem(xi.ki.SHADOW_FLAMES) and
-        player:getCharVar('BorghertzCS') >= 2
-    then
-        player:setCharVar('BorghertzSparkKilled', 1)
-    end
+entity.onMobInitialize = function(mob)
+    mob:setMobMod(xi.mobMod.IDLE_DESPAWN, 180)
 end
 
 return entity

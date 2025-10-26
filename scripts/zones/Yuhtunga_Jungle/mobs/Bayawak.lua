@@ -7,6 +7,16 @@
 ---@type TMobEntity
 local entity = {}
 
+entity.spawnPoints =
+{
+    { x =  199.614, y =  4.000, z =  240.307 },
+    { x =  240.919, y =  4.000, z =  202.680 },
+    { x =  291.329, y =  4.000, z =  283.012 },
+    { x =  302.803, y =  4.251, z =  211.679 },
+    { x =  347.081, y =  3.983, z =  187.811 },
+    { x =  361.050, y =  4.000, z =  158.976 }
+}
+
 entity.onMobSpawn = function(mob)
     mob:addImmunity(xi.immunity.LIGHT_SLEEP)
     mob:addImmunity(xi.immunity.DARK_SLEEP)
@@ -16,9 +26,10 @@ entity.onMobSpawn = function(mob)
 end
 
 entity.onMobRoam = function(mob)
+    local weather = mob:getWeather()
     if
-        not (mob:getWeather() == xi.weather.HOT_SPELL or
-        mob:getWeather() == xi.weather.HEAT_WAVE)
+        weather ~= xi.weather.HOT_SPELL and
+        weather ~= xi.weather.HEAT_WAVE
     then
         DespawnMob(mob:getID())
     end
@@ -31,9 +42,9 @@ end
 entity.onMobDespawn = function(mob)
     local respawn = math.random(5400, 7200)
     mob:setRespawnTime(respawn)
-    mob:setLocalVar("respawn", os.time() + respawn)
+    mob:setLocalVar('respawn', GetSystemTime() + respawn)
     DisallowRespawn(mob:getID(), true) -- prevents accidental 'pop' during no fire weather and immediate despawn
-    UpdateNMSpawnPoint(mob:getID())
+    xi.mob.updateNMSpawnPoint(mob)
 end
 
 return entity

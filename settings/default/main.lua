@@ -51,6 +51,11 @@ xi.settings.main =
     DAILY_TALLY_LIMIT  = 50000,
     GOBBIE_BOX_MIN_AGE = 45, -- Minimum character age in days before a character can sign up for Gobbie Mystery Box
 
+    -- A.M.A.N.
+    ASSIST_CHANNEL_ENABLED            = true, -- Enable Assist Channel
+    ASSIST_CHANNEL_MEMBERSHIP_LENGTH  = 240,  -- How long returnees and new players will have access to the assist channel, in playtime hours.
+    ASSIST_CHANNEL_RETURNEE_LOGIN_GAP =  48,  -- How many days must have elapsed before returnees are added to the assist channel.
+
     -- Records of Eminence
     ENABLE_ROE            = 1, -- Enable Records of Eminence
     ENABLE_ROE_TIMED      = 1, -- Enable 4-hour timed records
@@ -69,6 +74,9 @@ xi.settings.main =
 
     -- VoidWalker
     ENABLE_VOIDWALKER = 1,
+
+    -- Moblin Maze Mongers
+    ENABLE_MMM = 0,
 
     -- Monstrosity (Heavily in development, use at your own risk!)
     ENABLE_MONSTROSITY               = 0,
@@ -136,6 +144,8 @@ xi.settings.main =
     USE_ADOULIN_WEAPON_SKILL_CHANGES = true,  -- true/false. Change to toggle new Adoulin weapon skill damage calculations
     DISABLE_PARTY_EXP_PENALTY        = false, -- true/false.
     ENABLE_IMMUNOBREAK               = true,  -- true/false. Allow/Disallow immunobreaks to happen.
+    USE_PRE_2013_DEX_MULTIPLIER      = false, -- true/false. False uses 75% of DEX for accuracy calculation. Prior to 2013 50% of DEX was used.
+    USE_PRE_2013_STR_MULTIPLIER      = false, -- true/false. False uses STR multiplier of 1.0 for two handed, one handed main, and ranged attacks, 0.75 for H2H, and 0.5 for one handed in sub slot. True uses 0.5 of STR across the board and is how the game was from release to mid 2013.
 
     -- TRUSTS
     ENABLE_TRUST_CASTING           = 1,
@@ -215,15 +225,11 @@ xi.settings.main =
     ASSAULT_MINIMUM = 1,     -- Minimum amount of people needed to start an assault mission. TOAU era is 3, Default is 1.
 
     -- SPELL SPECIFIC SETTINGS
-    DIA_OVERWRITE                   = 1,     -- Set to 1 to allow Bio to overwrite same tier Dia.  Default is 1.
-    BIO_OVERWRITE                   = 0,     -- Set to 1 to allow Dia to overwrite same tier Bio.  Default is 0.
     STONESKIN_CAP                   = 350,   -- Soft cap for hp absorbed by stoneskin
     BLINK_SHADOWS                   = 2,     -- Number of shadows supplied by Blink spell
     SPIKE_EFFECT_DURATION           = 180,   -- the duration of RDM, BLM spikes effects (not Reprisal)
     ELEMENTAL_DEBUFF_DURATION       = 120,   -- base duration of elemental debuffs
     AQUAVEIL_COUNTER                = 1,     -- Base amount of hits Aquaveil absorbs to prevent spell interrupts. Retail is 1.
-    ABSORB_SPELL_AMOUNT             = 8,     -- how much of a stat gets absorbed by DRK absorb spells - expected to be a multiple of 8.
-    ABSORB_SPELL_TICK               = 9,     -- duration of 1 absorb spell tick
     SNEAK_INVIS_DURATION_MULTIPLIER = 1,     -- multiplies duration of sneak, invis, deodorize to reduce player torture. 1 = retail behavior.
     USE_OLD_CURE_FORMULA            = false, -- true/false. if true, uses older cure formula (3*MND + VIT + 3*(healing skill/5)) // cure 6 will use the newer formula
     USE_OLD_MAGIC_DAMAGE            = false, -- true/false. if true, uses older magic damage formulas

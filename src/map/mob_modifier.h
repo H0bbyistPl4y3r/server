@@ -28,19 +28,19 @@ Gets mapped for convenience in scripts/enum/mobMod.lua -- always edit both
 
 enum MOBMODIFIER : int
 {
-    MOBMOD_NONE           = 0,
-    MOBMOD_GIL_MIN        = 1,  // minimum gil drop -- spawn mod only
-    MOBMOD_GIL_MAX        = 2,  // maximum gil drop -- spawn mod only
-    MOBMOD_MP_BASE        = 3,  // Give mob mp. Used for mobs that are not mages, wyverns, avatars
-    MOBMOD_SIGHT_RANGE    = 4,  // sight range
-    MOBMOD_SOUND_RANGE    = 5,  // sound range
-    MOBMOD_BUFF_CHANCE    = 6,  // % chance to buff (combat only)
-    MOBMOD_GA_CHANCE      = 7,  // % chance to use -ga spell
-    MOBMOD_HEAL_CHANCE    = 8,  // % chance to use heal
-    MOBMOD_HP_HEAL_CHANCE = 9,  // can cast cures below this HP %
-    MOBMOD_SUBLINK        = 10, // sub link group
-    MOBMOD_LINK_RADIUS    = 11, // link radius
-    // UNUSED = 12,
+    MOBMOD_NONE                   = 0,
+    MOBMOD_GIL_MIN                = 1,  // minimum gil drop -- spawn mod only
+    MOBMOD_GIL_MAX                = 2,  // maximum gil drop -- spawn mod only
+    MOBMOD_MP_BASE                = 3,  // Give mob mp. Used for mobs that are not mages, wyverns, avatars
+    MOBMOD_SIGHT_RANGE            = 4,  // sight range
+    MOBMOD_SOUND_RANGE            = 5,  // sound range
+    MOBMOD_BUFF_CHANCE            = 6,  // % chance to buff (combat only)
+    MOBMOD_GA_CHANCE              = 7,  // % chance to use -ga spell
+    MOBMOD_HEAL_CHANCE            = 8,  // % chance to use heal
+    MOBMOD_HP_HEAL_CHANCE         = 9,  // can cast cures below this HP %
+    MOBMOD_SUBLINK                = 10, // Sub link group. Enables mobs from different families to link if they share a SUBLINK value.
+    MOBMOD_LINK_RADIUS            = 11, // link radius
+    MOBMOD_SEES_THROUGH_ILLUSION  = 12, // Mob can see through the Illusion effect that grants effects similar to Sneak & Invisible without this mod and allows aggro (see Viscious Liquid in mamook)
     MOBMOD_SEVERE_SPELL_CHANCE    = 13, // % chance to use a severe spell like death or impact
     MOBMOD_SKILL_LIST             = 14, // uses given mob skill list
     MOBMOD_MUG_GIL                = 15, // amount gil carried for mugging
@@ -54,7 +54,7 @@ enum MOBMODIFIER : int
     MOBMOD_IMMUNITY               = 23, // immune to set status effects. This only works from the db, not scripts
     MOBMOD_GRADUAL_RAGE           = 24, // (!) TODO: NOT YET IMPLEMENTED -- gradually rages
     MOBMOD_BUILD_RESIST           = 25, // (!) TODO: NOT YET IMPLEMENTED -- builds resistance to given effects
-    MOBMOD_SUPERLINK              = 26, // super link group. Only use this in mob_spawn_mods / scripts!
+    MOBMOD_SUPERLINK              = 26, // super link group. Only use this in scripts! Must be defined in onMobInitialize if relevant mobs are different families
     MOBMOD_SPELL_LIST             = 27, // set spell list
     MOBMOD_EXP_BONUS              = 28, // bonus exp (bonus / 100) negative values reduce exp.
     MOBMOD_ASSIST                 = 29, // mobs will assist me
@@ -111,6 +111,14 @@ enum MOBMODIFIER : int
     MOBMOD_SKIP_ALLEGIANCE_CHECK  = 80, // Skip the allegiance check for valid target (allows for example a mob to cast a TARGET_ENEMY spell on itself)
     MOBMOD_ABILITY_RESPONSE       = 81, // Mob can respond to player ability use with onPlayerAbilityUse()
     MOBMOD_RUN_SPEED_MULT         = 82, // Multiplier for the speed of a mob while running (generally when the target is out of range) 100 = 1.00x
+    MOBMOD_CLAIM_TYPE             = 83, // Changes the claim behavior of the mob. See ClaimType enum.
+    MOBMOD_NO_SPELL_COST          = 84, // Mob does not use MP when casting spells
+    MOBMOD_ASTRAL_PET_OFFSET      = 85, // If non-zero, defines the offset from main mob's ID for astral flow (if zero, will assume offset of 2)
+    MOBMOD_BASE_DAMAGE_MULTIPLIER = 86, // Multiplies the mob's base damage. Example: 150 = x1.5
+    MOBMOD_DAMAGE_OFFSET          = 87, // Adds or subtracts the mob's base damage offset.
+    MOBMOD_RANGED_DAMAGE_OFFSET   = 88, // Adds or subtracts the mob's ranged base damage offset.
+    AVATAR_PETID                  = 89, // A value from xi.petId to select model/ability from when owner uses astral flow
+    AVATAR_ASTRAL_DELAY           = 90, // Number of milliseconds to delay AF after avatar spawn
 };
 
 #endif

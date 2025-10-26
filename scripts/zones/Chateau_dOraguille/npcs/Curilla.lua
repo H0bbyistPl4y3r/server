@@ -41,9 +41,6 @@ local trustMemory = function(player)
     return memories
 end
 
-entity.onTrade = function(player, npc, trade)
-end
-
 entity.onTrigger = function(player, npc)
     local mLvl = player:getMainLvl()
     local mJob = player:getMainJob()
@@ -108,7 +105,7 @@ entity.onEventFinish = function(player, csid, option, npc)
     elseif csid == 562 then
         player:setCharVar('WildcatSandy', utils.mask.setBit(player:getCharVar('WildcatSandy'), 15, true))
     elseif csid == 573 and option == 2 then
-        player:addSpell(xi.magic.spell.CURILLA, true, true)
+        player:addSpell(xi.magic.spell.CURILLA, { silentLog = true })
         player:messageSpecial(ID.text.YOU_LEARNED_TRUST, 0, xi.magic.spell.CURILLA)
     end
 end

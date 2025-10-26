@@ -7,11 +7,9 @@
 ---@type TMobEntity
 local entity = {}
 
-entity.onMobDeath = function(mob, player, optParams)
-    if player:hasKeyItem(xi.ki.MERTAIRES_BRACELET) then
-        player:setCharVar('TrosKilled', 1)
-        player:setCharVar('Tros_Timer', os.time())
-    end
+entity.onMobInitialize = function(mob)
+    mob:setMobMod(xi.mobMod.IDLE_DESPAWN, 180)
+    mob:addImmunity(xi.immunity.DARK_SLEEP)
 end
 
 return entity

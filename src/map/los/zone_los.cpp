@@ -44,9 +44,10 @@ ZoneLos::ZoneLos(Triangle* elements, int elementCount)
 {
 }
 
-ZoneLos* ZoneLos::Load(uint16 zoneId, std::string const& pathToObj)
+auto ZoneLos::Load(uint16 zoneId, std::string const& pathToObj) -> std::unique_ptr<ZoneLos>
 {
     TracyZoneScoped;
+
     // Check if file exists before loading the OBJ model.
     if (FILE* file = fopen(pathToObj.c_str(), "r"))
     {
@@ -94,7 +95,7 @@ ZoneLos* ZoneLos::Load(uint16 zoneId, std::string const& pathToObj)
         }
     }
 
-    auto zoneLos = new ZoneLos(elements, mesh->face_count);
+    auto zoneLos = std::unique_ptr<ZoneLos>(new ZoneLos(elements, mesh->face_count));
 
 #ifdef LOS_DEBUG
     auto stats = zoneLos->tree.GetStats();
@@ -103,8 +104,8 @@ ZoneLos* ZoneLos::Load(uint16 zoneId, std::string const& pathToObj)
     ShowDebug("Nodes: %d", stats.nodes);
     ShowDebug("Empty nodes: %d", stats.emptyNodes);
     ShowDebug("Max elements: %d", stats.maxElements);
-    float treeMem    = stats.nodes * sizeof(LosTreeNode) / 1000000.f;
-    float elementMem = (mesh->face_count * sizeof(Triangle) + mesh->face_count * sizeof(int)) / 1000000.f;
+    float treeMem    = stats.nodes * sizeof(LosTreeNode) / 1000000.0f;
+    float elementMem = (mesh->face_count * sizeof(Triangle) + mesh->face_count * sizeof(int)) / 1000000.0f;
     totalMemory += treeMem + elementMem;
     ShowDebug("Tree memory (%db): %.2f mb", sizeof(LosTreeNode), treeMem);
     ShowDebug("Element memory (%db): %.2f mb", sizeof(Triangle), elementMem);

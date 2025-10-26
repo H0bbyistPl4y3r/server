@@ -7,11 +7,18 @@
 -- Has en-slow that overwrites and prevents Haste 2.
 -- When slow is active on the player, the NM moves out to melee at a normal range and stops trying to stand on them until it wears. Aura ceases at this time too.
 -----------------------------------
+local ID = zones[xi.zone.ROLANBERRY_FIELDS_S]
+-----------------------------------
 ---@type TMobEntity
 local entity = {}
 
+entity.phList =
+{
+    [ID.mob.DYINYINGA - 1] = ID.mob.DYINYINGA,
+}
+
 entity.onMobInitialize = function(mob)
-    mob:setSpeed(100)
+    mob:setBaseSpeed(100)
     mob:setMobMod(xi.mobMod.ADD_EFFECT, 1)
     mob:setMod(xi.mod.AURA_SIZE, -575) -- 6.25 + (-575) / 100 = .5'
 end

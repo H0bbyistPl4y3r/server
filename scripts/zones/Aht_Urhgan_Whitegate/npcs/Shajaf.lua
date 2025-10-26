@@ -5,9 +5,6 @@
 ---@type TNpcEntity
 local entity = {}
 
-entity.onTrade = function(player, npc, trade)
-end
-
 entity.onTrigger = function(player, npc)
     local imperialStanding = player:getCurrency('imperial_standing')
 
@@ -32,9 +29,6 @@ entity.onTrigger = function(player, npc)
     end
 end
 
-entity.onEventUpdate = function(player, csid, option, npc)
-end
-
 entity.onEventFinish = function(player, csid, option, npc)
     local imperialStanding = player:getCurrency('imperial_standing')
 
@@ -44,7 +38,7 @@ entity.onEventFinish = function(player, csid, option, npc)
             option == 1 and
             imperialStanding >= 2000
         then
-            player:setCharVar('[ISNM]Accepted', 1, getMidnight())
+            player:setCharVar('[ISNM]Accepted', 1, JstMidnight())
             player:delCurrency('imperial_standing', 2000)
             npcUtil.giveKeyItem(player, xi.ki.CONFIDENTIAL_IMPERIAL_ORDER)
 
@@ -53,7 +47,7 @@ entity.onEventFinish = function(player, csid, option, npc)
             option == 2 and
             imperialStanding >= 3000
         then
-            player:setCharVar('[ISNM]Accepted', 1, getMidnight())
+            player:setCharVar('[ISNM]Accepted', 1, JstMidnight())
             player:delCurrency('imperial_standing', 3000)
             npcUtil.giveKeyItem(player, xi.ki.SECRET_IMPERIAL_ORDER)
         end

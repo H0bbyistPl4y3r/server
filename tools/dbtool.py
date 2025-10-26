@@ -9,6 +9,8 @@ import shutil
 import importlib
 import pathlib
 
+import platform
+
 
 # Pre-flight sanity checks
 def preflight_exit():
@@ -88,7 +90,7 @@ def populate_migrations():
     for file in sorted(
         os.scandir(from_dbtool_path("migrations")), key=lambda e: e.name
     ):
-        if file.name.endswith(".py") and file.name != "utils.py":
+        if file.name.endswith(".py"):
             name = file.name.replace(".py", "")
             module = importlib.import_module("migrations." + name)
             migration_list.append(module)
@@ -184,6 +186,10 @@ player_data = [
     "accounts_banned.sql",
     "auction_house_items.sql",
     "auction_house.sql",
+    "audit_bazaar.sql",
+    "audit_dbox.sql",
+    "audit_trade.sql",
+    "audit_vendor.sql",
     "char_blacklist.sql",
     "char_chocobos.sql",
     "char_effects.sql",
@@ -252,11 +258,20 @@ colorama.init(autoreset=True)
 
 
 # Redirect errors through this to hide annoying password warning
-def fetch_errors(result):
+def fetch_errors(query, result):
     for line in result.stderr.splitlines():
         # Safe to ignore this warning
-        if "Using a password on the command line interface can be insecure" not in line:
+        if "Using a password on the command line interface can be insecure" in line:
+            continue
+
+        # If the output line begins with ERROR, print it in red and exit
+        if line.startswith("ERROR"):
+            print_red("Encountered error while executing SQL query:")
+            print_red(query)
+            print_red("Error:")
             print_red(line)
+            print_red("Exiting...")
+            exit(-1)
 
 
 def db_query(query):
@@ -273,7 +288,7 @@ def db_query(query):
         capture_output=True,
         text=True,
     )
-    fetch_errors(result)
+    fetch_errors(query, result)
     return result
 
 
@@ -472,7 +487,15 @@ def import_file(file):
         )
         return
     print("Importing " + file)
-    query = f"SET autocommit=0; SET unique_checks=0; SET foreign_key_checks=0; SOURCE {file}; SET unique_checks=1; SET foreign_key_checks=1; COMMIT;"
+    query = f"""
+    SET autocommit=0;
+    SET unique_checks=0;
+    SET foreign_key_checks=0;
+    SOURCE {file};
+    SET unique_checks=1;
+    SET foreign_key_checks=1;
+    COMMIT;
+    """
     _ = db_query(query)
 
 
@@ -497,6 +520,8 @@ def connect():
                 ).lower()
                 == "y"
             ):
+                query = f"CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+
                 result = subprocess.run(
                     [
                         f"{mysql_bin}mysql{exe}",
@@ -504,12 +529,12 @@ def connect():
                         f"-P{str(port)}",
                         f"-u{login}",
                         f"-p{password}",
-                        f"-e CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci",
+                        f"-e {query}",
                     ],
                     capture_output=True,
                     text=True,
                 )
-                fetch_errors(result)
+                fetch_errors(query, result)
                 setup_db()
                 connect()
             else:
@@ -573,7 +598,7 @@ def backup_db(silent=False, lite=False):
                 stderr=subprocess.PIPE,
                 text=True,
             )
-            fetch_errors(result)
+            fetch_errors("Dumping database", result)
             print_green("Database saved!")
             time.sleep(0.5)
 
@@ -934,7 +959,7 @@ def offload_to_auction_house_history():
 
 
 def announce_menu():
-    from announce import send_server_message
+    from tools.announce import send_server_message
 
     message = input("What message would you like to send to the whole server?\n> ")
     if (
@@ -996,15 +1021,52 @@ def present_menu(title, contents):
 # fmt: on
 
 
-def configure_and_launch_multi_process_by_modulus(mod):
-    # Build query string based on mod
-    query = ""
-    for idx in range(0, mod):
-        query += f"UPDATE xidb.zone_settings SET zoneport = 54230 + {idx} WHERE zoneid % {mod} = {idx};\n"
-
+def configure_single_process():
+    query = f"UPDATE xidb.zone_settings SET zoneport = 54230;"
     print(query)
     db_query(query)
 
+
+def configure_multi_process_by_modulus(mod):
+    for idx in range(0, mod):
+        query = f"UPDATE xidb.zone_settings SET zoneport = 54230 + {idx} WHERE zoneid % {mod} = {idx};"
+        print(query)
+        db_query(query)
+
+
+def configure_multi_process_by_modulus_3():
+    configure_multi_process_by_modulus(3)
+
+
+def configure_multi_process_by_modulus_7():
+    configure_multi_process_by_modulus(7)
+
+
+def launch_process_in_background(process_params):
+    # fmt: off
+
+    if platform.system() == "Windows":
+        subprocess.Popen(
+            process_params,
+            shell=True,
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+            cwd=server_dir_path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        subprocess.Popen(
+            process_params,
+            start_new_session=True, # POSIX specific flag, can't use the same flags as windows
+            cwd=server_dir_path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    # fmt: on
+
+
+def launch_using_zone_settings():
     result = db_query("SELECT DISTINCT zoneip FROM xidb.zone_settings;")
 
     zoneip = result.stdout.split("\n")[1]
@@ -1017,30 +1079,48 @@ def configure_and_launch_multi_process_by_modulus(mod):
 
     ports = result.stdout.split("\n")[1:-1]
 
-    executable = from_server_path(f"xi_map{exe}")
+    # Strip out any '0' entries from ports
+    ports = [port for port in ports if port.strip() != "0"]
 
     print(f"ZoneIP: {zoneip}, Ports: {ports}\n")
 
-    # fmt: off
+    xi_connect_executable = from_server_path(f"xi_connect{exe}")
+    xi_map_executable = from_server_path(f"xi_map{exe}")
+    xi_search_executable = from_server_path(f"xi_search{exe}")
+    xi_world_executable = from_server_path(f"xi_world{exe}")
+
+    print(f"Launching {xi_connect_executable} --log log/connect-server.log")
+    launch_process_in_background(
+        [xi_connect_executable, "--log", "log/connect-server.log"]
+    )
+
+    print(f"Launching {xi_search_executable} --log log/search-server.log")
+    launch_process_in_background(
+        [xi_search_executable, "--log", f"log/search-server.log"]
+    )
+
+    print(f"Launching {xi_world_executable} --log log/world-server.log")
+    launch_process_in_background(
+        [xi_world_executable, "--log", f"log/world-server.log"]
+    )
+
+    time.sleep(1)
+
     for port in ports:
-        print(f"Launching {executable} --log log/map-server-{port}.log --ip {zoneip} --port {port}")
-        subprocess.Popen(
-            [executable, "--log", f"log/map-server-{port}.log", "--ip", zoneip, "--port", port],
-            shell=True,
-            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-            cwd=server_dir_path,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        print(
+            f"Launching {xi_map_executable} --log log/map-server-{port}.log --ip {zoneip} --port {port}"
         )
-    # fmt: on
-
-
-def configure_and_launch_multi_process_by_modulus_3():
-    configure_and_launch_multi_process_by_modulus(3)
-
-
-def configure_and_launch_multi_process_by_modulus_7():
-    configure_and_launch_multi_process_by_modulus(7)
+        launch_process_in_background(
+            [
+                xi_map_executable,
+                "--log",
+                f"log/map-server-{port}.log",
+                "--ip",
+                zoneip,
+                "--port",
+                port,
+            ]
+        )
 
 
 def update_submodules():
@@ -1201,13 +1281,17 @@ def tasks_menu():
             #     "Offload historical auction data to auction_house_history",
             #     offload_to_auction_house_history,
             # ],
+            "l": [
+                "Configure single-process server",
+                configure_single_process,
+            ],
             "b": [
-                "Configure and launch multi-process server (3 processes)",
-                configure_and_launch_multi_process_by_modulus_3,
+                "Configure multi-process server (3 processes)",
+                configure_multi_process_by_modulus_3,
             ],
             "c": [
-                "Configure and launch multi-process server (7 processes)",
-                configure_and_launch_multi_process_by_modulus_7,
+                "Configure multi-process server (7 processes)",
+                configure_multi_process_by_modulus_7,
             ],
             "d": ["Dump Table", dump_table],
             "a": ["Dump All Tables", dump_all_tables],
@@ -1225,7 +1309,6 @@ def main():
         if not os.path.exists(mysql_bin + "mysql" + exe):
             adjust_mysql_bin()
             write_configs()
-        fetch_versions()
         # CLI args
         if len(sys.argv) > 1:
             arg1 = str(sys.argv[1])
@@ -1237,10 +1320,12 @@ def main():
                 return
             elif "migrate" == arg1:
                 if connect() != False:
+                    fetch_versions()
                     run_all_migrations(True)
                     close()
                 return
             elif "update" == arg1:
+                fetch_versions()
                 full_update = False
                 if len(sys.argv) > 2 and str(sys.argv[2]) == "full":
                     full_update = True
@@ -1261,6 +1346,8 @@ def main():
                 return
             elif "setup" == arg1:
                 if len(sys.argv) > 2 and str(sys.argv[2]) == database:
+                    query = f"CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+
                     result = subprocess.run(
                         [
                             f"{mysql_bin}mysql{exe}",
@@ -1268,12 +1355,13 @@ def main():
                             f"-P{str(port)}",
                             f"-u{login}",
                             f"-p{password}",
-                            f"-e CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci",
+                            f"-e {query}",
                         ],
                         capture_output=True,
                         text=True,
                     )
-                    fetch_errors(result)
+                    fetch_errors(query, result)
+                    fetch_versions()
                     setup_db()
                 return
             elif "dump" == arg1:
@@ -1284,6 +1372,7 @@ def main():
                 return
         # Main loop
         print(colorama.ansi.clear_screen())
+        fetch_versions()
         connect()
         while cur:
             colorama.init(autoreset=True)
@@ -1300,6 +1389,7 @@ def main():
                 "4": ["Restore/Import", restore_backup],
                 "r": ["Reset DB", reset_db],
                 "t": ["Maintenance Tasks", tasks_menu],
+                "l": ["Launch Server", launch_using_zone_settings],
                 "s": ["Settings", settings_menu],
                 "q": ["Quit", close],
             }

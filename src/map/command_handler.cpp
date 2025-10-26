@@ -29,7 +29,6 @@
 #include "lua/lua_baseentity.h"
 #include "lua/luautils.h"
 
-#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -218,7 +217,7 @@ int32 CCommandHandler::call(sol::state& lua, CCharEntity* PChar, const std::stri
             // clang-format off
             Async::getInstance()->submit([name, cmdname, cmdlinestr]()
             {
-                const auto query = "INSERT into audit_gm (date_time, gm_name, command, full_string) VALUES(current_timestamp(), ?, ?, ?)";
+                const auto query = "INSERT into audit_gm (date_time, gm_name, command, full_string) VALUES(CURRENT_TIMESTAMP(3), ?, ?, ?)";
                 if (!db::preparedStmt(query, db::escapeString(name), db::escapeString(cmdname), db::escapeString(cmdlinestr)))
                 {
                     ShowError("cmdhandler::call: Failed to log GM command.");
@@ -277,7 +276,7 @@ int32 CCommandHandler::call(sol::state& lua, CCharEntity* PChar, const std::stri
                 break;
 
             default:
-                ShowError("cmdhandler::call: (%s) undefined type for param; symbol: %s", cmdname.c_str(), *parameter);
+                ShowError("cmdhandler::call: (%s) undefined type for param: symbol: %s", cmdname.c_str(), *parameter);
                 break;
         }
 
@@ -285,7 +284,7 @@ int32 CCommandHandler::call(sol::state& lua, CCharEntity* PChar, const std::stri
     }
 
     // Call the function
-    auto result = onTrigger(CLuaBaseEntity(PChar), sol::as_args(args));
+    auto result = onTrigger(PChar, sol::as_args(args));
     if (!result.valid())
     {
         sol::error err = result;

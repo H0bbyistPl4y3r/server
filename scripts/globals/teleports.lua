@@ -1,7 +1,6 @@
 -----------------------------------
 -- A collection of frequently needed teleport shortcuts.
 -----------------------------------
-require('scripts/globals/utils')
 
 xi = xi or {}
 xi.teleport = xi.teleport or {}
@@ -91,6 +90,9 @@ local ids =
     SAFEHOLD_EARRING      = 79,
     NORG_EARRING          = 80,
     NASHMAU_EARRING       = 81,
+    EAST_SANDY_GLYPH      = 82,
+    BASTOK_MINES_GLYPH    = 83,
+    WINDY_WOODS_GLYPH     = 84,
 }
 xi.teleport.id = ids
 
@@ -119,7 +121,7 @@ xi.teleport.destination =
     [ids.A_REM]                 = { -579.000,   -0.050, -100.000, 192,  72 },
     [ids.B_REM]                 = {  620.000,    0.000, -260.640,  72,  72 }, -- (R)
     [ids.S_REM]                 = {  580.000,    0.000,  500.000, 192,  72 }, -- (R)
---  [ids.Z_REM]                 = {  000.000,    0.000,  000.000, 000,  72 },
+    [ids.Z_REM]                 = { -580.000,    0.000, -433.000,  64,  72 },
     [ids.MAAT]                  = {   11.000,    3.000,  117.000,   0, 243 },
     [ids.EXITPROMMEA]           = {  179.000,   35.000,  256.000,  63, 117 },
     [ids.EXITPROMHOLLA]         = {  337.000,   19.000,  -60.000, 125, 102 },
@@ -173,6 +175,9 @@ xi.teleport.destination =
     [ids.SAFEHOLD_EARRING]      = {   -7.737,  -28.012,  111.883, 128,  26 }, -- Tavnazian Safehold
     [ids.NORG_EARRING]          = {  -24.375,    0.389,  -48.209, 207, 252 }, -- Norg
     [ids.NASHMAU_EARRING]       = {   -7.710,    0.000,  -43.301, 193,  53 }, -- Nashmau
+    [ids.EAST_SANDY_GLYPH]      = {  101.292,    1.000,  -48.889,  31, 230 }, -- Southern San d'Oria East Gate
+    [ids.BASTOK_MINES_GLYPH]    = {   -2.658,   -1.001, -120.508,  70, 234 }, -- Bastok Mines Gate
+    [ids.WINDY_WOODS_GLYPH]     = {  108.726,   -5.000,  -43.588,   0, 241 }, -- Windurst Woods Gate
 }
 
 xi.teleport.type =
@@ -272,24 +277,24 @@ end
 
 local outpostDestinations =
 {
-    [xi.region.RONFAURE]        = { -437.688, -20.255, -219.227, 124, 100 }, -- Ronfaure (R)
-    [xi.region.ZULKHEIM]        = {  148.231,  -7.975,   93.479, 154, 103 }, -- Zulkheim (R)
-    [xi.region.NORVALLEN]       = {   62.030,   0.463,   -2.025,  67, 104 }, -- Norvallen (R)
-    [xi.region.GUSTABERG]       = { -580.161,  39.578,   62.680,  89, 106 }, -- Gustaberg (R)
-    [xi.region.DERFLAND]        = {  465.820,  23.625,  423.164,  29, 109 }, -- Derfland (R)
-    [xi.region.SARUTABARUTA]    = {  -17.921, -13.335,  318.156, 254, 115 }, -- Sarutabaruta (R)
-    [xi.region.KOLSHUSHU]       = { -480.237, -30.943,   58.079,  62, 118 }, -- Kolshushu (R)
-    [xi.region.ARAGONEU]        = { -297.047,  16.988,  418.026, 225, 119 }, -- Aragoneu (R)
-    [xi.region.FAUREGANDI]      = {  -18.690, -60.048, -109.243, 100, 111 }, -- Fauregandi (R)
-    [xi.region.VALDEAUNIA]      = {  211.210, -24.016, -207.338, 160, 112 }, -- Valdeaunia (R)
-    [xi.region.QUFIMISLAND]     = { -243.049, -19.983,  306.712,  71, 126 }, -- Qufim Island (R)
-    [xi.region.LITELOR]         = {  -37.669,   0.419, -141.216,  69, 121 }, -- Li'Telor (R)
-    [xi.region.KUZOTZ]          = { -249.983,   7.965, -252.976, 122, 114 }, -- Kuzotz (R)
-    [xi.region.VOLLBOW]         = { -176.360,   7.624,  -63.580, 122, 113 }, -- Vollbow (R)
-    [xi.region.ELSHIMOLOWLANDS] = { -240.860,  -0.031, -388.434,  64, 123 }, -- Elshimo Lowlands (R)
-    [xi.region.ELSHIMOUPLANDS]  = {  207.821,  -0.128,  -86.623, 159, 124 }, -- Elshimo Uplands (R)
-    [xi.region.TULIA]           = {    4.000, -54.000, -600.000, 192, 130 }, -- Tu'Lia (can't acquire on retail, but exists in NCP event menu)
-    [xi.region.TAVNAZIANARCH]   = { -535.861,  -7.149,  -53.628, 122,  24 }, -- Tavnazia (R)
+    [xi.region.RONFAURE]         = { -437.688, -20.255, -219.227, 124, 100 }, -- Ronfaure (R)
+    [xi.region.ZULKHEIM]         = {  148.231,  -7.975,   93.479, 154, 103 }, -- Zulkheim (R)
+    [xi.region.NORVALLEN]        = {   62.030,   0.463,   -2.025,  67, 104 }, -- Norvallen (R)
+    [xi.region.GUSTABERG]        = { -580.161,  39.578,   62.680,  89, 106 }, -- Gustaberg (R)
+    [xi.region.DERFLAND]         = {  465.820,  23.625,  423.164,  29, 109 }, -- Derfland (R)
+    [xi.region.SARUTABARUTA]     = {  -17.921, -13.335,  318.156, 254, 115 }, -- Sarutabaruta (R)
+    [xi.region.KOLSHUSHU]        = { -480.237, -30.943,   58.079,  62, 118 }, -- Kolshushu (R)
+    [xi.region.ARAGONEU]         = { -297.047,  16.988,  418.026, 225, 119 }, -- Aragoneu (R)
+    [xi.region.FAUREGANDI]       = {  -18.690, -60.048, -109.243, 100, 111 }, -- Fauregandi (R)
+    [xi.region.VALDEAUNIA]       = {  211.210, -24.016, -207.338, 160, 112 }, -- Valdeaunia (R)
+    [xi.region.QUFIMISLAND]      = { -243.049, -19.983,  306.712,  71, 126 }, -- Qufim Island (R)
+    [xi.region.LITELOR]          = {  -37.669,   0.419, -141.216,  69, 121 }, -- Li'Telor (R)
+    [xi.region.KUZOTZ]           = { -249.983,   7.965, -252.976, 122, 114 }, -- Kuzotz (R)
+    [xi.region.VOLLBOW]          = { -176.360,   7.624,  -63.580, 122, 113 }, -- Vollbow (R)
+    [xi.region.ELSHIMO_LOWLANDS] = { -240.860,  -0.031, -388.434,  64, 123 }, -- Elshimo Lowlands (R)
+    [xi.region.ELSHIMO_UPLANDS]  = {  207.821,  -0.128,  -86.623, 159, 124 }, -- Elshimo Uplands (R)
+    [xi.region.TULIA]            = {    4.000, -54.000, -600.000, 192, 130 }, -- Tu'Lia (can't acquire on retail, but exists in NCP event menu)
+    [xi.region.TAVNAZIANARCH]    = { -535.861,  -7.149,  -53.628, 122,  24 }, -- Tavnazia (R)
 }
 
 xi.teleport.toOutpost = function(player, region)

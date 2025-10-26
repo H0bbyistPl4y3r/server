@@ -197,9 +197,7 @@ end
 -- Add handlers from a container, if the handler is in a zone in the valid zone table
 function InteractionLookup:addContainer(container, validZoneTable)
     if self.containers[container.id] then
-        -- Container already added, need to remove it first to re-add.
-        printf('Can\'t add a container that is already a loaded. Need to remove it first: ' .. container.id)
-        return
+        self:removeContainer(container)
     end
 
     if container.id == nil then
@@ -478,11 +476,11 @@ function InteractionLookup:onMobDeath(mob, player, optParams, fallbackFn)
 end
 
 function InteractionLookup:onTriggerAreaEnter(player, triggerArea, instance, fallbackFn)
-    return onHandler(self.data, 'onTriggerAreaEnter', triggerArea:GetTriggerAreaID(), { player, triggerArea, instance }, fallbackFn)
+    return onHandler(self.data, 'onTriggerAreaEnter', triggerArea:getTriggerAreaID(), { player, triggerArea, instance }, fallbackFn)
 end
 
 function InteractionLookup:onTriggerAreaLeave(player, triggerArea, instance, fallbackFn)
-    return onHandler(self.data, 'onTriggerAreaLeave', triggerArea:GetTriggerAreaID(), { player, triggerArea, instance }, fallbackFn)
+    return onHandler(self.data, 'onTriggerAreaLeave', triggerArea:getTriggerAreaID(), { player, triggerArea, instance }, fallbackFn)
 end
 
 function InteractionLookup:onZoneIn(player, prevZone, fallbackFn)

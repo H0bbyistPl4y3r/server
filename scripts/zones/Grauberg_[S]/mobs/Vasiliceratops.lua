@@ -3,8 +3,21 @@
 --   NM: Vasiliceratops
 -- https://www.bg-wiki.com/ffxi/Vasiliceratops
 -----------------------------------
+local ID = zones[xi.zone.GRAUBERG_S]
+-----------------------------------
 ---@type TMobEntity
 local entity = {}
+
+entity.spawnPoints =
+{
+    { x =  276.142, y =  25.332, z = -453.541 }
+}
+
+entity.phList =
+{
+    [ID.mob.VASILICERATOPS - 3] = ID.mob.VASILICERATOPS,
+    [ID.mob.VASILICERATOPS - 67] = ID.mob.VASILICERATOPS,
+}
 
 entity.onMobInitialize = function(mob)
     mob:addImmunity(xi.immunity.BIND)
@@ -14,7 +27,7 @@ entity.onMobInitialize = function(mob)
     mob:addImmunity(xi.immunity.PETRIFY)
 
     mob:setMod(xi.mod.DOUBLE_ATTACK, 100)
-    mob:setSpeed(100)
+    mob:setBaseSpeed(100)
 end
 
 entity.onMobWeaponSkillPrepare = function(mob, target)

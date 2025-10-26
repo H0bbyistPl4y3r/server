@@ -46,14 +46,14 @@ local setMagicCastCooldown = function(pet)
     local actorWeather = pet:getWeather()
     -- Strong weathers.
     if
-        actorWeather == xi.combat.element.strongSingleWeather[petElement] or
-        actorWeather == xi.combat.element.strongDoubleWeather[petElement]
+        actorWeather == xi.data.element.getAssociatedSingleWeather(petElement) or
+        actorWeather == xi.data.element.getAssociatedDoubleWeather(petElement)
     then
         castingCooldown = castingCooldown - 2
     -- Weak weathers.
     elseif
-        actorWeather == xi.combat.element.weakSingleWeather[petElement] or
-        actorWeather == xi.combat.element.weakDoubleWeather[petElement]
+        actorWeather == xi.data.element.getOppositeSingleWeather(petElement) or
+        actorWeather == xi.data.element.getOppositeDoubleWeather(petElement)
     then
         castingCooldown = castingCooldown + 2
     end
@@ -63,7 +63,7 @@ local setMagicCastCooldown = function(pet)
     if dayElement == petElement then
         castingCooldown = castingCooldown - 3
     -- Weak day.
-    elseif dayElement == xi.combat.element.weakDay[petElement] then
+    elseif dayElement == xi.data.element.getElementWeakness(petElement) then
         castingCooldown = castingCooldown + 3
     end
 
@@ -78,9 +78,9 @@ local setMagicCastCooldown = function(pet)
     local lastCastTimeStamp = pet:getLocalVar(lastCastTimeStampVar)
     if
         lastCastTimeStamp > 0 and
-        os.time() - lastCastTimeStamp > lastCastTime
+        GetSystemTime() - lastCastTimeStamp > lastCastTime
     then
-        lastCastTime = os.time() - lastCastTimeStamp
+        lastCastTime = GetSystemTime() - lastCastTimeStamp
     end
 
     if
@@ -164,7 +164,7 @@ xi.pets.avatar.onMobMagicPrepare = function(pet)
 
     -- meta checks for fresh pet, etc
     pet:setLocalVar(lastCastTimeVar, 0)
-    pet:setLocalVar(lastCastTimeStampVar, os.time())
+    pet:setLocalVar(lastCastTimeStampVar, GetSystemTime())
 
     -- early exit from casting a spell to prevent immediately casting a spell after being summoned
     if pet:getMobMod(xi.mobMod.MAGIC_COOL) == 1 then

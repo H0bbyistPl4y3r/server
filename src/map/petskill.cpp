@@ -25,10 +25,11 @@
 CPetSkill::CPetSkill(uint16 id)
 : m_ID(id)
 , m_AnimID(0)
+, m_MobSkillID(0)
 , m_Aoe(0)
 , m_Distance(0)
-, m_AnimationTime(0)
-, m_ActivationTime(0)
+, m_AnimationTime(0s)
+, m_ActivationTime(0s)
 , m_ValidTarget(0)
 , m_Message(0)
 , m_Flag(0)
@@ -39,6 +40,7 @@ CPetSkill::CPetSkill(uint16 id)
 , m_secondarySkillchain(0)
 , m_tertiarySkillchain(0)
 , m_TP(0)
+, m_HP(0)
 , m_HPP(0)
 , m_TotalTargets(1)
 , m_PrimaryTargetID(0)
@@ -118,6 +120,11 @@ void CPetSkill::setAnimationID(uint16 animID)
     m_AnimID = animID;
 }
 
+void CPetSkill::setMobSkillID(uint16 skillID)
+{
+    m_MobSkillID = skillID;
+}
+
 const std::string& CPetSkill::getName() const
 {
     return m_name;
@@ -148,18 +155,23 @@ void CPetSkill::setTP(int16 tp)
     m_TP = tp;
 }
 
+void CPetSkill::setHP(const int32 hp)
+{
+    m_HP = hp;
+}
+
 // Stores the Monsters HP% as it was at the start of mobskill
 void CPetSkill::setHPP(uint8 hpp)
 {
     m_HPP = hpp;
 }
 
-void CPetSkill::setAnimationTime(uint16 AnimationTime)
+void CPetSkill::setAnimationTime(timer::duration AnimationTime)
 {
     m_AnimationTime = AnimationTime;
 }
 
-void CPetSkill::setActivationTime(uint16 ActivationTime)
+void CPetSkill::setActivationTime(timer::duration ActivationTime)
 {
     m_ActivationTime = ActivationTime;
 }
@@ -179,9 +191,19 @@ uint16 CPetSkill::getAnimationID() const
     return m_AnimID;
 }
 
+uint16 CPetSkill::getMobSkillID() const
+{
+    return m_MobSkillID;
+}
+
 int16 CPetSkill::getTP() const
 {
     return m_TP;
+}
+
+auto CPetSkill::getHP() const -> int32
+{
+    return m_HP;
 }
 
 // Retrieves the Pet's HP% as it was at the start of mobskill
@@ -200,6 +222,15 @@ uint32 CPetSkill::getPrimaryTargetID() const
     return m_PrimaryTargetID;
 }
 
+void CPetSkill::setFinalAnimationSub(uint8 newAnimationSub)
+{
+    m_FinalAnimationSub = newAnimationSub;
+}
+
+std::optional<uint8> CPetSkill::getFinalAnimationSub()
+{
+    return m_FinalAnimationSub;
+}
 uint16 CPetSkill::getMsg() const
 {
     return m_Message;
@@ -215,6 +246,7 @@ uint16 CPetSkill::getMsgForAction() const
     return getID();
 }
 
+// Converts skill's message id to the non-primary target version
 uint16 CPetSkill::getAoEMsg() const // TODO: put this in parent class?
 {
     switch (m_Message)
@@ -225,8 +257,10 @@ uint16 CPetSkill::getAoEMsg() const // TODO: put this in parent class?
             return 266;
         case 187:
             return 281;
+        case 324: // any miss message
+        case 158:
         case 188:
-            return 282;
+            return 282; // <target> evades.
         case 189:
             return 283;
         case 225:
@@ -238,7 +272,7 @@ uint16 CPetSkill::getAoEMsg() const // TODO: put this in parent class?
         case 238:       // recover hp
         case 306:       // recover hp
         case 318:       // recover hp
-            return 24;
+            return 367;
         case 242:
             return 277;
         case 243:
@@ -314,12 +348,12 @@ uint16 CPetSkill::getValidTargets() const
     return m_ValidTarget;
 }
 
-uint16 CPetSkill::getAnimationTime() const
+timer::duration CPetSkill::getAnimationTime() const
 {
     return m_AnimationTime;
 }
 
-uint16 CPetSkill::getActivationTime() const
+timer::duration CPetSkill::getActivationTime() const
 {
     return m_ActivationTime;
 }

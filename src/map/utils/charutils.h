@@ -19,15 +19,17 @@
 ===========================================================================
 */
 
-#ifndef _CHARUTILS_H
-#define _CHARUTILS_H
+#pragma once
 
 #include "common/cbasetypes.h"
 
 #include "entities/charentity.h"
 #include "items/item_equipment.h"
-#include "trait.h"
+#include "zone.h"
 
+enum class MissionLog : uint8_t;
+enum class QuestLog : uint8_t;
+enum class KeyItem : uint16_t;
 class CPetEntity;
 class CMobEntity;
 class CMeritPoints;
@@ -66,14 +68,19 @@ const std::vector<std::pair<uint16, uint8>> roeCapacityBonusRecords = {
 namespace charutils
 {
     void LoadExpTable();
-    auto LoadChar(uint32 charId) -> CCharEntity*;
+    auto LoadChar(uint32 charId) -> std::unique_ptr<CCharEntity>;
     void LoadSpells(CCharEntity* PChar);
     void LoadInventory(CCharEntity* PChar);
     void LoadEquip(CCharEntity* PChar);
 
     void SendQuestMissionLog(CCharEntity* PChar);
+    void SendPartialMissionLog(CCharEntity* PChar, MissionLog log, bool completed);
+    void SendPartialQuestLog(CCharEntity* PChar, QuestLog log, bool completed);
+    void SendRecordsOfEminenceLog(CCharEntity* PChar);
     void SendKeyItems(CCharEntity* PChar);
     void SendInventory(CCharEntity* PChar);
+    void SendUnityPackets(CCharEntity* PChar);
+    void SendExtendedJobPackets(CCharEntity* PChar);
 
     void CalculateStats(CCharEntity* PChar);
     void UpdateSubJob(CCharEntity* PChar);
@@ -96,12 +103,14 @@ namespace charutils
     void   AddCapacityPoints(CCharEntity* PChar, CBaseEntity* PMob, uint32 capacityPoints, int16 levelDiff = 0, bool isCapacityChain = false);
     void   DistributeCapacityPoints(CCharEntity* PChar, CMobEntity* PMob);
 
-    void TrySkillUP(CCharEntity* PChar, SKILLTYPE SkillID, uint8 lvl, bool forceSkillUp = false, bool useSubSkill = false);
-    void BuildingCharSkillsTable(CCharEntity* PChar);
-    void BuildingCharWeaponSkills(CCharEntity* PChar);
-    void BuildingCharAbilityTable(CCharEntity* PChar);
-    void BuildingCharTraitsTable(CCharEntity* PChar);
-    void BuildingCharPetAbilityTable(CCharEntity* PChar, CPetEntity* PPet, uint32 PetID);
+    void  TrySkillUP(CCharEntity* PChar, SKILLTYPE SkillID, uint8 lvl, bool forceSkillUp = false, bool useSubSkill = false);
+    bool  isArtsBonusActive(CCharEntity* PChar, SKILLTYPE SkillID);
+    int16 ArtsBonusSkill(CCharEntity* PChar, SKILLTYPE SkillID);
+    void  BuildingCharSkillsTable(CCharEntity* PChar);
+    void  BuildingCharWeaponSkills(CCharEntity* PChar);
+    void  BuildingCharAbilityTable(CCharEntity* PChar);
+    void  BuildingCharTraitsTable(CCharEntity* PChar);
+    void  BuildingCharPetAbilityTable(CCharEntity* PChar, CPetEntity* PPet, uint32 PetID);
 
     void DoTrade(CCharEntity* PChar, CCharEntity* PTarget);
     bool CanTrade(CCharEntity* PChar, CCharEntity* PTarget);
@@ -133,11 +142,12 @@ namespace charutils
     void   AddItemToRecycleBin(CCharEntity* PChar, uint32 container, uint8 slotID, uint8 quantity);
     void   EmptyRecycleBin(CCharEntity* PChar);
 
-    bool hasKeyItem(CCharEntity* PChar, uint16 KeyItemID);    // checking the presence of a key item
-    bool seenKeyItem(CCharEntity* PChar, uint16 KeyItemID);   // checking whether the description of the key item has been read
-    void unseenKeyItem(CCharEntity* PChar, uint16 KeyItemID); // attempt to remove keyitem from seen list
-    void addKeyItem(CCharEntity* PChar, uint16 KeyItemID);    // add a key item
-    void delKeyItem(CCharEntity* PChar, uint16 KeyItemID);    // delete a key item
+    auto hasKeyItem(const CCharEntity* PChar, KeyItem keyItemId) -> bool; // checking the presence of a key item
+    auto seenKeyItem(CCharEntity* PChar, KeyItem keyItemId) -> bool;      // checking whether the description of the key item has been read
+    void markSeenKeyItem(CCharEntity* PChar, KeyItem keyItemId);          // mark key item as seen (description read)
+    void unseenKeyItem(CCharEntity* PChar, KeyItem keyItemId);            // attempt to remove keyitem from seen list
+    void addKeyItem(CCharEntity* PChar, KeyItem keyItemId);               // add a key item
+    void delKeyItem(CCharEntity* PChar, KeyItem keyItemId);               // delete a key item
 
     int32 hasSpell(CCharEntity* PChar, uint16 SpellID); // checking for the presence of a spell
     int32 addSpell(CCharEntity* PChar, uint16 SpellID); // add a spell
@@ -173,11 +183,11 @@ namespace charutils
     int32 delWeaponSkill(CCharEntity* PChar, uint16 WeaponSkillID); // declaration of function to delete weapon skill
     bool  canUseWeaponSkill(CCharEntity* PChar, uint16 wsid);
 
-    void SaveCharJob(CCharEntity* PChar, JOBTYPE job); // save the level for the selected character's jobs
-    void SaveCharExp(CCharEntity* PChar, JOBTYPE job); // save experience for the selected character’s chosen job
-    void SaveCharEquip(CCharEntity* PChar);            // preserve the character’s equipment and appearance
-    void SaveCharLook(CCharEntity* PChar);             // saves a character's appearance based on style locking
-    void SaveCharPosition(CCharEntity* PChar);         // save the character's position (x/y/z)
+    void SaveCharJob(const CCharEntity* PChar, JOBTYPE job); // save the level for the selected character's jobs
+    void SaveCharExp(const CCharEntity* PChar, JOBTYPE job); // save experience for the selected character’s chosen job
+    void SaveCharEquip(CCharEntity* PChar);                  // preserve the character’s equipment and appearance
+    void SaveCharLook(CCharEntity* PChar);                   // saves a character's appearance based on style locking
+    void SaveCharPosition(CCharEntity* PChar);               // save the character's position (x/y/z)
     // void SaveCharLinkshells(CCharEntity* PChar);     // TODO: save the character's linkshells
     void SaveMissionsList(CCharEntity* PChar);          // save the missions list
     void SaveEminenceData(CCharEntity* PChar);          // save Eminence Record (RoE) data
@@ -188,23 +198,24 @@ namespace charutils
     void SaveCharInventoryCapacity(CCharEntity* PChar); // save Character inventory capacity
     void SaveSpell(CCharEntity* PChar, uint16 spellID); // save learned spells
     void DeleteSpell(CCharEntity* PChar, uint16 spellID);
-    void SaveLearnedAbilities(CCharEntity* PChar);             // save learned abilities (e.g., corsair rolls)
-    void SaveTitles(CCharEntity* PChar);                       // save character's titles
-    void SaveCharStats(CCharEntity* PChar);                    // save flags, current values of character stats (jobs/HP/MP/etc.)
-    void SaveCharGMLevel(CCharEntity* PChar);                  // save the character's gm level
-    void SaveMentorFlag(CCharEntity* PChar);                   // save the character's mentor flag
-    void SaveJobMasterDisplay(CCharEntity* PChar);             // Save the character's job master display status
-    void SavePlayerSettings(CCharEntity* PChar);               // save the character's settings
-    void SaveChatFilterFlags(CCharEntity* PChar);              // save the character's chat filters
-    void SaveLanguages(CCharEntity* PChar);                    // save the character's language preference
-    void SaveCharNation(CCharEntity* PChar);                   // save the character's nation of allegiance
-    void SaveCampaignAllegiance(CCharEntity* PChar);           // save the character's campaign allegiance
-    void SaveCharMoghancement(CCharEntity* PChar);             // save the character's current moghancement
-    void SaveCharSkills(CCharEntity* PChar, uint8 skillID);    // save the character's skills
-    void SaveTeleport(CCharEntity* PChar, TELEPORT_TYPE type); // save the character's teleports (homepoints, outposts, maws, etc)
-    void SaveDeathTime(CCharEntity* PChar);                    // save when this character last died
-    void SavePlayTime(CCharEntity* PChar);                     // save this character's total play time
-    bool hasMogLockerAccess(CCharEntity* PChar);               // true if have access, false otherwise
+    void SaveLearnedAbilities(CCharEntity* PChar);                // save learned abilities (e.g., corsair rolls)
+    void SaveTitles(CCharEntity* PChar);                          // save character's titles
+    void SaveCharStats(CCharEntity* PChar);                       // save flags, current values of character stats (jobs/HP/MP/etc.)
+    void SaveCharGMLevel(CCharEntity* PChar);                     // save the character's gm level
+    void SaveMentorFlag(CCharEntity* PChar);                      // save the character's mentor flag
+    void SaveJobMasterDisplay(CCharEntity* PChar);                // Save the character's job master display status
+    void SavePlayerSettings(CCharEntity* PChar);                  // save the character's settings
+    void SaveChatFilterFlags(CCharEntity* PChar);                 // save the character's chat filters
+    void SaveLanguages(CCharEntity* PChar);                       // save the character's language preference
+    void SaveCharNation(CCharEntity* PChar);                      // save the character's nation of allegiance
+    void SaveCampaignAllegiance(const CCharEntity* PChar);        // save the character's campaign allegiance
+    void SaveCharMoghancement(const CCharEntity* PChar);          // save the character's current moghancement
+    void SaveCharSkills(const CCharEntity* PChar, uint8 skillID); // save the character's skills
+    void SaveTeleport(CCharEntity* PChar, TELEPORT_TYPE type);    // save the character's teleports (homepoints, outposts, maws, etc)
+    void SaveDeathTime(CCharEntity* PChar);                       // save when this character last died
+    void SavePlayTime(CCharEntity* PChar);                        // save this character's total play time
+    void SaveLastLogout(const CCharEntity* PChar);                // save the last logout time of this character
+    bool hasMogLockerAccess(const CCharEntity* PChar);            // true if have access, false otherwise
 
     uint8 getQuestStatus(CCharEntity* PChar, uint8 log, uint8 quest); // Get Quest status (used in FishingUtils.cpp, allows to fish quest specific mobs, like PLD AF NM)
 
@@ -220,7 +231,7 @@ namespace charutils
     bool isRecvBoxOpen(CCharEntity* PChar);
     bool isAnyDeliveryBoxOpen(CCharEntity* PChar);
 
-    bool CheckAbilityAddtype(CCharEntity* PChar, CAbility* PAbility);
+    auto CheckAbilityAddtype(CCharEntity* PChar, const CAbility* PAbility) -> bool;
 
     void RemoveStratagems(CCharEntity* PChar, CSpell* PSpell);
 
@@ -237,7 +248,8 @@ namespace charutils
     int32 GetPoints(CCharEntity* PChar, const char* type);
     void  SetUnityLeader(CCharEntity* PChar, uint8 leaderID);
     auto  GetConquestPointsName(CCharEntity* PChar) -> std::string;
-    void  SendToZone(CCharEntity* PChar, uint8 type, uint64 ipp);
+    void  SendToZone(CCharEntity* PChar, uint16 zoneId);
+    void  SendDisconnect(CCharEntity* PChar);
     void  ForceLogout(CCharEntity* PChar);
     void  ForceRezone(CCharEntity* PChar);
     void  HomePoint(CCharEntity* PChar, bool resetHPMP);
@@ -247,8 +259,8 @@ namespace charutils
     void  SetCharVar(uint32 charId, std::string const& var, int32 value, uint32 expiry = 0);
     void  SetCharVar(CCharEntity* PChar, std::string const& var, int32 value, uint32 expiry = 0);
     int32 ClearCharVarsWithPrefix(CCharEntity* PChar, std::string const& prefix);
-    int32 RemoveCharVarsWithTag(CCharEntity* PChar, std::string const& varsTag);
     void  ClearCharVarFromAll(std::string const& varName, bool localOnly = false);
+    void  IncrementCharVar(uint32 charId, std::string const& var, int32 value);
     void  IncrementCharVar(CCharEntity* PChar, std::string const& var, int32 value);
 
     auto FetchCharVar(uint32 charId, std::string const& var) -> std::pair<int32, uint32>;
@@ -258,18 +270,18 @@ namespace charutils
     uint16 getWideScanRange(CCharEntity* PChar);
 
     void SendTimerPacket(CCharEntity* PChar, uint32 seconds);
-    void SendTimerPacket(CCharEntity* PChar, duration dur);
+    void SendTimerPacket(CCharEntity* PChar, timer::duration dur);
     void SendClearTimerPacket(CCharEntity* PChar);
 
-    time_t getTraverserEpoch(CCharEntity* PChar);
-    void   setTraverserEpoch(CCharEntity* PChar);
-    uint32 getClaimedTraverserStones(CCharEntity* PChar);
-    void   addClaimedTraverserStones(CCharEntity* PChar, uint16 numStones);
-    void   setClaimedTraverserStones(CCharEntity* PChar, uint16 stoneTotal);
-    uint32 getAvailableTraverserStones(CCharEntity* PChar);
+    earth_time::time_point getTraverserEpoch(CCharEntity* PChar);
+    void                   setTraverserEpoch(CCharEntity* PChar);
+    uint32                 getClaimedTraverserStones(CCharEntity* PChar);
+    void                   addClaimedTraverserStones(CCharEntity* PChar, uint16 numStones);
+    void                   setClaimedTraverserStones(CCharEntity* PChar, uint16 stoneTotal);
+    uint32                 getAvailableTraverserStones(CCharEntity* PChar);
 
     void ReadHistory(CCharEntity* PChar);
-    void WriteHistory(CCharEntity* PChar);
+    void WriteHistory(const CCharEntity* PChar);
 
     uint8 getMaxItemLevel(CCharEntity* PChar);
     uint8 getItemLevelDifference(CCharEntity* PChar);
@@ -278,11 +290,20 @@ namespace charutils
 
     bool hasEntitySpawned(CCharEntity* PChar, CBaseEntity* entity);
 
-    uint32 getCharIdFromName(std::string const& name);
+    auto getCharIdFromName(const std::string& name) -> uint32;
+    auto getAccountIdFromName(const std::string& name) -> uint32;
+    auto getCharIdAndAccountIdFromName(const std::string& name) -> std::pair<uint32, uint32>;
 
     void forceSynthCritFail(const std::string& sourceFunction, CCharEntity* PChar);
 
     void removeCharFromZone(CCharEntity* PChar);
-}; // namespace charutils
 
-#endif // _CHARUTILS_H
+    void updateSession(MapSession* PSession, CCharEntity* PChar, CZone* currentZone);
+    void loadDeathTimestamp(CCharEntity* PChar);
+    void loadZoningFlag(CCharEntity* PChar);
+
+    bool isOrchestrionPlaced(CCharEntity* PChar);
+    void updateMannequins(CCharEntity* PChar);
+
+    bool raceChange(CCharEntity* PChar, CharRace newRace, CharFace newFace, CharSize newSize);
+}; // namespace charutils

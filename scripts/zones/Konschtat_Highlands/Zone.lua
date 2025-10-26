@@ -2,7 +2,6 @@
 -- Zone: Konschtat_Highlands (108)
 -----------------------------------
 local ID = zones[xi.zone.KONSCHTAT_HIGHLANDS]
-require('scripts/quests/i_can_hear_a_rainbow')
 require('scripts/missions/amk/helpers')
 -----------------------------------
 ---@type TZone
@@ -24,10 +23,6 @@ zoneObject.onZoneIn = function(player, prevZone)
         player:setPos(-193, 71, 842, 117)
     end
 
-    if quests.rainbow.onZoneIn(player) then
-        cs = 104
-    end
-
     -- AMK06/AMK07
     if xi.settings.main.ENABLE_AMK == 1 then
         xi.amk.helpers.tryRandomlyPlaceDiggingLocation(player)
@@ -36,17 +31,18 @@ zoneObject.onZoneIn = function(player, prevZone)
     return cs
 end
 
+zoneObject.afterZoneIn = function(player)
+    xi.chocoboGame.handleMessage(player)
+end
+
 zoneObject.onConquestUpdate = function(zone, updatetype, influence, owner, ranking, isConquestAlliance)
-    xi.conq.onConquestUpdate(zone, updatetype, influence, owner, ranking, isConquestAlliance)
+    xi.conquest.onConquestUpdate(zone, updatetype, influence, owner, ranking, isConquestAlliance)
 end
 
 zoneObject.onTriggerAreaEnter = function(player, triggerArea)
 end
 
 zoneObject.onEventUpdate = function(player, csid, option, npc)
-    if csid == 104 then
-        quests.rainbow.onEventUpdate(player)
-    end
 end
 
 zoneObject.onEventFinish = function(player, csid, option, npc)
@@ -59,7 +55,7 @@ zoneObject.onGameHour = function(zone)
         local phase = VanadielMoonPhase()
         local haty = GetMobByID(ID.mob.HATY)
         local vran = GetMobByID(ID.mob.BENDIGEIT_VRAN)
-        local time = os.time()
+        local time = GetSystemTime()
 
         if
             haty and

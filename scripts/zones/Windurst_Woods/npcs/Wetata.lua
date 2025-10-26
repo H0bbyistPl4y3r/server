@@ -43,9 +43,6 @@ entity.onTrigger = function(player, npc)
     end
 end
 
-entity.onEventUpdate = function(player, csid, option, npc)
-end
-
 entity.onEventFinish = function(player, csid, option, npc)
     if (csid == 863 or csid == 867) and option == 2 then
         player:addQuest(xi.questLog.WINDURST, xi.quest.id.windurst.TRUST_WINDURST)
@@ -53,7 +50,7 @@ entity.onEventFinish = function(player, csid, option, npc)
     elseif csid == 862 or csid == 902 then
         local spellID = player:getLocalVar('TradingTrustCipher')
         player:setLocalVar('TradingTrustCipher', 0)
-        player:addSpell(spellID, true, true)
+        player:addSpell(spellID, { silentLog = true })
         player:messageSpecial(ID.text.YOU_LEARNED_TRUST, 0, spellID)
         player:tradeComplete()
     end

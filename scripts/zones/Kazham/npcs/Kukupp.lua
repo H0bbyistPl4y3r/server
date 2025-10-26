@@ -76,12 +76,7 @@ entity.onTrigger = function(player, npc)
         elseif progress >= 2 or failed >= 3 then
             player:startEvent(243) -- happy with workbench
         end
-    else
-        player:startEvent(198)
     end
-end
-
-entity.onEventUpdate = function(player, csid, option, npc)
 end
 
 entity.onEventFinish = function(player, csid, option, npc)

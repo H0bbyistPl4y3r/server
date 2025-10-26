@@ -7,8 +7,15 @@ local entity = {}
 
 entity.onMobInitialize = function(mob)
     mob:setMobMod(xi.mobMod.AUTO_SPIKES, 1)
+    mob:setMobMod(xi.mobMod.DETECTION, bit.bor(xi.detects.MAGIC, xi.detects.SCENT)) -- TODO: Verify scent tracking on retail.
     mob:addStatusEffect(xi.effect.SHOCK_SPIKES, 40, 0, 0)
     mob:getStatusEffect(xi.effect.SHOCK_SPIKES):setEffectFlags(xi.effectFlag.DEATH)
+end
+
+entity.onMobSpawn = function(mob)
+    mob:addMod(xi.mod.ATT, 50)
+    mob:setMod(xi.mod.DOUBLE_ATTACK, 25)
+    mob:setMod(xi.mod.TRIPLE_ATTACK, 25)
 end
 
 entity.onSpikesDamage = function(mob, target, damage)
@@ -35,7 +42,7 @@ entity.onMobDeath = function(mob, player, optParams)
 end
 
 entity.onMobDespawn = function(mob)
-    -- UpdateNMSpawnPoint(mob:getID())
+    -- xi.mob.updateNMSpawnPoint(mob)
     mob:setRespawnTime(math.random(1800, 10800)) -- 30 minutes to 3 hrs
 end
 

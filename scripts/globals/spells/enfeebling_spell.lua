@@ -2,17 +2,27 @@
 -- Enfeebling Spell Utilities
 -- Used for spells that deal negative status effects upon targets.
 -----------------------------------
-require('scripts/globals/combat/element_tables')
 require('scripts/globals/combat/magic_hit_rate')
-require('scripts/globals/combat/status_effect_tables')
 require('scripts/globals/jobpoints')
 require('scripts/globals/magicburst')
-require('scripts/globals/utils')
 -----------------------------------
 xi = xi or {}
 xi.spells = xi.spells or {}
 xi.spells.enfeebling = xi.spells.enfeebling or {}
 -----------------------------------
+local column =
+{
+    EFFECT_ID      = 1,
+    STAT_USED      = 2,
+    BASE_POTENCY   = 3,
+    BASE_TICK      = 4,
+    BASE_DURATION  = 5,
+    RESIST_STAGES  = 6,
+    MESSAGE_OFFSET = 7,
+    SABOTEUR       = 8,
+    BONUS_MACC     = 9,
+}
+
 local pTable =
 {   --                                  1                             2          3      4    5         6       7    8          9
     --                  [Spell ID ] = { Effect,                       Stat-Used, pBase, DoT, Duration, Resist, msg, pSaboteur, mAcc },
@@ -118,14 +128,14 @@ local function getElementalDebuffPotency(caster, statUsed)
         potency = potency + 1
     end
 
-    potency = potency + caster:getMerit(xi.merit.ELEMENTAL_DEBUFF_EFFECT) -- TODO: Add BLM Toban gear effect (potency) here.
+    potency = potency + caster:getMerit(xi.merit.ELEMENTAL_DEBUFF_EFFECT) + caster:getMod(xi.mod.ELEMENTAL_DEBUFF_EFFECT) / 2
 
     return potency
 end
 
 -- Calculate potency.
 xi.spells.enfeebling.calculatePotency = function(caster, target, spellId, spellEffect, skillType, statUsed)
-    local potency    = pTable[spellId][3]
+    local potency    = pTable[spellId][column.BASE_POTENCY]
     local statDiff   = caster:getStat(statUsed) - target:getStat(statUsed)
     local skillLevel = caster:getSkillLevel(skillType)
 
@@ -225,10 +235,11 @@ xi.spells.enfeebling.calculatePotency = function(caster, target, spellId, spellE
         end,
     }
 
+    ---@cast potency integer
     potency = math.floor(potency)
 
     -- Apply Saboteur Effect when applicable.
-    local applySaboteur = pTable[spellId][8]
+    local applySaboteur = pTable[spellId][column.SABOTEUR]
 
     if
         applySaboteur and
@@ -250,12 +261,14 @@ end
 
 -- Calculate duration before resist
 xi.spells.enfeebling.calculateDuration = function(caster, target, spellId, spellEffect, skillType)
-    local duration = pTable[spellId][5] -- Get base duration.
+    local duration = pTable[spellId][column.BASE_DURATION] -- Get base duration.
 
     -- BIND spells have a special random duration the follows a normal distribution with mean=30 and std=12
     if spellEffect == xi.effect.BIND then
         -- Use the Box-Muller transform to change uniform dist sample to the normal dist sample
         local z0 = math.sqrt(-2 * math.log(math.random())) * math.cos(2 * math.pi * math.random())
+
+        ---@cast duration integer
         duration = utils.clamp(math.floor(30 + z0 * 12), 1, duration)
     end
 
@@ -308,68 +321,38 @@ xi.spells.enfeebling.calculateDuration = function(caster, target, spellId, spell
                 duration = duration + caster:getJobPointLevel(xi.jp.STYMIE_EFFECT)
             end
         end
+
+        duration = math.floor(duration * (1 + caster:getMod(xi.mod.ENF_MAG_DURATION) / 100))
     end
 
+    ---@cast duration integer
     return math.floor(duration)
-end
-
-xi.spells.enfeebling.handleEffectNullification = function(caster, target, spell, spellId, spellEffect)
-    -- Determine if target mob is completely immune to a status effect.
-    if xi.combat.statusEffect.isTargetImmune(target, spellEffect, spell:getElement()) then
-        spell:setMsg(xi.msg.basic.MAGIC_COMPLETE_RESIST)
-
-        return true
-    end
-
-    -- Check trait nullification trigger.
-    if xi.combat.statusEffect.isTargetResistant(caster, target, spellEffect) then
-        spell:setModifier(xi.msg.actionModifier.RESIST)
-        spell:setMsg(xi.msg.basic.MAGIC_RESIST)
-
-        return true
-    end
-
-    -- Table for elemental debuff effects and which effect nullifies it.
-    local elementalDebuffTable =
-    {
-        -- effect = Nullified by
-        [xi.effect.BURN ] = { xi.effect.DROWN },
-        [xi.effect.CHOKE] = { xi.effect.FROST },
-        [xi.effect.DROWN] = { xi.effect.SHOCK },
-        [xi.effect.FROST] = { xi.effect.BURN  },
-        [xi.effect.RASP ] = { xi.effect.CHOKE },
-        [xi.effect.SHOCK] = { xi.effect.RASP  },
-    }
-
-    -- Elemental DoTs effects.
-    if
-        spellEffect == xi.effect.BURN or
-        spellEffect == xi.effect.CHOKE or
-        spellEffect == xi.effect.DROWN or
-        spellEffect == xi.effect.FROST or
-        spellEffect == xi.effect.RASP or
-        spellEffect == xi.effect.SHOCK
-    then
-        -- Target already has an status effect that nullifies current.
-        if target:hasStatusEffect(elementalDebuffTable[spellEffect][1]) then
-            spell:setMsg(xi.msg.basic.MAGIC_NO_EFFECT)
-
-            return true
-        end
-    end
-
-    return false
 end
 
 -- Main function, called by spell scripts
 xi.spells.enfeebling.useEnfeeblingSpell = function(caster, target, spell)
-    local spellId     = spell:getID()
-    local spellEffect = pTable[spellId][1]
+    local spellId      = spell:getID()
+    local spellElement = spell:getElement()
+    local spellEffect  = pTable[spellId][column.EFFECT_ID]
 
     ------------------------------
     -- STEP 1: Check spell nullification.
     ------------------------------
-    if xi.spells.enfeebling.handleEffectNullification(caster, target, spell, spellId, spellEffect) then
+    if xi.data.statusEffect.isTargetImmune(target, spellEffect, spellElement) then
+        spell:setMsg(xi.msg.basic.MAGIC_COMPLETE_RESIST)
+        return spellEffect
+    end
+
+    -- Check trait nullification trigger.
+    if xi.data.statusEffect.isTargetResistant(caster, target, spellEffect) then
+        spell:setModifier(xi.msg.actionModifier.RESIST)
+        spell:setMsg(xi.msg.basic.MAGIC_RESIST)
+        return spellEffect
+    end
+
+    -- Target already has an status effect that nullifies current.
+    if xi.data.statusEffect.isEffectNullified(target, spellEffect) then
+        spell:setMsg(xi.msg.basic.MAGIC_NO_EFFECT)
         return spellEffect
     end
 
@@ -377,13 +360,12 @@ xi.spells.enfeebling.useEnfeeblingSpell = function(caster, target, spell)
     -- STEP 2: Calculate resist tiers.
     ------------------------------
     local skillType    = spell:getSkillType()
-    local spellElement = spell:getElement()
     local spellGroup   = spell:getSpellGroup()
-    local statUsed     = pTable[spellId][2]
-    local resistStages = pTable[spellId][6]
-    local message      = pTable[spellId][7]
-    local bonusMacc    = pTable[spellId][9]
-    local resistRate   = xi.combat.magicHitRate.calculateResistRate(caster, target, spellGroup, skillType, spellElement, statUsed, spellEffect, bonusMacc)
+    local statUsed     = pTable[spellId][column.STAT_USED]
+    local resistStages = pTable[spellId][column.RESIST_STAGES]
+    local message      = pTable[spellId][column.MESSAGE_OFFSET]
+    local bonusMacc    = pTable[spellId][column.BONUS_MACC]
+    local resistRate   = xi.combat.magicHitRate.calculateResistRate(caster, target, spellGroup, skillType, 0, spellElement, statUsed, spellEffect, bonusMacc)
 
     if spellEffect ~= xi.effect.NONE then
         -- Stymie
@@ -403,29 +385,36 @@ xi.spells.enfeebling.useEnfeeblingSpell = function(caster, target, spell)
     -- STEP 3: Check if spell resists and Immunobreak.
     ------------------------------
     if resistRate <= 1 / (2 ^ resistStages) then
-        -- Attempt immunobreak. Fetch resistance rank modifier.
-        local resistRank          = 0
-        local immunobreakModifier = xi.combat.statusEffect.getAssociatedImmunobreakModifier(spellEffect)
-        local rankModifier        = target:getMod(immunobreakModifier)
+        -- Decide which resistance rank modifier to use:
+        -- 1: If an effect exists, check if said effect has a specialized resistance rank.
+        -- 2: If an effect doesn't exist, or does but doesn't have a specialized resistance rank, default to action element.
+        local resistanceRankMod = xi.data.statusEffect.getAssociatedResistanceRankModifier(spellEffect, spellElement)
 
-        if spellElement ~= xi.element.NONE then
-            resistRank = target:getMod(xi.combat.element.resistRankMod[spellElement])
+        if resistanceRankMod == 0 then -- If it's an effect and this is 0, try with element.
+            resistanceRankMod = xi.data.element.getElementalResistanceRankModifier(spellElement)
         end
 
+        -- Fetch resistance rank and apply possible modifiers to it.
+        local resistanceRank = target:getMod(resistanceRankMod)
+
+        -- Attempt immunobreak. Fetch resistance rank modifier.
+        local immunobreakModifier = xi.data.statusEffect.getAssociatedImmunobreakModifier(spellEffect)
+        local immunobreakValue    = target:getMod(immunobreakModifier)
+
         if
-            xi.settings.main.ENABLE_IMMUNOBREAK and
-            caster:isPC() and
-            target:isMob() and
+            xi.settings.main.ENABLE_IMMUNOBREAK and    -- Immunobreak didn't exist in lvl 75 era.
+            caster:isPC() and                          -- Only players can immunobreak.
+            caster:getMainJob() == xi.job.RDM and     -- Only Red Mages can immunobreak.
+            target:isMob() and                         -- Only non-players can be immunobroken.
             immunobreakModifier > 0 and                -- Only certain effects can be immunobroken.
             skillType == xi.skill.ENFEEBLING_MAGIC and -- Only Enfeebling magic can immunobreak.
-            (resistRank - rankModifier) > 4            -- Only mobs with a resistance rank of 5+ (50% EEM) can be immunobroken.
+            resistanceRank >= 5                        -- Only mobs with a resistance rank of 5+ (50% EEM) can be immunobroken.
         then
-            local immunobreakRandom = math.random(1, 100)
-            local immunobreakChance = 16 / (1 + rankModifier) + caster:getMerit(xi.merit.IMMUNOBREAK_CHANCE)
+            local immunobreakChance = 20 / (1 + immunobreakValue) + caster:getMerit(xi.merit.IMMUNOBREAK_CHANCE) -- TODO: Add immunobreak gear?
 
             -- We successfully trigger Immunobreak. Change target modifier and set correct message.
-            if immunobreakRandom <= immunobreakChance then
-                target:setMod(immunobreakModifier, rankModifier + 1) -- TODO: Add equipment modifier (x2) here.
+            if math.random(1, 100) <= immunobreakChance then
+                target:setMod(immunobreakModifier, immunobreakValue + 1) -- TODO: Add equipment modifier (x2) here.
 
                 spell:setModifier(xi.msg.actionModifier.IMMUNOBREAK)
             end
@@ -443,7 +432,7 @@ xi.spells.enfeebling.useEnfeeblingSpell = function(caster, target, spell)
     local potency    = xi.spells.enfeebling.calculatePotency(caster, target, spellId, spellEffect, skillType, statUsed)
     local subpotency = 0
     local duration   = math.floor(xi.spells.enfeebling.calculateDuration(caster, target, spellId, spellEffect, skillType) * resistRate)
-    local tick       = pTable[spellId][4]
+    local tick       = pTable[spellId][column.BASE_TICK]
 
     ------------------------------
     -- STEP 5: Exceptions.

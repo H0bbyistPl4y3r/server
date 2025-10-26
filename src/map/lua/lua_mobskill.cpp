@@ -92,6 +92,16 @@ uint32 CLuaMobSkill::getPrimaryTargetID()
     return m_PLuaMobSkill->getPrimaryTargetID();
 }
 
+void CLuaMobSkill::setFinalAnimationSub(uint8 newAnimationSub)
+{
+    return m_PLuaMobSkill->setFinalAnimationSub(newAnimationSub);
+}
+
+void CLuaMobSkill::setAnimationTime(uint32 newAnimationTime)
+{
+    m_PLuaMobSkill->setAnimationTime(std::chrono::milliseconds(newAnimationTime));
+}
+
 uint16 CLuaMobSkill::getMsg()
 {
     return m_PLuaMobSkill->getMsg();
@@ -118,6 +128,12 @@ float CLuaMobSkill::getTP()
     return static_cast<float>(m_PLuaMobSkill->getTP());
 }
 
+// Retrieves the Monsters HP as it was at the start of mobskill
+auto CLuaMobSkill::getMobHP() const -> int32
+{
+    return m_PLuaMobSkill->getHP();
+}
+
 // Retrieves the Monsters HP% as it was at the start of mobskill
 uint8 CLuaMobSkill::getMobHPP()
 {
@@ -140,7 +156,10 @@ void CLuaMobSkill::Register()
     SOL_REGISTER("getTargets", CLuaMobSkill::getTargets);
     SOL_REGISTER("getTotalTargets", CLuaMobSkill::getTotalTargets);
     SOL_REGISTER("getPrimaryTargetID", CLuaMobSkill::getPrimaryTargetID);
+    SOL_REGISTER("setFinalAnimationSub", CLuaMobSkill::setFinalAnimationSub);
+    SOL_REGISTER("setAnimationTime", CLuaMobSkill::setAnimationTime);
     SOL_REGISTER("getTP", CLuaMobSkill::getTP);
+    SOL_REGISTER("getMobHP", CLuaMobSkill::getMobHP);
     SOL_REGISTER("getMobHPP", CLuaMobSkill::getMobHPP);
 }
 
